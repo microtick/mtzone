@@ -11,14 +11,14 @@ All account balances and quantities are rounded (not floats)
 ## Description
 
 * accounts
-  * activeQuotes - array of Quote IDs
-  * activeTrades - array of Trade IDs
+  * activeQuotes - array of currently active Quote IDs
+  * activeTrades - array of currently active Trade IDs
   * balance (maintained by auth module)
   * id (Account ID maintained by auth module)
-  * numQuotes - length of activeQuotes array
-  * numTrades - length of activeTrades array
-  * quoteBacking - total amount of tokens backing quotes for this account
-  * tradeBacking - total amount of tokens backing trades for this account
+  * numQuotes - count of total quotes this account has created
+  * numTrades - count of total trades this account has initiated
+  * quoteBacking - total amount of tokens currently backing quotes for this account
+  * tradeBacking - total amount of tokens currently backing trades for this account
 * activeQuotes - map[Quote ID]
   * backing - amount of tokens backing this quote
   * canModify - timestamp when this quote may be modified again
