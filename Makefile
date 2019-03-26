@@ -1,5 +1,7 @@
 DEP := $(shell command -v dep 2> /dev/null)
 
+all: install
+
 get_tools:
 ifndef DEP
 	@echo "Installing dep"

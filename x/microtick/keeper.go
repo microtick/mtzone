@@ -20,3 +20,14 @@ func NewKeeper(coinKeeper bank.Keeper, storeKey sdk.StoreKey, cdc *codec.Codec) 
 		cdc:        cdc,
 	}
 }
+
+func (k Keeper) GetAccountStatus(ctx sdk.Context, acct string) AccountInfo {
+	store := ctx.KVStore(k.storeKey)
+	if !store.Has([]byte(acct)) {
+		return NewAccountInfo(acct)
+	}
+	bz := store.Get([]byte(acct))
+	var acctInfo AccountInfo
+	k.cdc.MustUnmarshalBinaryBare(bz, &acctInfo)
+	return acctInfo
+}

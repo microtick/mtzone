@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	"github.com/mjackson001/mtzone/x/microtick"
 
 	bam "github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,7 +30,7 @@ type mtApp struct {
 
 	keyMain          *sdk.KVStoreKey
 	keyAccount       *sdk.KVStoreKey
-	//keyNS            *sdk.KVStoreKey
+	keyMT            *sdk.KVStoreKey
 	keyFeeCollection *sdk.KVStoreKey
 	keyParams        *sdk.KVStoreKey
 	tkeyParams       *sdk.TransientStoreKey
@@ -38,7 +39,7 @@ type mtApp struct {
 	bankKeeper          bank.Keeper
 	feeCollectionKeeper auth.FeeCollectionKeeper
 	paramsKeeper        params.Keeper
-	//nsKeeper            nameservice.Keeper
+	mtKeeper            microtick.Keeper
 }
 
 func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
@@ -55,6 +56,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 		keyFeeCollection: sdk.NewKVStoreKey("fee_collection"),
 		keyParams:        sdk.NewKVStoreKey("params"),
 		tkeyParams:       sdk.NewTransientStoreKey("transient_params"),
+		keyMT:			  sdk.NewKVStoreKey("microtick"),
     }
     
  	// The ParamsKeeper handles parameter storage for the application
@@ -77,6 +79,12 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 
 	// The FeeCollectionKeeper collects transaction fees and renders them to the fee distribution module
 	app.feeCollectionKeeper = auth.NewFeeCollectionKeeper(cdc, app.keyFeeCollection)
+	
+	app.mtKeeper = microtick.NewKeeper(
+		app.bankKeeper,
+		app.keyMT,
+		app.cdc,
+	)
 
 	// The AnteHandler handles signature verification and transaction pre-processing
 	app.SetAnteHandler(auth.NewAnteHandler(app.accountKeeper, app.feeCollectionKeeper))
@@ -88,8 +96,8 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 		//AddRoute("nameservice", nameservice.NewHandler(app.nsKeeper))
 
 	// The app.QueryRouter is the main query router where each module registers its routes
-	//app.QueryRouter().
-		//AddRoute("nameservice", nameservice.NewQuerier(app.nsKeeper))
+	app.QueryRouter().
+		AddRoute("microtick", microtick.NewQuerier(app.mtKeeper))
 
 	// The initChainer handles translating the genesis.json file into initial state for the network
 	app.SetInitChainer(app.initChainer)
@@ -100,6 +108,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 		app.keyFeeCollection,
 		app.keyParams,
 		app.tkeyParams,
+		app.keyMT,
 	)
 
 	err := app.LoadLatestVersion(app.keyMain)
