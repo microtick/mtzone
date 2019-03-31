@@ -30,10 +30,10 @@ type mtApp struct {
 
 	keyMain          *sdk.KVStoreKey
 	keyAccount       *sdk.KVStoreKey
-	keyMT            *sdk.KVStoreKey
 	keyFeeCollection *sdk.KVStoreKey
 	keyParams        *sdk.KVStoreKey
 	tkeyParams       *sdk.TransientStoreKey
+	keyMT            microtick.MicrotickStores
 
 	accountKeeper       auth.AccountKeeper
 	bankKeeper          bank.Keeper
@@ -46,6 +46,13 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
     cdc := MakeCodec()
 
     bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc))
+    
+    var mtStores = microtick.MicrotickStores {
+    	AccountStatus: sdk.NewKVStoreKey("MTAccountStatus"),
+    	ActiveQuotes: sdk.NewKVStoreKey("MTActiveQuotes"),
+    	ActiveTrades: sdk.NewKVStoreKey("MTActiveTrades"),
+    	Markets: sdk.NewKVStoreKey("MTMarkets"),
+    }
 
     var app = &mtApp{
         BaseApp: bApp,
@@ -56,7 +63,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 		keyFeeCollection: sdk.NewKVStoreKey("fee_collection"),
 		keyParams:        sdk.NewKVStoreKey("params"),
 		tkeyParams:       sdk.NewTransientStoreKey("transient_params"),
-		keyMT:			  sdk.NewKVStoreKey("microtick"),
+		keyMT:			  mtStores,
     }
     
  	// The ParamsKeeper handles parameter storage for the application
@@ -92,8 +99,8 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 	// The app.Router is the main transaction router where each module registers its routes
 	// Register the bank and nameservice routes here
 	app.Router().
-		AddRoute("bank", bank.NewHandler(app.bankKeeper))
-		//AddRoute("nameservice", nameservice.NewHandler(app.nsKeeper))
+		AddRoute("bank", bank.NewHandler(app.bankKeeper)).
+		AddRoute("microtick", microtick.NewHandler(app.mtKeeper))
 
 	// The app.QueryRouter is the main query router where each module registers its routes
 	app.QueryRouter().
@@ -108,7 +115,10 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 		app.keyFeeCollection,
 		app.keyParams,
 		app.tkeyParams,
-		app.keyMT,
+		app.keyMT.AccountStatus,
+		app.keyMT.ActiveQuotes,
+		app.keyMT.ActiveTrades,
+		app.keyMT.Markets,
 	)
 
 	err := app.LoadLatestVersion(app.keyMain)
@@ -182,7 +192,7 @@ func MakeCodec() *codec.Codec {
 	var cdc = codec.New()
 	auth.RegisterCodec(cdc)
 	bank.RegisterCodec(cdc)
-	//nameservice.RegisterCodec(cdc)
+	microtick.RegisterCodec(cdc)
 	staking.RegisterCodec(cdc)
 	sdk.RegisterCodec(cdc)
 	codec.RegisterCrypto(cdc)

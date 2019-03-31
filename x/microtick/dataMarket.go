@@ -1,6 +1,7 @@
 package microtick
 
 import (
+    "fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -13,7 +14,7 @@ type DataOrderBook struct {
 type DataMarket struct {
     Market MicrotickMarket `json:"market"`
     Consensus MicrotickSpot `json:"consensus"`
-    OrderBooks map[MicrotickDuration]DataOrderBook `json:"orderBooks"`
+    OrderBooks []DataOrderBook `json:"orderBooks"`
     SumBacking sdk.Coins `json:"sumBacking"`
     SumSpots MicrotickSpot `json:"sumSpots"`
     SumWeight MicrotickQuantity `json:"sumWeight"`
@@ -30,13 +31,12 @@ func NewDataMarket(market MicrotickMarket) DataMarket {
     }
 }
 
-func newOrderBooks() map[MicrotickDuration]DataOrderBook {
-    orderBooks := make(map[MicrotickDuration]DataOrderBook)
-    orderBooks[Dur5Minute] = newOrderBook()
-    orderBooks[Dur15Minute] = newOrderBook()
-    orderBooks[Dur1Hour] = newOrderBook()
-    orderBooks[Dur4Hour] = newOrderBook()
-    orderBooks[Dur12Hour] = newOrderBook()
+func newOrderBooks() []DataOrderBook {
+    orderBooks := make([]DataOrderBook, len(MicrotickDurations))
+    for i := range MicrotickDurations {
+        fmt.Println(i)
+        orderBooks[i] = newOrderBook()
+    }
     return orderBooks
 }
 

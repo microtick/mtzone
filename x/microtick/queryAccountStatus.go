@@ -17,18 +17,18 @@ type ResponseAccountStatus struct {
     TradeBacking sdk.Coins `json:"tradeBacking"`
 }
 
-func (ai ResponseAccountStatus) String() string {
+func (ras ResponseAccountStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Account: %s
 NumQuotes: %s
 NumTrades: %s
 QuoteBacking: %s
-TradeBacking: %s`, ai.Account, ai.NumQuotes, ai.NumTrades, ai.QuoteBacking, ai.TradeBacking))
+TradeBacking: %s`, ras.Account, ras.NumQuotes, ras.NumTrades, ras.QuoteBacking, ras.TradeBacking))
 }
 
 func queryAccountStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
     acct := path[0]
     data := keeper.GetAccountStatus(ctx, acct)
-    response := ResponseAccountStatus{
+    response := ResponseAccountStatus {
         Account: acct,
         NumQuotes: data.NumQuotes,
         NumTrades: data.NumTrades,

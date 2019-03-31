@@ -9,11 +9,10 @@ import (
     "github.com/mjackson001/mtzone/x/microtick"
 )
 
-// GetCmdAcctInfo queries information about an account
 func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "status [acct]",
-		Short: "status acct",
+		Use:   "account [acct]",
+		Short: "account acct",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
@@ -25,7 +24,30 @@ func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 				return nil
 			}
 
-			var out microtick.AccountInfo
+			var out microtick.ResponseAccountStatus
+			cdc.MustUnmarshalJSON(res, &out)
+			//fmt.Println(out.String())
+			return cliCtx.PrintOutput(out)
+		},
+	}
+}
+
+func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "market [acct]",
+		Short: "market acct",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			market := args[0]
+
+			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/market/%s", queryRoute, market), nil)
+			if err != nil {
+				fmt.Printf("could not resolve market - %s \n", string(market))
+				return nil
+			}
+
+			var out microtick.ResponseMarketStatus
 			cdc.MustUnmarshalJSON(res, &out)
 			//fmt.Println(out.String())
 			return cliCtx.PrintOutput(out)

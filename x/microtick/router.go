@@ -5,6 +5,7 @@ import (
     
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
+    "github.com/cosmos/cosmos-sdk/codec"
 )
 
 func NewQuerier(keeper Keeper) sdk.Querier {
@@ -12,6 +13,8 @@ func NewQuerier(keeper Keeper) sdk.Querier {
         switch path[0] {
         case "status":
             return queryAccountStatus(ctx, path[1:], req, keeper)
+        case "market":
+            return queryMarketStatus(ctx, path[1:], req, keeper)
         default:
             return nil, sdk.ErrUnknownRequest("unknown microtick query endpoint")
         }
@@ -21,6 +24,8 @@ func NewQuerier(keeper Keeper) sdk.Querier {
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
 		switch msg := msg.(type) {
+		case TxCreateMarket:
+		    return handleTxCreateMarket(ctx, keeper, msg)
 		case TxCreateQuote:
 			return handleTxCreateQuote(ctx, keeper, msg)
 		default:
@@ -28,4 +33,11 @@ func NewHandler(keeper Keeper) sdk.Handler {
 			return sdk.ErrUnknownRequest(errMsg).Result()
 		}
 	}
+}
+
+// Codec
+
+func RegisterCodec(cdc *codec.Codec) {
+    cdc.RegisterConcrete(TxCreateMarket{}, "microtick/CreateMarket", nil)
+    cdc.RegisterConcrete(TxCreateQuote{}, "microtick/CreateQuote", nil)
 }

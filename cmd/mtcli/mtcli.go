@@ -20,7 +20,7 @@ import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
-	app "github.com/cosmos/sdk-application-tutorial"
+	app "github.com/mjackson001/mtzone"
 	mtclient "github.com/mjackson001/mtzone/x/microtick/client"
 	mtrest "github.com/mjackson001/mtzone/x/microtick/client/rest"
 )

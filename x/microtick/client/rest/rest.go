@@ -17,7 +17,6 @@ import (
 
 // RegisterRoutes - Central function to define routes that get registered by the main application
 func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, storeName string) {
-    fmt.Println("storeName=" + storeName)
 	r.HandleFunc(fmt.Sprintf("/%s/status/{acct}", storeName), accountStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
 	//r.HandleFunc(fmt.Sprintf("/%s/names", storeName), buyNameHandler(cdc, cliCtx)).Methods("POST")
 	//r.HandleFunc(fmt.Sprintf("/%s/names", storeName), setNameHandler(cdc, cliCtx)).Methods("PUT")
@@ -115,7 +114,6 @@ func accountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		vars := mux.Vars(r)
 		account := vars["acct"]
 
-fmt.Println(account)
 		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/status/%s", storeName, account), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())

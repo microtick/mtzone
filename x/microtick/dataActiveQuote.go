@@ -16,14 +16,14 @@ type DataActiveQuote struct {
     CanModify time.Time `json:"canModify"`
     Backing sdk.Coins `json:"backing"`
     Commission sdk.Coins `json:"commission"`
-    Premium sdk.Coins `json:"premium"`
+    Premium MicrotickPremium `json:"premium"`
     Quantity MicrotickQuantity `json:"quantity"`
     Spot MicrotickSpot `json:"spot"`
 }
 
 func NewDataActiveQuote(id MicrotickId, market MicrotickMarket, dur MicrotickDuration, 
-    provider MicrotickAccount, backing sdk.Coins, commission sdk.Coins, premium sdk.Coins, 
-    quantity MicrotickQuantity, spot MicrotickSpot) DataActiveQuote {
+    provider MicrotickAccount, backing sdk.Coins, spot MicrotickSpot, 
+    premium MicrotickPremium) DataActiveQuote {
         
     now := time.Now()
     return DataActiveQuote {
@@ -31,12 +31,13 @@ func NewDataActiveQuote(id MicrotickId, market MicrotickMarket, dur MicrotickDur
         Market: market,
         Duration: dur,
         Provider: provider,
+        Backing: backing,
+        Spot: spot,
+        Premium: premium,
+        Quantity: 0, // should be a rounded 10 * backing / premium
+        
         Modified: now,
         CanModify: now,
-        Backing: backing,
-        Commission: commission,
-        Premium: premium,
-        Quantity: quantity,
-        Spot: spot,
+        Commission: sdk.Coins{sdk.NewInt64Coin(TokenType, 0)},
     }
 }

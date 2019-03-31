@@ -1,24 +1,29 @@
 package microtick
 
 import (
-    "fmt"
     "encoding/json"
     
     sdk "github.com/cosmos/cosmos-sdk/types"
-    "github.com/cosmos/cosmos-sdk/codec"
 )
 
-// Tx
-
 type TxCreateQuote struct {
-    Account sdk.AccAddress
+    Market MicrotickMarket
+    Duration MicrotickDuration
+    Provider sdk.AccAddress
     Backing sdk.Coins
+    Spot MicrotickSpot
+    Premium MicrotickPremium
 }
 
-func NewTxCreateQuote(account sdk.AccAddress, backing sdk.Coins) TxCreateQuote {
+func NewTxCreateQuote(market MicrotickMarket, dur MicrotickDuration, provider sdk.AccAddress, 
+    backing sdk.Coins, spot MicrotickSpot, premium MicrotickPremium) TxCreateQuote {
     return TxCreateQuote {
-        Account: account,
+        Market: market,
+        Duration: dur,
+        Provider: provider,
         Backing: backing,
+        Spot: spot,
+        Premium: premium,
     }
 }
 
@@ -27,12 +32,15 @@ func (msg TxCreateQuote) Route() string { return "microtick" }
 func (msg TxCreateQuote) Type() string { return "create_quote" }
 
 func (msg TxCreateQuote) ValidateBasic() sdk.Error {
-    if msg.Account.Empty() {
-        return sdk.ErrInvalidAddress(msg.Account.String())
+    if len(msg.Market) == 0 {
+        return sdk.ErrInternal("Unknown market")
     }
-    //if !msg.Backing.IsAllPositive() {
-        //return sdk.ErrInsufficientCoins("Backing must be positive")
-    //}
+    if msg.Provider.Empty() {
+        return sdk.ErrInvalidAddress(msg.Provider.String())
+    }
+    if !msg.Backing.IsAllPositive() {
+        return sdk.ErrInsufficientCoins("Backing must be positive")
+    }
     return nil
 }
 
@@ -45,24 +53,27 @@ func (msg TxCreateQuote) GetSignBytes() []byte {
 }
 
 func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
-    return []sdk.AccAddress{msg.Account}
-}
-
-// Codec
-
-func RegisterCodec(cdc *codec.Codec) {
-    cdc.RegisterConcrete(TxCreateQuote{}, "microtick/CreateQuote", nil)
+    return []sdk.AccAddress{msg.Provider}
 }
 
 // Handler
 
 func handleTxCreateQuote(ctx sdk.Context, keeper Keeper, msg TxCreateQuote) sdk.Result {
+    // Subtract coins from quote provider
+  	_, _, err := keeper.coinKeeper.SubtractCoins(ctx, msg.Provider, msg.Backing) 
+	if err != nil {
+		return sdk.ErrInsufficientCoins("Buyer does not have enough coins").Result()
+	}
+	
     id := keeper.GetNextActiveQuoteId(ctx)
-    str := fmt.Sprint(id)
-    fmt.Println("next id=" + str)
-    acct := msg.Account.String()
-    accountStatus := keeper.GetAccountStatus(ctx, acct)
+    provider := msg.Provider.String()
+     
+    dataActiveQuote := NewDataActiveQuote(id, msg.Market, msg.Duration, provider,
+        msg.Backing, msg.Spot, msg.Premium)
+    keeper.SetActiveQuote(ctx, dataActiveQuote)
+    
+    accountStatus := keeper.GetAccountStatus(ctx, provider)
     accountStatus.NumQuotes++
-    keeper.SetAccountStatus(ctx, acct, accountStatus)
+    keeper.SetAccountStatus(ctx, provider, accountStatus)
 	return sdk.Result{}
 }
