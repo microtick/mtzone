@@ -41,3 +41,9 @@ func NewDataActiveQuote(id MicrotickId, market MicrotickMarket, dur MicrotickDur
         Commission: sdk.Coins{sdk.NewInt64Coin(TokenType, 0)},
     }
 }
+
+// Implement ListItem
+
+func (daq DataActiveQuote) ListItemId() uint {
+    return uint(daq.Id)
+}

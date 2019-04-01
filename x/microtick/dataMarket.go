@@ -1,7 +1,6 @@
 package microtick
 
 import (
-    "fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -34,7 +33,6 @@ func NewDataMarket(market MicrotickMarket) DataMarket {
 func newOrderBooks() []DataOrderBook {
     orderBooks := make([]DataOrderBook, len(MicrotickDurations))
     for i := range MicrotickDurations {
-        fmt.Println(i)
         orderBooks[i] = newOrderBook()
     }
     return orderBooks

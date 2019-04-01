@@ -1,6 +1,7 @@
 package microtick
 
 import (
+    "fmt"
     "encoding/json"
     
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -58,7 +59,8 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxCreateQuote(ctx sdk.Context, keeper Keeper, msg TxCreateQuote) sdk.Result {
+func handleTxCreateQuote(ctx sdk.Context, keeper Keeper, 
+    msg TxCreateQuote) sdk.Result {
     // Subtract coins from quote provider
   	_, _, err := keeper.coinKeeper.SubtractCoins(ctx, msg.Provider, msg.Backing) 
 	if err != nil {
@@ -73,6 +75,9 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper, msg TxCreateQuote) sdk.
     keeper.SetActiveQuote(ctx, dataActiveQuote)
     
     accountStatus := keeper.GetAccountStatus(ctx, provider)
+    fmt.Printf("before: %+v\n", accountStatus.ActiveQuotes)
+    accountStatus.ActiveQuotes.Insert(dataActiveQuote)
+    fmt.Printf("after: %+v\n", accountStatus.ActiveQuotes)
     accountStatus.NumQuotes++
     keeper.SetAccountStatus(ctx, provider, accountStatus)
 	return sdk.Result{}

@@ -13,6 +13,8 @@ func NewQuerier(keeper Keeper) sdk.Querier {
         switch path[0] {
         case "status":
             return queryAccountStatus(ctx, path[1:], req, keeper)
+        case "active":
+            return queryAccountActive(ctx, path[1:], req, keeper)
         case "market":
             return queryMarketStatus(ctx, path[1:], req, keeper)
         default:

@@ -26,11 +26,11 @@ type MicrotickMarket = string
 type MicrotickDuration = uint16
 
 var MicrotickDurations = []MicrotickDuration {
-    300,
-    900,
-    3600,
-    14400,
-    43200,
+    300, // 5 minutes
+    900, // 15 minutes
+    3600, // 1 hour
+    14400, // 4 hours
+    43200, // 12 hours
 }
 
 func NewMicrotickDurationFromString(d string) (mtd MicrotickDuration, err sdk.Error) {
@@ -50,7 +50,7 @@ func NewMicrotickDurationFromString(d string) (mtd MicrotickDuration, err sdk.Er
 
 // Type
 
-type MicrotickType = bool
+type MicrotickTradeType = bool
 
 const (
     MicrotickCall = false  // 0

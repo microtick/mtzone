@@ -27,6 +27,7 @@ func (mc ModuleClient) GetQueryCmd() *cobra.Command {
 
 	namesvcQueryCmd.AddCommand(client.GetCommands(
 		cli.GetCmdAccountStatus(mc.storeKey, mc.cdc),
+		cli.GetCmdAccountActive(mc.storeKey, mc.cdc),
 		cli.GetCmdMarketStatus(mc.storeKey, mc.cdc),
 	)...)
 

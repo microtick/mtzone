@@ -9,7 +9,7 @@ type DataActiveTrade struct {
     Id MicrotickId `json:"id"`
     Market MicrotickMarket `json:"market"`
     Duration MicrotickDuration `json:"duration"`
-    Type MicrotickType `json:"type"`
+    Type MicrotickTradeType `json:"type"`
     Commission sdk.Coins `json:"commission"`
     CounterParties []DataCounterParty `json:"counterParties"`
     Long MicrotickAccount `json:"long"`
@@ -21,7 +21,7 @@ type DataActiveTrade struct {
 }
 
 func NewDataActiveTrade(id MicrotickId, market MicrotickMarket, dur MicrotickDuration,
-    ttype MicrotickType, commission sdk.Coins, long MicrotickAccount, premium sdk.Coins, 
+    ttype MicrotickTradeType, commission sdk.Coins, long MicrotickAccount, premium sdk.Coins, 
     quantity MicrotickQuantity, strike MicrotickSpot) DataActiveTrade {
         
     now := time.Now()    

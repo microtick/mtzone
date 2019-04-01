@@ -32,6 +32,29 @@ func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 	}
 }
 
+func GetCmdAccountActive(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "active [acct]",
+		Short: "active acct",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			acct := args[0]
+
+			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/active/%s", queryRoute, acct), nil)
+			if err != nil {
+				fmt.Printf("could not resolve account - %s \n", string(acct))
+				return nil
+			}
+
+			var out microtick.ResponseAccountActive
+			cdc.MustUnmarshalJSON(res, &out)
+			//fmt.Println(out.String())
+			return cliCtx.PrintOutput(out)
+		},
+	}
+}
+
 func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "market [acct]",
