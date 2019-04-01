@@ -16,23 +16,11 @@ type DataAccountStatus struct {
     TradeBacking sdk.Coins `json:"tradeBacking"`
 }
 
-func quoteCompare(x, y ListItem) int {
-    x1 := x.(DataActiveQuote)
-    y1 := y.(DataActiveQuote)
-    return int(x1.Id) - int(y1.Id)
-}
-
-func tradeCompare(x, y ListItem) int {
-    x1 := x.(DataActiveQuote)
-    y1 := y.(DataActiveQuote)
-    return int(x1.Id) - int(y1.Id)
-}
-
 func NewDataAccountStatus(account MicrotickAccount) DataAccountStatus {
     return DataAccountStatus {
         Account: account,
-        ActiveQuotes: NewOrderedList(quoteCompare),
-        ActiveTrades: NewOrderedList(tradeCompare),
+        ActiveQuotes: NewOrderedList(),
+        ActiveTrades: NewOrderedList(),
         NumQuotes: 0,
         NumTrades: 0,
         QuoteBacking: sdk.Coins{sdk.NewInt64Coin(TokenType, 0)},

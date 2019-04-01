@@ -76,7 +76,8 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     
     accountStatus := keeper.GetAccountStatus(ctx, provider)
     fmt.Printf("before: %+v\n", accountStatus.ActiveQuotes)
-    accountStatus.ActiveQuotes.Insert(dataActiveQuote)
+    accountStatus.ActiveQuotes.Insert(NewListItem(uint(id), 
+        int(id)))
     fmt.Printf("after: %+v\n", accountStatus.ActiveQuotes)
     accountStatus.NumQuotes++
     keeper.SetAccountStatus(ctx, provider, accountStatus)

@@ -4,20 +4,24 @@ import (
     "fmt"
 )
 
-type ListItem interface {
-    ListItemId() uint
+type ListItem struct {
+    Id uint `json:"Id"`
+    Value int `json:"Value"`
 }
 
-type CompareFunc func(x, y ListItem) int
+func NewListItem(id uint, value int) ListItem {
+    return ListItem {
+        Id: id,
+        Value: value,
+    }
+}
 
 type OrderedList struct {
-    Compare CompareFunc `json:"-"`
     Data []ListItem
 }
 
-func NewOrderedList(compareFunc CompareFunc) OrderedList {
+func NewOrderedList() OrderedList {
     return OrderedList {
-        Compare: compareFunc,
         Data: make([]ListItem, 0, 0),
     }
 }
@@ -28,13 +32,13 @@ func (ol *OrderedList) Search(li ListItem) int {
     hi = len(ol.Data)
     for hi - lo > 1 {
         mid := (hi + lo) / 2
-        if ol.Compare(li, ol.Data[mid]) >= 0 {
+        if li.Value >= ol.Data[mid].Value {
             lo = mid
         } else {
             hi = mid
         }
     }
-    if lo < len(ol.Data) && ol.Compare(li, ol.Data[lo]) != 0 {
+    if lo < len(ol.Data) && li.Value != ol.Data[lo].Value {
         return hi
     }
     return lo
@@ -58,7 +62,6 @@ func (ol *OrderedList) Insert(li ListItem) {
         ol.Data[i+1] = cur[i]
     }
     fmt.Printf("After size=%d\n", len(ol.Data))
-    fmt.Printf("%v\n", ol.Data)
 }
 
 func (ol *OrderedList) Delete(li ListItem) {
@@ -68,7 +71,7 @@ func (ol *OrderedList) Delete(li ListItem) {
         ol.Data = make([]ListItem, len-1, len-1)
         pos := 0
         for i := 0; i < len; i++ {
-            if cur[i].ListItemId() != li.ListItemId() {
+            if cur[i].Id != li.Id {
                 ol.Data[pos] = cur[i]
                 pos++
             }
