@@ -19,7 +19,10 @@ type ResponseMarketStatus struct {
 
 func (rm ResponseMarketStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Market: %s
-Consensus: %i`, rm.Market, rm.Consensus))
+Consensus: %i
+Sum Backing: %s
+Sum Weight: %i`, rm.Market, rm.Consensus, rm.SumBacking.String(),
+    rm.SumWeight))
 }
 
 func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {

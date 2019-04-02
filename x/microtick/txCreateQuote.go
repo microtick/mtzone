@@ -1,7 +1,6 @@
 package microtick
 
 import (
-    "fmt"
     "encoding/json"
     
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -72,13 +71,12 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
      
     dataActiveQuote := NewDataActiveQuote(id, msg.Market, msg.Duration, provider,
         msg.Backing, msg.Spot, msg.Premium)
+    dataActiveQuote.ComputeQuantity()
     keeper.SetActiveQuote(ctx, dataActiveQuote)
     
     accountStatus := keeper.GetAccountStatus(ctx, provider)
-    fmt.Printf("before: %+v\n", accountStatus.ActiveQuotes)
     accountStatus.ActiveQuotes.Insert(NewListItem(uint(id), 
         int(id)))
-    fmt.Printf("after: %+v\n", accountStatus.ActiveQuotes)
     accountStatus.NumQuotes++
     keeper.SetAccountStatus(ctx, provider, accountStatus)
 	return sdk.Result{}

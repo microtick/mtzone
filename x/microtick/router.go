@@ -17,6 +17,8 @@ func NewQuerier(keeper Keeper) sdk.Querier {
             return queryAccountActive(ctx, path[1:], req, keeper)
         case "market":
             return queryMarketStatus(ctx, path[1:], req, keeper)
+        case "quote":
+            return queryActiveQuote(ctx, path[1:], req, keeper)
         default:
             return nil, sdk.ErrUnknownRequest("unknown microtick query endpoint")
         }

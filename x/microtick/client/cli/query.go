@@ -77,3 +77,26 @@ func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 		},
 	}
 }
+
+func GetCmdActiveQuote(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "quote [id]",
+		Short: "quote id",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			id := args[0]
+
+			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/quote/%s", queryRoute, id), nil)
+			if err != nil {
+				fmt.Printf("could not resolve quote - %s \n", string(id))
+				return nil
+			}
+
+			var out microtick.ResponseActiveQuote
+			cdc.MustUnmarshalJSON(res, &out)
+			//fmt.Println(out.String())
+			return cliCtx.PrintOutput(out)
+		},
+	}
+}

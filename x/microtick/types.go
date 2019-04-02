@@ -8,6 +8,7 @@ import (
 )
 
 const TokenType = "fox"
+const Leverage = 10
 
 // Account
 
@@ -77,6 +78,12 @@ func NewMicrotickQuantityFromString(q string) (mtq MicrotickQuantity, err sdk.Er
     return result, nil
 }
 
+func FormatMicrotickQuantity(q MicrotickQuantity) string {
+    pow := math.Pow(10, MicrotickQuantityDecimals)
+    fmtString := "%" + fmt.Sprintf("0.%d", MicrotickQuantityDecimals) + "f"
+    return fmt.Sprintf(fmtString, float64(q) / pow)
+}
+
 // Spot
 
 type MicrotickSpot = uint32
@@ -97,6 +104,12 @@ func NewMicrotickSpotFromString(q string) (mts MicrotickSpot, err sdk.Error) {
     return result, nil
 }
 
+func FormatMicrotickSpot(s MicrotickSpot) string {
+    pow := math.Pow(10, MicrotickSpotDecimals)
+    fmtString := "%" + fmt.Sprintf("0.%d", MicrotickSpotDecimals) + "f"
+    return fmt.Sprintf(fmtString, float64(s) / pow)
+}
+
 // Premium 
 
 type MicrotickPremium = uint32
@@ -115,4 +128,10 @@ func NewMicrotickPremiumFromString(q string) (mts MicrotickPremium, err sdk.Erro
     result := MicrotickQuantity(intPart * uint32(pow) + uint32(fracPart))
     fmt.Printf("Premium Result %d\n", result)
     return result, nil
+}
+
+func FormatMicrotickPremium(p MicrotickPremium) string {
+    pow := math.Pow(10, MicrotickPremiumDecimals)
+    fmtString := "%" + fmt.Sprintf("0.%d", MicrotickPremiumDecimals) + "f"
+    return fmt.Sprintf(fmtString, float64(p) / pow)
 }

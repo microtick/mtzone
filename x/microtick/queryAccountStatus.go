@@ -22,7 +22,10 @@ func (ras ResponseAccountStatus) String() string {
 NumQuotes: %s
 NumTrades: %s
 QuoteBacking: %s
-TradeBacking: %s`, ras.Account, ras.NumQuotes, ras.NumTrades, ras.QuoteBacking, ras.TradeBacking))
+TradeBacking: %s`, ras.Account, 
+    fmt.Sprintf("%d", ras.NumQuotes), 
+    fmt.Sprintf("%d", ras.NumTrades), 
+    ras.QuoteBacking, ras.TradeBacking))
 }
 
 func queryAccountStatus(ctx sdk.Context, path []string, 
