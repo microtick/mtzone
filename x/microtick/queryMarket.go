@@ -13,16 +13,16 @@ type ResponseMarketStatus struct {
     Market MicrotickMarket `json:"market"`
     Consensus MicrotickSpot `json:"consensus"`
     OrderBooks []DataOrderBook `json:"orderBooks"`
-    SumBacking sdk.Coins `json:"sumBacking"`
+    SumBacking MicrotickCoin `json:"sumBacking"`
     SumWeight MicrotickQuantity `json:"sumWeight"`
 }
 
 func (rm ResponseMarketStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Market: %s
-Consensus: %i
+Consensus: %s
 Sum Backing: %s
-Sum Weight: %i`, rm.Market, rm.Consensus, rm.SumBacking.String(),
-    rm.SumWeight))
+Sum Weight: %s`, rm.Market, rm.Consensus.String(), rm.SumBacking.String(),
+    rm.SumWeight.String()))
 }
 
 func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {

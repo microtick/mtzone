@@ -15,28 +15,28 @@ type ResponseActiveQuote struct {
     Market MicrotickMarket `json:"market"`
     Duration MicrotickDuration `json:"duration"`
     Provider MicrotickAccount `json:"provider"`
-    Backing sdk.Coins `json:"backing"`
+    Backing MicrotickCoin `json:"backing"`
     Spot MicrotickSpot `json:"spot"`
     Premium MicrotickPremium `json:"premium"`
     Quantity MicrotickQuantity `json:"quantity"`
 }
 
 func (raq ResponseActiveQuote) String() string {
-    return strings.TrimSpace(fmt.Sprintf(`Id: %s
+    return strings.TrimSpace(fmt.Sprintf(`Id: %d
 Market: %s
-Duration: %s
+Duration: %d
 Provider: %s
 Backing: %s
 Spot: %s
 Premium: %s
 Quantity: %s`, 
-    fmt.Sprintf("%d", raq.Id), 
+    raq.Id, 
     raq.Market, 
-    fmt.Sprintf("%d", raq.Duration),
+    raq.Duration,
     raq.Provider, raq.Backing.String(), 
-    FormatMicrotickSpot(raq.Spot),
-    FormatMicrotickPremium(raq.Premium),
-    FormatMicrotickQuantity(raq.Quantity)))
+    raq.Spot.String(),
+    raq.Premium.String(),
+    raq.Quantity.String()))
 }
 
 func queryActiveQuote(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {

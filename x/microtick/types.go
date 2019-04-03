@@ -3,7 +3,6 @@ package microtick
 import (
     "fmt"
     "strconv"
-    "math"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -49,6 +48,15 @@ func NewMicrotickDurationFromString(d string) (mtd MicrotickDuration, err sdk.Er
     return 0, sdk.ErrInternal("Invalid duration: " + fmt.Sprintf("%d", dur))
 }
 
+func ValidMicrotickDuration(mtd MicrotickDuration) bool {
+    for i := 0; i < len(MicrotickDurations); i++ {
+        if (mtd == MicrotickDurations[i]) {
+            return true
+        }
+    }
+    return false
+}
+
 // Type
 
 type MicrotickTradeType = bool
@@ -58,80 +66,79 @@ const (
     MicrotickPut = true    // 1
 )
 
-// Quantity
+// Backing
 
-type MicrotickQuantity = uint32
-const MicrotickQuantityDecimals = 6
+type MicrotickCoin = sdk.DecCoin
 
-func NewMicrotickQuantityFromString(q string) (mtq MicrotickQuantity, err sdk.Error) {
-    tmp, err2 := strconv.ParseFloat(q, 64)
-    if err2 != nil {
-        return 0, sdk.ErrInternal("Not a floating point value: " + q)
+func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
+    return sdk.NewInt64DecCoin(TokenType, b)
+}
+
+func NewMicrotickCoinFromString(b string) (mtq MicrotickQuantity, err sdk.Error) {
+    amount, err := sdk.NewDecFromStr(b)
+    var result MicrotickCoin
+    if err != nil {
+        return result, err
     }
-    pow := math.Pow(10, MicrotickQuantityDecimals)
-    var intPart uint32 = uint32(tmp)
-    var fracPart uint16 = uint16((tmp - float64(intPart)) * pow)
-    fmt.Printf("Quantity Int part: %d\n", intPart)
-    fmt.Printf("Quantity Frac part: %d\n", fracPart)
-    result := MicrotickQuantity(intPart * uint32(pow) + uint32(fracPart))
-    fmt.Printf("Quantity Result %d\n", result)
+    result = sdk.NewDecCoinFromDec(TokenType, amount)
+    fmt.Printf("Coin: %s\n", result.String())
     return result, nil
 }
 
-func FormatMicrotickQuantity(q MicrotickQuantity) string {
-    pow := math.Pow(10, MicrotickQuantityDecimals)
-    fmtString := "%" + fmt.Sprintf("0.%d", MicrotickQuantityDecimals) + "f"
-    return fmt.Sprintf(fmtString, float64(q) / pow)
+// Quantity
+
+type MicrotickQuantity = sdk.DecCoin
+
+func NewMicrotickQuantityFromInt(q int64) MicrotickQuantity {
+    return sdk.NewInt64DecCoin("quantity", q)
+}
+
+func NewMicrotickQuantityFromString(q string) (mtq MicrotickQuantity, err sdk.Error) {
+    amount, err := sdk.NewDecFromStr(q)
+    var result MicrotickQuantity
+    if err != nil {
+        return result, err
+    }
+    result = sdk.NewDecCoinFromDec("quantity", amount)
+    fmt.Printf("Quantity: %s\n", result.String())
+    return result, nil
 }
 
 // Spot
 
-type MicrotickSpot = uint32
-const MicrotickSpotDecimals = 4
+type MicrotickSpot = sdk.DecCoin
 
-func NewMicrotickSpotFromString(q string) (mts MicrotickSpot, err sdk.Error) {
-    tmp, err2 := strconv.ParseFloat(q, 64)
-    if err2 != nil {
-        return 0, sdk.ErrInternal("Not a floating point value: " + q)
-    }
-    pow := math.Pow(10, MicrotickSpotDecimals)
-    var intPart uint32 = uint32(tmp)
-    var fracPart uint16 = uint16((tmp - float64(intPart)) * pow)
-    fmt.Printf("Spot Int part: %d\n", intPart)
-    fmt.Printf("Spot Frac part: %d\n", fracPart)
-    result := MicrotickQuantity(intPart * uint32(pow) + uint32(fracPart))
-    fmt.Printf("Spot Result %d\n", result)
-    return result, nil
+func NewMicrotickSpotFromInt(s int64) MicrotickQuantity {
+    return sdk.NewInt64DecCoin("spot", s)
 }
 
-func FormatMicrotickSpot(s MicrotickSpot) string {
-    pow := math.Pow(10, MicrotickSpotDecimals)
-    fmtString := "%" + fmt.Sprintf("0.%d", MicrotickSpotDecimals) + "f"
-    return fmt.Sprintf(fmtString, float64(s) / pow)
+
+func NewMicrotickSpotFromString(s string) (mts MicrotickSpot, err sdk.Error) {
+    amount, err := sdk.NewDecFromStr(s)
+    var result MicrotickSpot
+    if err != nil {
+        return result, err
+    }
+    result = sdk.NewDecCoinFromDec("spot", amount)
+    fmt.Printf("Spot: %s\n", result.String())
+    return result, nil
 }
 
 // Premium 
 
-type MicrotickPremium = uint32
-const MicrotickPremiumDecimals = 6
+type MicrotickPremium = sdk.DecCoin
 
-func NewMicrotickPremiumFromString(q string) (mts MicrotickPremium, err sdk.Error) {
-    tmp, err2 := strconv.ParseFloat(q, 64)
-    if err2 != nil {
-        return 0, sdk.ErrInternal("Not a floating point value: " + q)
-    }
-    pow := math.Pow(10, MicrotickPremiumDecimals)
-    var intPart uint32 = uint32(tmp)
-    var fracPart uint16 = uint16((tmp - float64(intPart)) * pow)
-    fmt.Printf("Premium Int part: %d\n", intPart)
-    fmt.Printf("Premium Frac part: %d\n", fracPart)
-    result := MicrotickQuantity(intPart * uint32(pow) + uint32(fracPart))
-    fmt.Printf("Premium Result %d\n", result)
-    return result, nil
+func NewMicrotickPremiumFromInt(p int64) MicrotickQuantity {
+    return sdk.NewInt64DecCoin("premium", p)
 }
 
-func FormatMicrotickPremium(p MicrotickPremium) string {
-    pow := math.Pow(10, MicrotickPremiumDecimals)
-    fmtString := "%" + fmt.Sprintf("0.%d", MicrotickPremiumDecimals) + "f"
-    return fmt.Sprintf(fmtString, float64(p) / pow)
+func NewMicrotickPremiumFromString(p string) (mts MicrotickPremium, err sdk.Error) {
+    amount, err := sdk.NewDecFromStr(p)
+    var result MicrotickPremium
+    if err != nil {
+        return result, err
+    }
+    result = sdk.NewDecCoinFromDec("premium", amount)
+    fmt.Printf("Premium: %s\n", result.String())
+    return result, nil
 }

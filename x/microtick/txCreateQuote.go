@@ -1,6 +1,7 @@
 package microtick
 
 import (
+    "fmt"
     "encoding/json"
     
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,13 +11,13 @@ type TxCreateQuote struct {
     Market MicrotickMarket
     Duration MicrotickDuration
     Provider sdk.AccAddress
-    Backing sdk.Coins
+    Backing MicrotickCoin
     Spot MicrotickSpot
     Premium MicrotickPremium
 }
 
 func NewTxCreateQuote(market MicrotickMarket, dur MicrotickDuration, provider sdk.AccAddress, 
-    backing sdk.Coins, spot MicrotickSpot, premium MicrotickPremium) TxCreateQuote {
+    backing MicrotickCoin, spot MicrotickSpot, premium MicrotickPremium) TxCreateQuote {
     return TxCreateQuote {
         Market: market,
         Duration: dur,
@@ -38,7 +39,7 @@ func (msg TxCreateQuote) ValidateBasic() sdk.Error {
     if msg.Provider.Empty() {
         return sdk.ErrInvalidAddress(msg.Provider.String())
     }
-    if !msg.Backing.IsAllPositive() {
+    if !msg.Backing.IsPositive() {
         return sdk.ErrInsufficientCoins("Backing must be positive")
     }
     return nil
@@ -60,11 +61,19 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 
 func handleTxCreateQuote(ctx sdk.Context, keeper Keeper, 
     msg TxCreateQuote) sdk.Result {
+        
+    if !keeper.HasDataMarket(ctx, msg.Market) {
+        return sdk.ErrInternal("No such market: " + msg.Market).Result()
+    }
+    
+    if !ValidMicrotickDuration(msg.Duration) {
+        return sdk.ErrInternal(fmt.Sprintf("Invalid duration: %d", msg.Duration)).Result()
+    }
+        
     // Subtract coins from quote provider
-  	_, _, err := keeper.coinKeeper.SubtractCoins(ctx, msg.Provider, msg.Backing) 
-	if err != nil {
-		return sdk.ErrInsufficientCoins("Buyer does not have enough coins").Result()
-	}
+    keeper.WithdrawDecCoin(ctx, msg.Provider, msg.Backing)
+	
+	// DataActiveQuote
 	
     id := keeper.GetNextActiveQuoteId(ctx)
     provider := msg.Provider.String()
@@ -74,10 +83,27 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     dataActiveQuote.ComputeQuantity()
     keeper.SetActiveQuote(ctx, dataActiveQuote)
     
+    // DataAccountStatus
+    
     accountStatus := keeper.GetAccountStatus(ctx, provider)
     accountStatus.ActiveQuotes.Insert(NewListItem(uint(id), 
         int(id)))
     accountStatus.NumQuotes++
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Backing)
     keeper.SetAccountStatus(ctx, provider, accountStatus)
-	return sdk.Result{}
+    
+    // DataMarket
+    
+    //dataMarket := keeper.GetDataMarket(ctx, msg.Market)
+    
+    
+    tags := sdk.NewTags(
+        "id", fmt.Sprintf("%d", id),
+        fmt.Sprintf("quote.%d", id), "create",
+        fmt.Sprintf("acct.%s", provider), "quote.create",
+    )
+    
+	return sdk.Result{
+	    Tags: tags,
+	}
 }

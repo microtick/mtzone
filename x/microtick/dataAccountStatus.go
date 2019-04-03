@@ -1,9 +1,5 @@
 package microtick
 
-import (
-    sdk "github.com/cosmos/cosmos-sdk/types"
-)
-
 // DataAccountStatus
 
 type DataAccountStatus struct {
@@ -12,8 +8,9 @@ type DataAccountStatus struct {
     ActiveTrades OrderedList `json:"activeTrades"`
     NumQuotes uint32 `json:"numQuotes"`
     NumTrades uint32 `json:"numTrades"`
-    QuoteBacking sdk.Coins `json:"quoteBacking"`
-    TradeBacking sdk.Coins `json:"tradeBacking"`
+    Change MicrotickCoin `json:"change"`
+    QuoteBacking MicrotickCoin `json:"quoteBacking"`
+    TradeBacking MicrotickCoin `json:"tradeBacking"`
 }
 
 func NewDataAccountStatus(account MicrotickAccount) DataAccountStatus {
@@ -23,8 +20,9 @@ func NewDataAccountStatus(account MicrotickAccount) DataAccountStatus {
         ActiveTrades: NewOrderedList(),
         NumQuotes: 0,
         NumTrades: 0,
-        QuoteBacking: sdk.Coins{sdk.NewInt64Coin(TokenType, 0)},
-        TradeBacking: sdk.Coins{sdk.NewInt64Coin(TokenType, 0)},
+        Change: NewMicrotickCoinFromInt(0),
+        QuoteBacking: NewMicrotickCoinFromInt(0),
+        TradeBacking: NewMicrotickCoinFromInt(0),
     }
 }
 

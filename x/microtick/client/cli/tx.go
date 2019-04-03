@@ -63,12 +63,11 @@ func GetCmdCreateQuote(cdc *codec.Codec) *cobra.Command {
 				return err
 			}
 
-			coins, err2 := sdk.ParseCoins(args[2])
+			coins, err2 := microtick.NewMicrotickCoinFromString(args[2])
 			if err2 != nil {
 				return err2
 			}
 			
-			//mdj mdj parse parse
 			spot, err := microtick.NewMicrotickSpotFromString(args[3])
 			if err != nil {
 				return err
