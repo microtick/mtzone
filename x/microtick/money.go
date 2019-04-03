@@ -8,7 +8,6 @@ import (
 
 func (k Keeper) WithdrawDecCoin(ctx sdk.Context, account sdk.AccAddress, 
     withdrawAmount MicrotickCoin) {
-        
 	accountStatus := k.GetAccountStatus(ctx, account.String())
 	
     if (accountStatus.Change.IsGTE(withdrawAmount)) {
@@ -36,4 +35,25 @@ func (k Keeper) WithdrawDecCoin(ctx sdk.Context, account sdk.AccAddress,
 	
 	    k.SetAccountStatus(ctx, account.String(), accountStatus)
     }
+}
+
+func (k Keeper) DepositDecCoin(ctx sdk.Context, account sdk.AccAddress,
+	depositAmount MicrotickCoin) {
+	accountStatus := k.GetAccountStatus(ctx, account.String())
+	
+	totalDecCoin := accountStatus.Change.Plus(depositAmount)
+	
+	var amt sdk.Coin
+	var change sdk.DecCoin
+	amt, change = totalDecCoin.TruncateDecimal()
+	
+	if amt.IsPositive() {
+		_, _, err := k.coinKeeper.AddCoins(ctx, account, sdk.Coins{amt})
+		if err != nil {
+			panic("Deposit failed")
+		}
+	}
+	
+	accountStatus.Change = change
+	k.SetAccountStatus(ctx, account.String(), accountStatus)
 }

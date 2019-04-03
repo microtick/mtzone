@@ -75,13 +75,10 @@ func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
 }
 
 func NewMicrotickCoinFromString(b string) (mtq MicrotickQuantity, err sdk.Error) {
-    amount, err := sdk.NewDecFromStr(b)
-    var result MicrotickCoin
-    if err != nil {
-        return result, err
+    result, err2 := sdk.ParseDecCoin(b)
+    if err2 != nil || result.Denom != TokenType {
+        return result, sdk.ErrInternal("Invalid coin suffix")
     }
-    result = sdk.NewDecCoinFromDec(TokenType, amount)
-    fmt.Printf("Coin: %s\n", result.String())
     return result, nil
 }
 
@@ -94,13 +91,10 @@ func NewMicrotickQuantityFromInt(q int64) MicrotickQuantity {
 }
 
 func NewMicrotickQuantityFromString(q string) (mtq MicrotickQuantity, err sdk.Error) {
-    amount, err := sdk.NewDecFromStr(q)
-    var result MicrotickQuantity
-    if err != nil {
-        return result, err
+    result, err2 := sdk.ParseDecCoin(q)
+    if err2 != nil || result.Denom != "quantity" {
+        return result, sdk.ErrInternal("Invalid quantity")
     }
-    result = sdk.NewDecCoinFromDec("quantity", amount)
-    fmt.Printf("Quantity: %s\n", result.String())
     return result, nil
 }
 
@@ -114,13 +108,10 @@ func NewMicrotickSpotFromInt(s int64) MicrotickQuantity {
 
 
 func NewMicrotickSpotFromString(s string) (mts MicrotickSpot, err sdk.Error) {
-    amount, err := sdk.NewDecFromStr(s)
-    var result MicrotickSpot
-    if err != nil {
-        return result, err
+    result, err2 := sdk.ParseDecCoin(s)
+    if err2 != nil || result.Denom != "spot" {
+        return result, sdk.ErrInternal("Invalid spot")
     }
-    result = sdk.NewDecCoinFromDec("spot", amount)
-    fmt.Printf("Spot: %s\n", result.String())
     return result, nil
 }
 
@@ -133,12 +124,9 @@ func NewMicrotickPremiumFromInt(p int64) MicrotickQuantity {
 }
 
 func NewMicrotickPremiumFromString(p string) (mts MicrotickPremium, err sdk.Error) {
-    amount, err := sdk.NewDecFromStr(p)
-    var result MicrotickPremium
-    if err != nil {
-        return result, err
+    result, err2 := sdk.ParseDecCoin(p)
+    if err2 != nil || result.Denom != "premium" {
+        return result, sdk.ErrInternal("Invalid premium")
     }
-    result = sdk.NewDecCoinFromDec("premium", amount)
-    fmt.Printf("Premium: %s\n", result.String())
     return result, nil
 }
