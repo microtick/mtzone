@@ -99,26 +99,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
         panic("Invalid market")
     }
     
-    dataMarket.SumBacking = dataMarket.SumBacking.Plus(dataActiveQuote.Backing)
-    dataMarket.SumSpots = dataMarket.SumSpots.Add(dataActiveQuote.Spot.Amount.Mul(
-        dataActiveQuote.Quantity.Amount))
-    dataMarket.SumWeight = dataMarket.SumWeight.Plus(dataActiveQuote.Quantity)
-    dataMarket.Consensus = MicrotickSpot{
-        Denom: "spot",
-        Amount: dataMarket.SumSpots.Quo(dataMarket.SumWeight.Amount),
-    }
-    
-    var orderBookIndex, i int
-    for i = 0; i < len(MicrotickDurations); i++ {
-        if MicrotickDurations[i] == msg.Duration {
-            orderBookIndex = i
-        }
-    }
-    
-    orderBook := dataMarket.OrderBooks[orderBookIndex]
-    
-    orderBook.SumBacking = orderBook.SumBacking.Plus(dataActiveQuote.Backing)
-    orderBook.SumWeight = orderBook.SumWeight.Plus(dataActiveQuote.Quantity)
+    dataMarket.factorIn(dataActiveQuote)
     
     keeper.SetDataMarket(ctx, dataMarket)
     

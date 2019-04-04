@@ -2,7 +2,10 @@ package microtick
 
 import (
     "fmt"
+    "regexp"
     "strconv"
+    "strings"
+    "github.com/pkg/errors"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -68,6 +71,26 @@ const (
 
 // Backing
 
+var reDecCoin = regexp.MustCompile(fmt.Sprintf(`^(%s)%s(%s)$`, `(?:[0-9]*[.])?[0-9]+`, `[[:space:]]*`, `[a-z][a-z0-9]{2,15}`))
+
+func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
+	coinStr = strings.TrimSpace(coinStr)
+
+	matches := reDecCoin.FindStringSubmatch(coinStr)
+	if matches == nil {
+		return sdk.DecCoin{}, fmt.Errorf("invalid decimal coin expression: %s", coinStr)
+	}
+
+	amountStr, denomStr := matches[1], matches[2]
+
+	amount, err := sdk.NewDecFromStr(amountStr)
+	if err != nil {
+		return sdk.DecCoin{}, errors.Wrap(err, fmt.Sprintf("failed to parse decimal coin amount: %s", amountStr))
+	}
+
+	return sdk.NewDecCoinFromDec(denomStr, amount), nil
+}
+
 type MicrotickCoin = sdk.DecCoin
 
 func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
@@ -75,7 +98,7 @@ func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
 }
 
 func NewMicrotickCoinFromString(b string) (mtq MicrotickQuantity, err sdk.Error) {
-    result, err2 := sdk.ParseDecCoin(b)
+    result, err2 := parseDecCoin(b)
     if err2 != nil || result.Denom != TokenType {
         return result, sdk.ErrInternal("Invalid coin suffix")
     }
@@ -91,7 +114,7 @@ func NewMicrotickQuantityFromInt(q int64) MicrotickQuantity {
 }
 
 func NewMicrotickQuantityFromString(q string) (mtq MicrotickQuantity, err sdk.Error) {
-    result, err2 := sdk.ParseDecCoin(q)
+    result, err2 := parseDecCoin(q)
     if err2 != nil || result.Denom != "quantity" {
         return result, sdk.ErrInternal("Invalid quantity")
     }
@@ -108,7 +131,7 @@ func NewMicrotickSpotFromInt(s int64) MicrotickQuantity {
 
 
 func NewMicrotickSpotFromString(s string) (mts MicrotickSpot, err sdk.Error) {
-    result, err2 := sdk.ParseDecCoin(s)
+    result, err2 := parseDecCoin(s)
     if err2 != nil || result.Denom != "spot" {
         return result, sdk.ErrInternal("Invalid spot")
     }
@@ -124,7 +147,7 @@ func NewMicrotickPremiumFromInt(p int64) MicrotickQuantity {
 }
 
 func NewMicrotickPremiumFromString(p string) (mts MicrotickPremium, err sdk.Error) {
-    result, err2 := sdk.ParseDecCoin(p)
+    result, err2 := parseDecCoin(p)
     if err2 != nil || result.Denom != "premium" {
         return result, sdk.ErrInternal("Invalid premium")
     }
