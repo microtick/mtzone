@@ -23,17 +23,18 @@ type ResponseQuoteStatus struct {
 
 func (raq ResponseQuoteStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Id: %d
-Market: %s
-Duration: %d
 Provider: %s
+Market: %s
+Duration: %s
 Backing: %s
 Spot: %s
 Premium: %s
 Quantity: %s`, 
     raq.Id, 
+    raq.Provider, 
     raq.Market, 
-    raq.Duration,
-    raq.Provider, raq.Backing.String(), 
+    MicrotickDurationNameFromDur(raq.Duration),
+    raq.Backing.String(), 
     raq.Spot.String(),
     raq.Premium.String(),
     raq.Quantity.String()))
