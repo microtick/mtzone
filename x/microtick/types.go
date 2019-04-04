@@ -3,7 +3,6 @@ package microtick
 import (
     "fmt"
     "regexp"
-    "strconv"
     "strings"
     "github.com/pkg/errors"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,19 +35,30 @@ var MicrotickDurations = []MicrotickDuration {
     43200, // 12 hours
 }
 
-func NewMicrotickDurationFromString(d string) (mtd MicrotickDuration, err sdk.Error) {
-    var dur MicrotickDuration
-    dur2, err2 := strconv.ParseInt(d, 10, 16)
-    if err2 != nil {
-        return 0, sdk.ErrInternal("Not an integer value: " + d)
-    }
-    dur = MicrotickDuration(dur2)
-    for _, d := range MicrotickDurations {
+var MicrotickDurationNames = []string {
+    "5minute",
+    "15minute",
+    "1hour",
+    "4hour",
+    "12hour",
+}
+
+func NewMicrotickDurationFromString(dur string) (mtd MicrotickDuration, err sdk.Error) {
+    for i, d := range MicrotickDurationNames {
         if dur == d {
-            return dur, nil
+            return MicrotickDurations[i], nil
         }
     }
     return 0, sdk.ErrInternal("Invalid duration: " + fmt.Sprintf("%d", dur))
+}
+
+func MicrotickDurationNameFromDur(dur MicrotickDuration) string {
+    for i, d := range MicrotickDurations {
+        if dur == d {
+            return MicrotickDurationNames[i]
+        }
+    }
+    return ""
 }
 
 func ValidMicrotickDuration(mtd MicrotickDuration) bool {
@@ -71,7 +81,7 @@ const (
 
 // Backing
 
-var reDecCoin = regexp.MustCompile(fmt.Sprintf(`^(%s)%s(%s)$`, `(?:[0-9]*[.])?[0-9]+`, `[[:space:]]*`, `[a-z][a-z0-9]{2,15}`))
+var reDecCoin = regexp.MustCompile(fmt.Sprintf(`^(%s)%s(%s)$`, `(?:[[:digit:]]*[.])?[[:digit:]]+`, `[[:space:]]*`, `[a-z][a-z0-9]{2,15}`))
 
 func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
 	coinStr = strings.TrimSpace(coinStr)

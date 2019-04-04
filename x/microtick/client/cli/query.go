@@ -18,36 +18,13 @@ func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			acct := args[0]
 
-			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/status/%s", queryRoute, acct), nil)
+			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/account/%s", queryRoute, acct), nil)
 			if err != nil {
 				fmt.Printf("could not resolve account - %s \n", string(acct))
 				return nil
 			}
 
 			var out microtick.ResponseAccountStatus
-			cdc.MustUnmarshalJSON(res, &out)
-			//fmt.Println(out.String())
-			return cliCtx.PrintOutput(out)
-		},
-	}
-}
-
-func GetCmdAccountActive(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "active [acct]",
-		Short: "active acct",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			acct := args[0]
-
-			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/active/%s", queryRoute, acct), nil)
-			if err != nil {
-				fmt.Printf("could not resolve account - %s \n", string(acct))
-				return nil
-			}
-
-			var out microtick.ResponseAccountActive
 			cdc.MustUnmarshalJSON(res, &out)
 			//fmt.Println(out.String())
 			return cliCtx.PrintOutput(out)
@@ -78,6 +55,30 @@ func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 	}
 }
 
+func GetCmdOrderBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "orderbook [market] [dur]",
+		Short: "orderbook market dur",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			market := args[0]
+			dur := args[1]
+
+			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/orderbook/%s/%s", queryRoute, market, dur), nil)
+			if err != nil {
+				fmt.Printf("could not resolve orderbook - %s %s\n", market, dur)
+				return nil
+			}
+
+			var out microtick.ResponseOrderBook
+			cdc.MustUnmarshalJSON(res, &out)
+			//fmt.Println(out.String())
+			return cliCtx.PrintOutput(out)
+		},
+	}
+}
+
 func GetCmdActiveQuote(queryRoute string, cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "quote [id]",
@@ -93,7 +94,7 @@ func GetCmdActiveQuote(queryRoute string, cdc *codec.Codec) *cobra.Command {
 				return nil
 			}
 
-			var out microtick.ResponseActiveQuote
+			var out microtick.ResponseQuoteStatus
 			cdc.MustUnmarshalJSON(res, &out)
 			//fmt.Println(out.String())
 			return cliCtx.PrintOutput(out)

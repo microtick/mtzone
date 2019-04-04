@@ -11,14 +11,14 @@ import (
 func NewQuerier(keeper Keeper) sdk.Querier {
     return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err sdk.Error) {
         switch path[0] {
-        case "status":
+        case "account":
             return queryAccountStatus(ctx, path[1:], req, keeper)
-        case "active":
-            return queryAccountActive(ctx, path[1:], req, keeper)
         case "market":
             return queryMarketStatus(ctx, path[1:], req, keeper)
+        case "orderbook":
+            return queryOrderBook(ctx, path[1:], req, keeper)
         case "quote":
-            return queryActiveQuote(ctx, path[1:], req, keeper)
+            return queryQuoteStatus(ctx, path[1:], req, keeper)
         default:
             return nil, sdk.ErrUnknownRequest("unknown microtick query endpoint")
         }

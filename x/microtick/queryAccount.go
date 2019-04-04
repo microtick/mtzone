@@ -15,6 +15,8 @@ type ResponseAccountStatus struct {
     Change MicrotickCoin `json:"change"`
     NumQuotes uint32 `json:"numQuotes"`
     NumTrades uint32 `json:"numTrades"`
+    ActiveQuotes []uint `json:"activeQuotes"`
+    ActiveTrades []uint `json:"activeTrades"`
     QuoteBacking MicrotickCoin `json:"quoteBacking"`
     TradeBacking MicrotickCoin `json:"tradeBacking"`
 }
@@ -25,12 +27,15 @@ Balance: %s
 Change: %s
 NumQuotes: %d
 NumTrades: %d
+ActiveQuotes: %v
+ActiveTrades: %v
 QuoteBacking: %s
 TradeBacking: %s`, ras.Account, 
     ras.Balance.String(),
     ras.Change,
     ras.NumQuotes, 
     ras.NumTrades, 
+    ras.ActiveQuotes, ras.ActiveTrades,
     ras.QuoteBacking.String(), ras.TradeBacking.String()))
 }
 
@@ -49,12 +54,22 @@ func queryAccountStatus(ctx sdk.Context, path []string,
             balance = balance.Plus(sdk.NewDecCoin(TokenType, coins[i].Amount))
         }
     }
+    activeQuotes := make([]uint, len(data.ActiveQuotes.Data))
+    activeTrades := make([]uint, len(data.ActiveTrades.Data))
+    for i := 0; i < len(data.ActiveQuotes.Data); i++ {
+        activeQuotes[i] = data.ActiveQuotes.Data[i].Id
+    }
+    for i := 0; i < len(data.ActiveTrades.Data); i++ {
+        activeTrades[i] = data.ActiveTrades.Data[i].Id
+    }
     response := ResponseAccountStatus {
         Account: acct,
         Balance: balance,
         Change: data.Change,
         NumQuotes: data.NumQuotes,
         NumTrades: data.NumTrades,
+        ActiveQuotes: activeQuotes,
+        ActiveTrades: activeTrades,
         QuoteBacking: data.QuoteBacking,
         TradeBacking: data.TradeBacking,
     }

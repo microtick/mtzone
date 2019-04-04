@@ -10,7 +10,7 @@ import (
     abci "github.com/tendermint/tendermint/abci/types"
 )
 
-type ResponseActiveQuote struct {
+type ResponseQuoteStatus struct {
     Id MicrotickId `json:"id"`
     Market MicrotickMarket `json:"market"`
     Duration MicrotickDuration `json:"duration"`
@@ -21,7 +21,7 @@ type ResponseActiveQuote struct {
     Quantity MicrotickQuantity `json:"quantity"`
 }
 
-func (raq ResponseActiveQuote) String() string {
+func (raq ResponseQuoteStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Id: %d
 Market: %s
 Duration: %d
@@ -39,7 +39,7 @@ Quantity: %s`,
     raq.Quantity.String()))
 }
 
-func queryActiveQuote(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
+func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
@@ -50,7 +50,7 @@ func queryActiveQuote(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         panic("could not fetch quote data")
     }
     
-    response := ResponseActiveQuote {
+    response := ResponseQuoteStatus {
         Id: data.Id,
         Market: data.Market,
         Duration: data.Duration,

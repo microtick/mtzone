@@ -48,6 +48,25 @@ func newOrderBook() DataOrderBook {
     }
 }
 
+func (dm *DataMarket) GetOrderBook(dur MicrotickDuration) DataOrderBook {
+    for i := 0; i < len(MicrotickDurations); i++ {
+        if MicrotickDurations[i] == dur {
+            return dm.OrderBooks[i]
+        }
+    }
+    panic("Invalid duration")
+}
+
+func (dm *DataMarket) SetOrderBook(dur MicrotickDuration, ob DataOrderBook) {
+    for i := 0; i < len(MicrotickDurations); i++ {
+        if MicrotickDurations[i] == dur {
+            dm.OrderBooks[i] = ob
+            return
+        }
+    }
+    panic("Invalid duration")
+}
+
 func (dm *DataMarket) factorIn(quote DataActiveQuote) {
     dm.SumBacking = dm.SumBacking.Plus(quote.Backing)
     dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(
@@ -60,17 +79,10 @@ func (dm *DataMarket) factorIn(quote DataActiveQuote) {
         }
     }
     
-    var orderBookIndex, i int
-    for i = 0; i < len(MicrotickDurations); i++ {
-        if MicrotickDurations[i] == quote.Duration {
-            orderBookIndex = i
-        }
-    }
-    
-    orderBook := dm.OrderBooks[orderBookIndex]
-    
+    orderBook := dm.GetOrderBook(quote.Duration)
     orderBook.SumBacking = orderBook.SumBacking.Plus(quote.Backing)
     orderBook.SumWeight = orderBook.SumWeight.Plus(quote.Quantity)
+    dm.SetOrderBook(quote.Duration, orderBook)
 }
 
 func (dm *DataMarket) factorOut(quote DataActiveQuote) {
@@ -85,15 +97,19 @@ func (dm *DataMarket) factorOut(quote DataActiveQuote) {
         }
     }
     
-    var orderBookIndex, i int
-    for i = 0; i < len(MicrotickDurations); i++ {
-        if MicrotickDurations[i] == quote.Duration {
-            orderBookIndex = i
-        }
-    }
-    
-    orderBook := dm.OrderBooks[orderBookIndex]
-    
+    orderBook := dm.GetOrderBook(quote.Duration)
     orderBook.SumBacking = orderBook.SumBacking.Minus(quote.Backing)
     orderBook.SumWeight = orderBook.SumWeight.Minus(quote.Quantity)
+    dm.SetOrderBook(quote.Duration, orderBook)
+}
+
+func (dm *DataMarket) AddQuote(quote DataActiveQuote) {
+    orderBook := dm.GetOrderBook(quote.Duration)
+    callValue := quote.Premium.Amount.Add(quote.Spot.Amount.QuoInt64(2))
+    orderBook.Calls.Insert(NewListItem(uint(quote.Id), callValue))
+    putValue := quote.Premium.Amount.Sub(quote.Spot.Amount.QuoInt64(2))
+    orderBook.Puts.Insert(NewListItem(uint(quote.Id), putValue))
+    dm.SetOrderBook(quote.Duration, orderBook)
+    
+    dm.factorIn(quote)
 }

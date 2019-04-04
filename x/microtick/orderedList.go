@@ -1,11 +1,15 @@
 package microtick
 
+import (
+    sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
 type ListItem struct {
     Id uint `json:"Id"`
-    Value int `json:"Value"`
+    Value sdk.Dec `json:"Value"`
 }
 
-func NewListItem(id uint, value int) ListItem {
+func NewListItem(id uint, value sdk.Dec) ListItem {
     return ListItem {
         Id: id,
         Value: value,
@@ -28,17 +32,19 @@ func (ol *OrderedList) Search(li ListItem) int {
     hi = len(ol.Data)
     for hi - lo > 1 {
         mid := (hi + lo) / 2
-        if li.Value >= ol.Data[mid].Value {
+        if li.Value.GTE(ol.Data[mid].Value) {
             lo = mid
         } else {
             hi = mid
         }
     }
-    if lo < len(ol.Data) && li.Value != ol.Data[lo].Value {
+    if lo < len(ol.Data) && li.Value.GTE(ol.Data[lo].Value) {
         return hi
     }
     return lo
 }
+
+// TODO: more efficient algorithms for insert / delete
 
 func (ol *OrderedList) Insert(li ListItem) {
     pos := ol.Search(li)

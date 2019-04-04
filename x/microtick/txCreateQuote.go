@@ -86,8 +86,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     // DataAccountStatus
     
     accountStatus := keeper.GetAccountStatus(ctx, provider)
-    accountStatus.ActiveQuotes.Insert(NewListItem(uint(id), 
-        int(id)))
+    accountStatus.ActiveQuotes.Insert(NewListItem(uint(id), sdk.NewDec(int64(id))))
     accountStatus.NumQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Backing)
     keeper.SetAccountStatus(ctx, provider, accountStatus)
@@ -98,10 +97,10 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     if err2 != nil {
         panic("Invalid market")
     }
-    
-    dataMarket.factorIn(dataActiveQuote)
-    
+    dataMarket.AddQuote(dataActiveQuote)
     keeper.SetDataMarket(ctx, dataMarket)
+    
+    // Add tags
     
     tags := sdk.NewTags(
         "id", fmt.Sprintf("%d", id),
