@@ -8,7 +8,7 @@ import (
 
 func (k Keeper) WithdrawDecCoin(ctx sdk.Context, account sdk.AccAddress, 
     withdrawAmount MicrotickCoin) {
-	accountStatus := k.GetAccountStatus(ctx, account.String())
+	accountStatus := k.GetAccountStatus(ctx, account)
 	
     if (accountStatus.Change.IsGTE(withdrawAmount)) {
         // handle without needing from the coin balance
@@ -33,13 +33,13 @@ func (k Keeper) WithdrawDecCoin(ctx sdk.Context, account sdk.AccAddress,
 	        panic("Not enough funds")
 	    }
 	
-	    k.SetAccountStatus(ctx, account.String(), accountStatus)
+	    k.SetAccountStatus(ctx, account, accountStatus)
     }
 }
 
 func (k Keeper) DepositDecCoin(ctx sdk.Context, account sdk.AccAddress,
 	depositAmount MicrotickCoin) {
-	accountStatus := k.GetAccountStatus(ctx, account.String())
+	accountStatus := k.GetAccountStatus(ctx, account)
 	
 	totalDecCoin := accountStatus.Change.Plus(depositAmount)
 	
@@ -55,5 +55,5 @@ func (k Keeper) DepositDecCoin(ctx sdk.Context, account sdk.AccAddress,
 	}
 	
 	accountStatus.Change = change
-	k.SetAccountStatus(ctx, account.String(), accountStatus)
+	k.SetAccountStatus(ctx, account, accountStatus)
 }

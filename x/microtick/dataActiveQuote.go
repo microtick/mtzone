@@ -48,3 +48,23 @@ func (daq *DataActiveQuote) ComputeQuantity() {
         Amount: daq.Backing.Amount.Quo(premiumLeverage),
     }
 }
+
+func (daq DataActiveQuote) PremiumAsCall(strike MicrotickSpot) MicrotickPremium {
+    premium := daq.Premium.Amount
+    delta := strike.Amount.Sub(daq.Spot.Amount)
+    delta = delta.QuoInt64(2)
+    if premium.LT(delta) {
+        return NewMicrotickPremiumFromInt(0)
+    }
+    return NewMicrotickPremiumFromDec(premium.Sub(delta))
+}
+
+func (daq DataActiveQuote) PremiumAsPut(strike MicrotickSpot) MicrotickPremium {
+    premium := daq.Premium.Amount
+    delta := daq.Spot.Amount.Sub(strike.Amount)
+    delta = delta.QuoInt64(2)
+    if premium.LT(delta) {
+        return NewMicrotickPremiumFromInt(0)
+    }
+    return NewMicrotickPremiumFromDec(premium.Sub(delta))
+}

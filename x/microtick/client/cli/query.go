@@ -20,7 +20,7 @@ func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/account/%s", queryRoute, acct), nil)
 			if err != nil {
-				fmt.Printf("could not resolve account - %s \n", string(acct))
+				fmt.Printf("could not resolve account %s \n", string(acct))
 				return nil
 			}
 
@@ -43,7 +43,7 @@ func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/market/%s", queryRoute, market), nil)
 			if err != nil {
-				fmt.Printf("could not resolve market - %s \n", string(market))
+				fmt.Printf("could not resolve market %s \n", string(market))
 				return nil
 			}
 
@@ -67,7 +67,7 @@ func GetCmdOrderBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/orderbook/%s/%s", queryRoute, market, dur), nil)
 			if err != nil {
-				fmt.Printf("could not resolve orderbook - %s %s\n", market, dur)
+				fmt.Printf("could not resolve orderbook %s %s\n", market, dur)
 				return nil
 			}
 
@@ -90,11 +90,34 @@ func GetCmdActiveQuote(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/quote/%s", queryRoute, id), nil)
 			if err != nil {
-				fmt.Printf("could not resolve quote - %s \n", string(id))
+				fmt.Printf("could not resolve quote %s \n", string(id))
 				return nil
 			}
 
 			var out microtick.ResponseQuoteStatus
+			cdc.MustUnmarshalJSON(res, &out)
+			//fmt.Println(out.String())
+			return cliCtx.PrintOutput(out)
+		},
+	}
+}
+
+func GetCmdActiveTrade(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "trade [id]",
+		Short: "trade id",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			id := args[0]
+
+			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/trade/%s", queryRoute, id), nil)
+			if err != nil {
+				fmt.Printf("could not resolve trade %s \n", string(id))
+				return nil
+			}
+
+			var out microtick.ResponseTradeStatus
 			cdc.MustUnmarshalJSON(res, &out)
 			//fmt.Println(out.String())
 			return cliCtx.PrintOutput(out)

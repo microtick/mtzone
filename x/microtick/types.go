@@ -13,7 +13,7 @@ const Leverage = 10
 
 // Account
 
-type MicrotickAccount = string
+type MicrotickAccount = sdk.AccAddress
 
 // ID
 
@@ -43,13 +43,13 @@ var MicrotickDurationNames = []string {
     "12hour",
 }
 
-func NewMicrotickDurationFromString(dur string) (mtd MicrotickDuration, err sdk.Error) {
+func NewMicrotickDurationFromString(dur string) MicrotickDuration {
     for i, d := range MicrotickDurationNames {
         if dur == d {
-            return MicrotickDurations[i], nil
+            return MicrotickDurations[i]
         }
     }
-    return 0, sdk.ErrInternal("Invalid duration: " + fmt.Sprintf("%d", dur))
+    panic("Invalid duration: " + fmt.Sprintf("%d", dur))
 }
 
 func MicrotickDurationNameFromDur(dur MicrotickDuration) string {
@@ -79,7 +79,22 @@ const (
     MicrotickPut = true    // 1
 )
 
+func NewMicrotickTradeTypeFromString(str string) MicrotickTradeType {
+    if str == "call" { return MicrotickCall }
+    if str == "put" { return MicrotickPut }
+    panic("invalid trade type")
+}
+
+func MicrotickTradeTypeToString(mtt MicrotickTradeType) string {
+    if mtt {
+        return "put"
+    }
+    return "call"
+}
+
 // Backing
+
+type MicrotickCoin = sdk.DecCoin
 
 var reDecCoin = regexp.MustCompile(fmt.Sprintf(`^(%s)%s(%s)$`, `(?:[[:digit:]]*[.])?[[:digit:]]+`, `[[:space:]]*`, `[a-z][a-z0-9]{2,15}`))
 
@@ -101,18 +116,20 @@ func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
 	return sdk.NewDecCoinFromDec(denomStr, amount), nil
 }
 
-type MicrotickCoin = sdk.DecCoin
-
 func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
     return sdk.NewInt64DecCoin(TokenType, b)
 }
 
-func NewMicrotickCoinFromString(b string) (mtq MicrotickQuantity, err sdk.Error) {
+func NewMicrotickCoinFromString(b string) MicrotickCoin {
     result, err2 := parseDecCoin(b)
     if err2 != nil || result.Denom != TokenType {
-        return result, sdk.ErrInternal("Invalid coin suffix")
+        panic("Invalid coin suffix")
     }
-    return result, nil
+    return result
+}
+
+func NewMicrotickCoinFromDec(d sdk.Dec) MicrotickCoin {
+    return sdk.NewDecCoinFromDec(TokenType, d)
 }
 
 // Quantity
@@ -123,43 +140,60 @@ func NewMicrotickQuantityFromInt(q int64) MicrotickQuantity {
     return sdk.NewInt64DecCoin("quantity", q)
 }
 
-func NewMicrotickQuantityFromString(q string) (mtq MicrotickQuantity, err sdk.Error) {
+func NewMicrotickQuantityFromString(q string) MicrotickQuantity {
     result, err2 := parseDecCoin(q)
     if err2 != nil || result.Denom != "quantity" {
-        return result, sdk.ErrInternal("Invalid quantity")
+        panic("Invalid quantity")
     }
-    return result, nil
+    return result
 }
+
+func NewMicrotickQuantityFromDec(d sdk.Dec) MicrotickQuantity {
+    return sdk.NewDecCoinFromDec("quantity", d)
+}
+
 
 // Spot
 
 type MicrotickSpot = sdk.DecCoin
 
-func NewMicrotickSpotFromInt(s int64) MicrotickQuantity {
+func NewMicrotickSpotFromInt(s int64) MicrotickSpot {
     return sdk.NewInt64DecCoin("spot", s)
 }
 
 
-func NewMicrotickSpotFromString(s string) (mts MicrotickSpot, err sdk.Error) {
+func NewMicrotickSpotFromString(s string) MicrotickSpot {
     result, err2 := parseDecCoin(s)
     if err2 != nil || result.Denom != "spot" {
-        return result, sdk.ErrInternal("Invalid spot")
+        panic("Invalid spot")
     }
-    return result, nil
+    return result
+}
+
+func NewMicrotickSpotFromDec(d sdk.Dec) MicrotickSpot {
+    return sdk.NewDecCoinFromDec("spot", d)
 }
 
 // Premium 
 
 type MicrotickPremium = sdk.DecCoin
 
-func NewMicrotickPremiumFromInt(p int64) MicrotickQuantity {
+func NewMicrotickPremiumFromInt(p int64) MicrotickPremium {
     return sdk.NewInt64DecCoin("premium", p)
 }
 
-func NewMicrotickPremiumFromString(p string) (mts MicrotickPremium, err sdk.Error) {
+func NewMicrotickPremiumFromString(p string) MicrotickPremium {
     result, err2 := parseDecCoin(p)
     if err2 != nil || result.Denom != "premium" {
-        return result, sdk.ErrInternal("Invalid premium")
+        panic("Invalid premium")
     }
-    return result, nil
+    return result
+}
+
+func NewMicrotickPremiumFromDec(d sdk.Dec) MicrotickPremium {
+    return sdk.NewDecCoinFromDec("premium", d)
+}
+
+func NewMicrotickCoinFromPremium(p MicrotickPremium) MicrotickCoin {
+    return sdk.NewDecCoinFromDec(TokenType, p.Amount)
 }

@@ -19,17 +19,21 @@ type ResponseQuoteStatus struct {
     Spot MicrotickSpot `json:"spot"`
     Premium MicrotickPremium `json:"premium"`
     Quantity MicrotickQuantity `json:"quantity"`
+    PremiumAsCall MicrotickPremium `json:"premiumAsCall"`
+    PremiumAsPut MicrotickPremium `json:"premiumAsPut"`
 }
 
 func (raq ResponseQuoteStatus) String() string {
-    return strings.TrimSpace(fmt.Sprintf(`Id: %d
+    return strings.TrimSpace(fmt.Sprintf(`Quote Id: %d
 Provider: %s
 Market: %s
 Duration: %s
 Backing: %s
 Spot: %s
 Premium: %s
-Quantity: %s`, 
+Quantity: %s
+PremiumAsCall: %s
+PremiumAsPut: %s`, 
     raq.Id, 
     raq.Provider, 
     raq.Market, 
@@ -37,7 +41,9 @@ Quantity: %s`,
     raq.Backing.String(), 
     raq.Spot.String(),
     raq.Premium.String(),
-    raq.Quantity.String()))
+    raq.Quantity.String(),
+    raq.PremiumAsCall.String(),
+    raq.PremiumAsPut.String()))
 }
 
 func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
@@ -50,6 +56,10 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     if err2 != nil {
         panic("could not fetch quote data")
     }
+    dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
+    if err3 != nil {
+        panic("could not fetch market consensus")
+    }
     
     response := ResponseQuoteStatus {
         Id: data.Id,
@@ -60,6 +70,8 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Spot: data.Spot,
         Premium: data.Premium,
         Quantity: data.Quantity,
+        PremiumAsCall: data.PremiumAsCall(dataMarket.Consensus),
+        PremiumAsPut: data.PremiumAsPut(dataMarket.Consensus),
     }
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)

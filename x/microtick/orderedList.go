@@ -5,11 +5,11 @@ import (
 )
 
 type ListItem struct {
-    Id uint `json:"Id"`
+    Id MicrotickId `json:"Id"`
     Value sdk.Dec `json:"Value"`
 }
 
-func NewListItem(id uint, value sdk.Dec) ListItem {
+func NewListItem(id MicrotickId, value sdk.Dec) ListItem {
     return ListItem {
         Id: id,
         Value: value,
@@ -60,14 +60,14 @@ func (ol *OrderedList) Insert(li ListItem) {
     }
 }
 
-func (ol *OrderedList) Delete(li ListItem) {
+func (ol *OrderedList) Delete(id MicrotickId) {
     len := len(ol.Data)
     if len > 0 {
         cur := ol.Data
         ol.Data = make([]ListItem, len-1, len-1)
         pos := 0
         for i := 0; i < len; i++ {
-            if cur[i].Id != li.Id {
+            if cur[i].Id != id {
                 ol.Data[pos] = cur[i]
                 pos++
             }

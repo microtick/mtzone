@@ -76,20 +76,19 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
 	// DataActiveQuote
 	
     id := keeper.GetNextActiveQuoteId(ctx)
-    provider := msg.Provider.String()
      
-    dataActiveQuote := NewDataActiveQuote(id, msg.Market, msg.Duration, provider,
+    dataActiveQuote := NewDataActiveQuote(id, msg.Market, msg.Duration, msg.Provider,
         msg.Backing, msg.Spot, msg.Premium)
     dataActiveQuote.ComputeQuantity()
     keeper.SetActiveQuote(ctx, dataActiveQuote)
     
     // DataAccountStatus
     
-    accountStatus := keeper.GetAccountStatus(ctx, provider)
-    accountStatus.ActiveQuotes.Insert(NewListItem(uint(id), sdk.NewDec(int64(id))))
+    accountStatus := keeper.GetAccountStatus(ctx, msg.Provider)
+    accountStatus.ActiveQuotes.Insert(NewListItem(id, sdk.NewDec(int64(id))))
     accountStatus.NumQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Backing)
-    keeper.SetAccountStatus(ctx, provider, accountStatus)
+    keeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
     
     // DataMarket
     
@@ -98,6 +97,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
         panic("Invalid market")
     }
     dataMarket.AddQuote(dataActiveQuote)
+    dataMarket.factorIn(dataActiveQuote)
     keeper.SetDataMarket(ctx, dataMarket)
     
     // Add tags
@@ -105,10 +105,10 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     tags := sdk.NewTags(
         "id", fmt.Sprintf("%d", id),
         fmt.Sprintf("quote.%d", id), "create",
-        fmt.Sprintf("acct.%s", provider), "quote.create",
+        fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create",
     )
     
-	return sdk.Result{
+	return sdk.Result {
 	    Tags: tags,
 	}
 }

@@ -15,8 +15,8 @@ type ResponseAccountStatus struct {
     Change MicrotickCoin `json:"change"`
     NumQuotes uint32 `json:"numQuotes"`
     NumTrades uint32 `json:"numTrades"`
-    ActiveQuotes []uint `json:"activeQuotes"`
-    ActiveTrades []uint `json:"activeTrades"`
+    ActiveQuotes []MicrotickId `json:"activeQuotes"`
+    ActiveTrades []MicrotickId `json:"activeTrades"`
     QuoteBacking MicrotickCoin `json:"quoteBacking"`
     TradeBacking MicrotickCoin `json:"tradeBacking"`
 }
@@ -42,8 +42,8 @@ TradeBacking: %s`, ras.Account,
 func queryAccountStatus(ctx sdk.Context, path []string, 
     req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
     acct := path[0]
-    data := keeper.GetAccountStatus(ctx, acct)
     address, err2 := sdk.AccAddressFromBech32(acct)
+    data := keeper.GetAccountStatus(ctx, address)
     if err2 != nil {
         panic("could not get address balance")
     }
@@ -51,11 +51,11 @@ func queryAccountStatus(ctx sdk.Context, path []string,
     balance := data.Change
     for i := 0; i < len(coins); i++ {
         if coins[i].Denom == TokenType {
-            balance = balance.Plus(sdk.NewDecCoin(TokenType, coins[i].Amount))
+            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
-    activeQuotes := make([]uint, len(data.ActiveQuotes.Data))
-    activeTrades := make([]uint, len(data.ActiveTrades.Data))
+    activeQuotes := make([]MicrotickId, len(data.ActiveQuotes.Data))
+    activeTrades := make([]MicrotickId, len(data.ActiveTrades.Data))
     for i := 0; i < len(data.ActiveQuotes.Data); i++ {
         activeQuotes[i] = data.ActiveQuotes.Data[i].Id
     }

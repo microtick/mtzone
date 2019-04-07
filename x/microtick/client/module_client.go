@@ -30,6 +30,7 @@ func (mc ModuleClient) GetQueryCmd() *cobra.Command {
 		cli.GetCmdMarketStatus(mc.storeKey, mc.cdc),
 		cli.GetCmdOrderBook(mc.storeKey, mc.cdc),
 		cli.GetCmdActiveQuote(mc.storeKey, mc.cdc),
+		cli.GetCmdActiveTrade(mc.storeKey, mc.cdc),
 	)...)
 
 	return namesvcQueryCmd
@@ -44,6 +45,7 @@ func (mc ModuleClient) GetTxCmd() *cobra.Command {
 	mtTxCmd.AddCommand(client.PostCommands(
 		cli.GetCmdCreateMarket(mc.cdc),
 		cli.GetCmdCreateQuote(mc.cdc),
+		cli.GetCmdTrade(mc.cdc),
 	)...)
 
 	return mtTxCmd

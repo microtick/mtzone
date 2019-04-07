@@ -57,30 +57,48 @@ func GetCmdCreateQuote(cdc *codec.Codec) *cobra.Command {
 			}
 			
 			market := args[0]
-			
-			dur, err := microtick.NewMicrotickDurationFromString(args[1])
-			if err != nil {
-				return err
-			}
-
-			coins, err2 := microtick.NewMicrotickCoinFromString(args[2])
-			if err2 != nil {
-				return err2
-			}
-			
-			spot, err := microtick.NewMicrotickSpotFromString(args[3])
-			if err != nil {
-				return err
-			}
-			
-			premium, err := microtick.NewMicrotickPremiumFromString(args[4])
-			if err != nil {
-				return err
-			}
+			dur := microtick.NewMicrotickDurationFromString(args[1])
+			coins := microtick.NewMicrotickCoinFromString(args[2])
+			spot := microtick.NewMicrotickSpotFromString(args[3])
+			premium := microtick.NewMicrotickPremiumFromString(args[4])
 
 			msg := microtick.NewTxCreateQuote(market, dur, cliCtx.GetFromAddress(), coins,
 				spot, premium)
-			err = msg.ValidateBasic()
+			err := msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			cliCtx.PrintResponse = true
+
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+		},
+	}
+}
+
+func GetCmdTrade(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "trade [market] [duration] [call/put] [quantity]",
+		Short: "create a new trade",
+		Args:  cobra.ExactArgs(4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
+
+			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			if err := cliCtx.EnsureAccountExists(); err != nil {
+				return err
+			}
+			
+			market := args[0]
+			
+			dur := microtick.NewMicrotickDurationFromString(args[1])
+			ttype := microtick.NewMicrotickTradeTypeFromString(args[2])
+			quantity := microtick.NewMicrotickQuantityFromString(args[3])
+			
+			msg := microtick.NewTxTrade(market, dur, cliCtx.GetFromAddress(), ttype,
+				quantity)
+			err := msg.ValidateBasic()
 			if err != nil {
 				return err
 			}

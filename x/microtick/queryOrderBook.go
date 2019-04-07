@@ -12,8 +12,8 @@ import (
 type ResponseOrderBook struct {
     SumBacking MicrotickCoin `json:"sumBacking"`
     SumWeight MicrotickQuantity `json:"sumWeight"`
-    Calls []uint `json:"calls"`
-    Puts []uint `json:"puts"`
+    Calls []MicrotickId `json:"calls"`
+    Puts []MicrotickId `json:"puts"`
 }
 
 func (rma ResponseOrderBook) String() string {
@@ -27,10 +27,7 @@ func queryOrderBook(ctx sdk.Context, path []string,
     req abci.RequestQuery, keeper Keeper)(res []byte, err sdk.Error) {
         
     market := path[0]
-    dur, err2 := NewMicrotickDurationFromString(path[1])
-    if err2 != nil {
-        panic("Invalid duration")
-    }
+    dur := NewMicrotickDurationFromString(path[1])
     
     dataMarket, err3 := keeper.GetDataMarket(ctx, market)
     if err3 != nil {
@@ -39,8 +36,8 @@ func queryOrderBook(ctx sdk.Context, path []string,
     
     orderBook := dataMarket.GetOrderBook(dur)
     
-    calls := make([]uint, len(orderBook.Calls.Data))
-    puts := make([]uint, len(orderBook.Puts.Data))
+    calls := make([]MicrotickId, len(orderBook.Calls.Data))
+    puts := make([]MicrotickId, len(orderBook.Puts.Data))
     for i := 0; i < len(orderBook.Calls.Data); i++ {
         calls[i] = orderBook.Calls.Data[i].Id
     }

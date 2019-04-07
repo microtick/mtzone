@@ -37,9 +37,9 @@ func NewKeeper(coinKeeper bank.Keeper, storeKeys MicrotickStores, cdc *codec.Cod
 
 // DataAccountStatus
 
-func (k Keeper) GetAccountStatus(ctx sdk.Context, acct string) DataAccountStatus {
+func (k Keeper) GetAccountStatus(ctx sdk.Context, acct MicrotickAccount) DataAccountStatus {
 	store := ctx.KVStore(k.storeKeys.AccountStatus)
-	key := []byte(acct)
+	key := []byte(acct.String())
 	if !store.Has(key) {
 		return NewDataAccountStatus(acct)
 	}
@@ -49,11 +49,37 @@ func (k Keeper) GetAccountStatus(ctx sdk.Context, acct string) DataAccountStatus
 	return acctStatus
 }
 
-func (k Keeper) SetAccountStatus(ctx sdk.Context, acct string, status DataAccountStatus) {
+func (k Keeper) SetAccountStatus(ctx sdk.Context, acct MicrotickAccount, status DataAccountStatus) {
 	store := ctx.KVStore(k.storeKeys.AccountStatus)
-	key := []byte(acct)
+	key := []byte(acct.String())
 	status.Account = acct
 	store.Set(key, k.cdc.MustMarshalBinaryBare(status))
+}
+
+// DataMarket
+
+func (k Keeper) HasDataMarket(ctx sdk.Context, market MicrotickMarket) bool {
+	store := ctx.KVStore(k.storeKeys.Markets)
+	key := []byte(market)
+	return store.Has(key)
+}
+
+func (k Keeper) GetDataMarket(ctx sdk.Context, market MicrotickMarket) (DataMarket, error) {
+	store := ctx.KVStore(k.storeKeys.Markets)
+	key := []byte(market)
+	var dataMarket DataMarket
+	if !store.Has(key) {
+		return dataMarket, errors.New(fmt.Sprintf("No such market: {%s}", market))
+	}
+	bz := store.Get(key)
+	k.cdc.MustUnmarshalBinaryBare(bz, &dataMarket)
+	return dataMarket, nil
+}
+
+func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
+	store := ctx.KVStore(k.storeKeys.Markets)
+	key := []byte(dataMarket.Market)
+	store.Set(key, k.cdc.MustMarshalBinaryBare(dataMarket))
 }
 
 // DataActiveQuote
@@ -95,30 +121,50 @@ func (k Keeper) SetActiveQuote(ctx sdk.Context, active DataActiveQuote) {
 	binary.LittleEndian.PutUint32(key, active.Id)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(active))
 }
-  
-  
-// DataMarket
 
-func (k Keeper) HasDataMarket(ctx sdk.Context, market MicrotickMarket) bool {
-	store := ctx.KVStore(k.storeKeys.Markets)
-	key := []byte(market)
-	return store.Has(key)
+func (k Keeper) DeleteActiveQuote(ctx sdk.Context, id MicrotickId) {
+	store := ctx.KVStore(k.storeKeys.ActiveQuotes)
+	key := make([]byte, 4)
+	binary.LittleEndian.PutUint32(key, id)
+	store.Delete(key)
 }
 
-func (k Keeper) GetDataMarket(ctx sdk.Context, market MicrotickMarket) (DataMarket, error) {
-	store := ctx.KVStore(k.storeKeys.Markets)
-	key := []byte(market)
-	var dataMarket DataMarket
+// DataActiveTrade
+
+func (k Keeper) GetNextActiveTradeId(ctx sdk.Context) MicrotickId {
+	store := ctx.KVStore(k.storeKeys.ActiveQuotes)
+	key := []byte("nextTradeId")
+	var id MicrotickId
+	var val []byte
 	if !store.Has(key) {
-		return dataMarket, errors.New(fmt.Sprintf("No such market: {%s}", market))
+		val = make([]byte, 4)
+		id = 1
+	} else {
+		val = store.Get(key)
+		id = binary.LittleEndian.Uint32(val)
+		id++
+	}
+	binary.LittleEndian.PutUint32(val, id)
+	store.Set(key, val)
+	return id
+}
+
+func (k Keeper) GetActiveTrade(ctx sdk.Context, id MicrotickId) (DataActiveTrade, error) {
+	store := ctx.KVStore(k.storeKeys.ActiveTrades)
+	key := make([]byte, 4)
+	var activeTrade DataActiveTrade
+	binary.LittleEndian.PutUint32(key, id)
+	if !store.Has(key) {
+		return activeTrade, errors.New(fmt.Sprintf("No such trade ID: {%i}", id))
 	}
 	bz := store.Get(key)
-	k.cdc.MustUnmarshalBinaryBare(bz, &dataMarket)
-	return dataMarket, nil
+	k.cdc.MustUnmarshalBinaryBare(bz, &activeTrade)
+	return activeTrade, nil
 }
 
-func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
-	store := ctx.KVStore(k.storeKeys.Markets)
-	key := []byte(dataMarket.Market)
-	store.Set(key, k.cdc.MustMarshalBinaryBare(dataMarket))
+func (k Keeper) SetActiveTrade(ctx sdk.Context, active DataActiveTrade) {
+	store := ctx.KVStore(k.storeKeys.ActiveTrades)
+	key := make([]byte, 4)
+	binary.LittleEndian.PutUint32(key, active.Id)
+	store.Set(key, k.cdc.MustMarshalBinaryBare(active))
 }
