@@ -15,7 +15,6 @@ type DataActiveTrade struct {
     Long MicrotickAccount `json:"long"`
     Backing MicrotickCoin `json:"backing"`
     Premium MicrotickCoin `json:"premium"`  // for trades, premium is in Coin not Premium type
-    RequestedQuantity MicrotickQuantity `json:"requestedQuantity"`
     FilledQuantity MicrotickQuantity `json:"quantity"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
@@ -23,8 +22,7 @@ type DataActiveTrade struct {
 }
 
 func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
-    ttype MicrotickTradeType, long MicrotickAccount, strike MicrotickSpot,
-    quantity MicrotickQuantity) DataActiveTrade {
+    ttype MicrotickTradeType, long MicrotickAccount, strike MicrotickSpot) DataActiveTrade {
         
     now := time.Now()    
     expire, err := time.ParseDuration(fmt.Sprintf("%d", dur) + "s")
@@ -40,7 +38,6 @@ func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
         Long: long,
         Backing: NewMicrotickCoinFromInt(0),
         Premium: NewMicrotickCoinFromInt(0),
-        RequestedQuantity: quantity,
         FilledQuantity: NewMicrotickQuantityFromInt(0), // computed later
         Start: now,
         Expiration: now.Add(expire),

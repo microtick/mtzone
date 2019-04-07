@@ -76,7 +76,7 @@ func GetCmdCreateQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdTrade(cdc *codec.Codec) *cobra.Command {
+func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "trade [market] [duration] [call/put] [quantity]",
 		Short: "create a new trade",
@@ -96,8 +96,42 @@ func GetCmdTrade(cdc *codec.Codec) *cobra.Command {
 			ttype := microtick.NewMicrotickTradeTypeFromString(args[2])
 			quantity := microtick.NewMicrotickQuantityFromString(args[3])
 			
-			msg := microtick.NewTxTrade(market, dur, cliCtx.GetFromAddress(), ttype,
+			msg := microtick.NewTxMarketTrade(market, dur, cliCtx.GetFromAddress(), ttype,
 				quantity)
+			err := msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			cliCtx.PrintResponse = true
+
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+		},
+	}
+}
+
+func GetCmdLimitTrade(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "limit [market] [duration] [call/put] [limit]",
+		Short: "create a new limit trade",
+		Args:  cobra.ExactArgs(4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
+
+			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			if err := cliCtx.EnsureAccountExists(); err != nil {
+				return err
+			}
+			
+			market := args[0]
+			
+			dur := microtick.NewMicrotickDurationFromString(args[1])
+			ttype := microtick.NewMicrotickTradeTypeFromString(args[2])
+			limit := microtick.NewMicrotickPremiumFromString(args[3])
+			
+			msg := microtick.NewTxLimitTrade(market, dur, cliCtx.GetFromAddress(), ttype,
+				limit)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err

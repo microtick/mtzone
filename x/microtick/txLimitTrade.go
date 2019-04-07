@@ -7,31 +7,32 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type TxTrade struct {
+type TxLimitTrade struct {
     Market MicrotickMarket
     Duration MicrotickDuration
     Buyer sdk.AccAddress
     TradeType MicrotickTradeType
-    Quantity MicrotickQuantity
+    Limit MicrotickPremium
 }
 
-func NewTxTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.AccAddress,
-    tradeType MicrotickTradeType, quantity MicrotickQuantity) TxTrade {
+func NewTxLimitTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.AccAddress,
+    tradeType MicrotickTradeType, limit MicrotickPremium) TxLimitTrade {
         
-    return TxTrade {
+    return TxLimitTrade {
         Market: market,
         Duration: dur,
         Buyer: buyer,
         TradeType: tradeType,
-        Quantity: quantity,
+        
+        Limit: limit,
     }
 }
 
-func (msg TxTrade) Route() string { return "microtick" }
+func (msg TxLimitTrade) Route() string { return "microtick" }
 
-func (msg TxTrade) Type() string { return "create_trade" }
+func (msg TxLimitTrade) Type() string { return "trade_limit" }
 
-func (msg TxTrade) ValidateBasic() sdk.Error {
+func (msg TxLimitTrade) ValidateBasic() sdk.Error {
     if len(msg.Market) == 0 {
         return sdk.ErrInternal("Unknown market")
     }
@@ -41,7 +42,7 @@ func (msg TxTrade) ValidateBasic() sdk.Error {
     return nil
 }
 
-func (msg TxTrade) GetSignBytes() []byte {
+func (msg TxLimitTrade) GetSignBytes() []byte {
     b, err := json.Marshal(msg)
     if err != nil {
         panic(err)
@@ -49,13 +50,13 @@ func (msg TxTrade) GetSignBytes() []byte {
     return sdk.MustSortJSON(b)
 }
 
-func (msg TxTrade) GetSigners() []sdk.AccAddress {
+func (msg TxLimitTrade) GetSigners() []sdk.AccAddress {
     return []sdk.AccAddress{ msg.Buyer }
 }
 
 // Handler
 
-func handleTxTrade(ctx sdk.Context, keeper Keeper, msg TxTrade) sdk.Result {
+func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Result {
     if !keeper.HasDataMarket(ctx, msg.Market) {
         return sdk.ErrInternal("No such market: " + msg.Market).Result()
     }
@@ -70,7 +71,7 @@ func handleTxTrade(ctx sdk.Context, keeper Keeper, msg TxTrade) sdk.Result {
         panic("Error fetching market")
     }
     trade := NewDataActiveTrade(msg.Market, msg.Duration, msg.TradeType,
-        msg.Buyer, market.Consensus, msg.Quantity)
+        msg.Buyer, market.Consensus)
         
     matcher := NewMatcher(trade, func (id MicrotickId) DataActiveQuote {
         quote, err := keeper.GetActiveQuote(ctx, id)
@@ -81,7 +82,7 @@ func handleTxTrade(ctx sdk.Context, keeper Keeper, msg TxTrade) sdk.Result {
     })
         
     // Step 2 - Compute premium for quantity requested
-    market.MatchByQuantity(&matcher)
+    market.MatchByLimit(&matcher, msg.Limit)
     
     if matcher.hasQuantity() {
         

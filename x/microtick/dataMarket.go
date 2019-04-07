@@ -115,9 +115,9 @@ func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
     dm.SetOrderBook(quote.Duration, orderBook)
 }
 
-func (dm *DataMarket) MatchByQuantity(matcher *Matcher) {
+func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuantity) {
     orderBook := dm.GetOrderBook(matcher.Trade.Duration)
-    quantityToMatch := matcher.Trade.RequestedQuantity.Amount
+    quantityToMatch := quantity.Amount
     
     var list OrderedList
     if matcher.Trade.Type == MicrotickCall {
@@ -159,6 +159,55 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher) {
                 BoughtQuantity: boughtQuantity,
                 PaidPremium: NewMicrotickCoinFromDec(paidPremium),
             })
+        } else {
+            fmt.Printf("Skipping quote %d\n", id)
+        }
+        index++
+    }
+}
+
+func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
+    orderBook := dm.GetOrderBook(matcher.Trade.Duration)
+    
+    var list OrderedList
+    if matcher.Trade.Type == MicrotickCall {
+        list = orderBook.Calls
+    }
+    if matcher.Trade.Type == MicrotickPut {
+        list = orderBook.Puts
+    }
+    
+    index := 0
+    for index < len(list.Data) {
+        id := list.Data[index].Id 
+        quote := matcher.FetchQuote(id)
+        if !quote.Provider.Equals(matcher.Trade.Long) {
+            var premium MicrotickPremium
+            if matcher.Trade.Type == MicrotickCall {
+                premium = quote.PremiumAsCall(matcher.Trade.Strike)
+            }
+            if matcher.Trade.Type == MicrotickPut {
+                premium = quote.PremiumAsPut(matcher.Trade.Strike)
+            }
+            
+            if premium.Amount.LTE(limit.Amount) {
+                var boughtQuantity sdk.Dec = quote.Quantity.Amount
+                
+                matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
+                paidPremium := premium.Amount.Mul(boughtQuantity)
+                matcher.TotalPremium = matcher.TotalPremium.Add(paidPremium)
+                
+                matcher.FillInfo = append(matcher.FillInfo, QuoteFillInfo {
+                    Quote: quote,
+                    BoughtQuantity: boughtQuantity,
+                    PaidPremium: NewMicrotickCoinFromDec(paidPremium),
+                })
+            } else {
+                
+                // terminate - premium is > limit
+                break
+                
+            }
         } else {
             fmt.Printf("Skipping quote %d\n", id)
         }

@@ -21,7 +21,6 @@ type ResponseTradeStatus struct {
     Long MicrotickAccount `json:"long"`
     Backing MicrotickCoin `json:"backing"`
     Premium MicrotickCoin `json:"premium"` 
-    RequestedQuantity MicrotickQuantity `json:"requestedQuantity"`
     FilledQuantity MicrotickQuantity `json:"quantity"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
@@ -41,7 +40,6 @@ Type: %s
 Start: %s
 Expiration: %s
 Strike: %s 
-Requested Quantity: %s
 Filled Quantity: %s
 Backing: %s
 Premium: %s
@@ -55,7 +53,6 @@ Counter Parties: %s`,
     rat.Start.String(),
     rat.Expiration.String(),
     rat.Strike.String(),
-    rat.RequestedQuantity.String(),
     rat.FilledQuantity.String(),
     rat.Backing.String(), 
     rat.Premium.String(),
@@ -101,7 +98,6 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Long: data.Long,
         Backing: data.Backing,
         Premium: data.Premium,
-        RequestedQuantity: data.RequestedQuantity,
         FilledQuantity: data.FilledQuantity,
         Start: data.Start,
         Expiration: data.Expiration,
