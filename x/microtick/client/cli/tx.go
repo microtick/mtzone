@@ -76,6 +76,35 @@ func GetCmdCreateQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
+func GetCmdCancelQuote(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "cancel-quote [id]",
+		Short: "cancel a quote",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
+
+			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			if err := cliCtx.EnsureAccountExists(); err != nil {
+				return err
+			}
+			
+			id := microtick.NewMicrotickIdFromString(args[0])
+
+			msg := microtick.NewTxCancelQuote(id, cliCtx.GetFromAddress())
+			err := msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			cliCtx.PrintResponse = true
+
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+		},
+	}
+}
+
 func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "trade [market] [duration] [call/put] [quantity]",

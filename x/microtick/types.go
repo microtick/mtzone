@@ -3,6 +3,7 @@ package microtick
 import (
     "fmt"
     "regexp"
+    "strconv"
     "strings"
     "github.com/pkg/errors"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,6 +19,11 @@ type MicrotickAccount = sdk.AccAddress
 // ID
 
 type MicrotickId = uint32
+
+func NewMicrotickIdFromString(s string) MicrotickId {
+    id, _ := strconv.Atoi(s)
+    return MicrotickId(id)
+}
 
 // Market
 

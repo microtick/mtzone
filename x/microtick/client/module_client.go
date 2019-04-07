@@ -45,6 +45,7 @@ func (mc ModuleClient) GetTxCmd() *cobra.Command {
 	mtTxCmd.AddCommand(client.PostCommands(
 		cli.GetCmdCreateMarket(mc.cdc),
 		cli.GetCmdCreateQuote(mc.cdc),
+		cli.GetCmdCancelQuote(mc.cdc),
 		cli.GetCmdMarketTrade(mc.cdc),
 		cli.GetCmdLimitTrade(mc.cdc),
 	)...)
