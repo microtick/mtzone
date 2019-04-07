@@ -67,11 +67,11 @@ func formatCounterParty(cpData DataCounterParty) string {
     return fmt.Sprintf(`
     Short: %s
     Backing: %s
-    Premium: %s
+    Paid Premium: %s
     FilledQuantity: %s`,
         cpData.Short.String(),
         cpData.Backing.String(),
-        cpData.Premium.String(),
+        cpData.PaidPremium.String(),
         cpData.FilledQuantity.String(),
     )
 }

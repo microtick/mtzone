@@ -72,98 +72,41 @@ func handleTxTrade(ctx sdk.Context, keeper Keeper, msg TxTrade) sdk.Result {
     trade := NewDataActiveTrade(msg.Market, msg.Duration, msg.TradeType,
         msg.Buyer, market.Consensus, msg.Quantity)
         
-    fmt.Printf("Trade: %+v\n", trade)
-    
-    // Step 2 - Compute premium for quantity requested
-    quantity, premium := market.Match(trade, func(id MicrotickId) DataActiveQuote {
+    matcher := NewMatcher(trade, func (id MicrotickId) DataActiveQuote {
         quote, err := keeper.GetActiveQuote(ctx, id)
         if err != nil {
             panic("Invalid quote ID")
         }
         return quote
-    }, nil)
+    })
+        
+    // Step 2 - Compute premium for quantity requested
+    market.MatchByQuantity(&matcher)
     
-    fmt.Printf("Quantity: %s\n", quantity.String())
-    fmt.Printf("Premium: %s\n", premium.String())
-    
-    if quantity.Amount.GT(sdk.ZeroDec()) {
+    if matcher.hasQuantity() {
         
         // Step 3 - Deduct premium from buyer account and add it to provider account
-        keeper.WithdrawDecCoin(ctx, msg.Buyer, NewMicrotickCoinFromPremium(premium))
+        // We do this first because if the funds aren't there we abort
+        keeper.WithdrawDecCoin(ctx, msg.Buyer, NewMicrotickCoinFromDec(matcher.TotalPremium))
     
         // Step 4 - Finalize trade 
-        trade.Id = keeper.GetNextActiveTradeId(ctx)
-        market.Match(trade, func(id MicrotickId) DataActiveQuote {
-            quote, err := keeper.GetActiveQuote(ctx, id)
-            if err != nil {
-                panic("Invalid quote ID")
-            }
-            return quote
-        }, func(quote DataActiveQuote, boughtQuantity sdk.Dec, paidPremium MicrotickPremium) {
-            
-            // Pay premium
-            keeper.DepositDecCoin(ctx, quote.Provider, NewMicrotickCoinFromPremium(paidPremium))
-            
-            accountStatus := keeper.GetAccountStatus(ctx, quote.Provider)
-            
-            // Adjust quote
-            market.factorOut(quote)
-            
-            var backing MicrotickCoin
-            if boughtQuantity.GTE(quote.Quantity.Amount) {
-                backing = quote.Backing
-            } else {
-                backing = NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(boughtQuantity.Quo(quote.Quantity.Amount)))
-            }
-            quote.Quantity = NewMicrotickQuantityFromDec(quote.Quantity.Amount.Sub(boughtQuantity))
-            quote.Backing = quote.Backing.Minus(backing)
-            
-            fmt.Printf("Quote Quantity: %s\n", quote.Quantity.String())
-            if quote.Quantity.Amount.IsZero() {
-                market.DeleteQuote(quote)
-                keeper.DeleteActiveQuote(ctx, quote.Id)
-                accountStatus.ActiveQuotes.Delete(quote.Id)
-            } else {
-                market.factorIn(quote)
-            }
-            
-            // Adjust trade
-            trade.Backing = trade.Backing.Plus(backing)
-            trade.Premium = trade.Premium.Plus(paidPremium)
-            trade.FilledQuantity = NewMicrotickQuantityFromDec(trade.FilledQuantity.Amount.Add(boughtQuantity))
-            
-            params := DataQuoteParams {
-                Id: quote.Id,
-                Premium: quote.Premium,
-                Quantity: quote.Quantity,
-                Spot: quote.Spot,
-            }
-            trade.CounterParties = append(trade.CounterParties, DataCounterParty {
-                Backing: backing,
-                Premium: paidPremium,
-                FilledQuantity: NewMicrotickQuantityFromDec(boughtQuantity),
-                Short: quote.Provider,
-                Quoted: params,
-            })
-            
-            accountStatus.ActiveTrades.Insert(NewListItem(trade.Id, sdk.NewDec(trade.Expiration.UnixNano())))
-            accountStatus.QuoteBacking = accountStatus.QuoteBacking.Minus(backing)
-            accountStatus.TradeBacking = accountStatus.TradeBacking.Plus(backing)
-            keeper.SetAccountStatus(ctx, quote.Provider, accountStatus)
-        })
+        matcher.Trade.Id = keeper.GetNextActiveTradeId(ctx)
         
+        matcher.AssignCounterparties(ctx, keeper, &market)
+        
+        // Update the account status for the buyer
         accountStatus := keeper.GetAccountStatus(ctx, msg.Buyer)
-        accountStatus.ActiveTrades.Insert(NewListItem(trade.Id, sdk.NewDec(trade.Expiration.UnixNano())))
+        accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
         accountStatus.NumTrades++
-        keeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
         
         // Commit changes
+        keeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
         keeper.SetDataMarket(ctx, market)
-        keeper.SetActiveTrade(ctx, trade)
+        keeper.SetActiveTrade(ctx, matcher.Trade)
     
         tags := sdk.NewTags(
-            "id", fmt.Sprintf("%d", trade.Id),
-            fmt.Sprintf("trade.%d", trade.Id), "create",
+            "id", fmt.Sprintf("%d", matcher.Trade.Id),
+            fmt.Sprintf("trade.%d", matcher.Trade.Id), "create",
         )
             
         return sdk.Result {

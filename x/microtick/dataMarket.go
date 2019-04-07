@@ -115,40 +115,30 @@ func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
     dm.SetOrderBook(quote.Duration, orderBook)
 }
 
-type FetchQuoteFunc func(MicrotickId) DataActiveQuote
-type AddCounterPartyFunc func(DataActiveQuote, sdk.Dec, MicrotickCoin)
-
-func (dm *DataMarket) Match(trade DataActiveTrade, fetchQuote FetchQuoteFunc, 
-    addCounterParty AddCounterPartyFunc) (MicrotickQuantity, MicrotickPremium) {
-    orderBook := dm.GetOrderBook(trade.Duration)
-    totalQuantity := sdk.ZeroDec()
-    totalPremium := sdk.ZeroDec()
-    quantityToMatch := trade.RequestedQuantity.Amount
+func (dm *DataMarket) MatchByQuantity(matcher *Matcher) {
+    orderBook := dm.GetOrderBook(matcher.Trade.Duration)
+    quantityToMatch := matcher.Trade.RequestedQuantity.Amount
     
     var list OrderedList
-    if trade.Type == MicrotickCall {
+    if matcher.Trade.Type == MicrotickCall {
         list = orderBook.Calls
     }
-    if trade.Type == MicrotickPut {
+    if matcher.Trade.Type == MicrotickPut {
         list = orderBook.Puts
     }
     
     index := 0
     for index < len(list.Data) && quantityToMatch.GT(sdk.ZeroDec()) {
         id := list.Data[index].Id 
-        quote := fetchQuote(id)
-        if !quote.Provider.Equals(trade.Long) {
-            fmt.Printf("Matching quote %d\n", id)
+        quote := matcher.FetchQuote(id)
+        if !quote.Provider.Equals(matcher.Trade.Long) {
             var premium MicrotickPremium
-            if trade.Type == MicrotickCall {
-                premium = quote.PremiumAsCall(trade.Strike)
+            if matcher.Trade.Type == MicrotickCall {
+                premium = quote.PremiumAsCall(matcher.Trade.Strike)
             }
-            if trade.Type == MicrotickPut {
-                premium = quote.PremiumAsPut(trade.Strike)
+            if matcher.Trade.Type == MicrotickPut {
+                premium = quote.PremiumAsPut(matcher.Trade.Strike)
             }
-            fmt.Printf("  quote quantity: %s\n", quote.Quantity.Amount.String())
-            fmt.Printf("  quantity to match: %s\n", quantityToMatch.String())
-            fmt.Printf("  premium: %s\n", premium.String())
             
             var boughtQuantity sdk.Dec
             
@@ -160,17 +150,18 @@ func (dm *DataMarket) Match(trade DataActiveTrade, fetchQuote FetchQuoteFunc,
                 quantityToMatch = quantityToMatch.Sub(quote.Quantity.Amount)
             }
             
-            totalQuantity = totalQuantity.Add(boughtQuantity)
+            matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
             paidPremium := premium.Amount.Mul(boughtQuantity)
-            totalPremium = totalPremium.Add(paidPremium)
+            matcher.TotalPremium = matcher.TotalPremium.Add(paidPremium)
             
-            if addCounterParty != nil {
-                addCounterParty(quote, boughtQuantity, NewMicrotickCoinFromDec(paidPremium))
-            }
+            matcher.FillInfo = append(matcher.FillInfo, QuoteFillInfo {
+                Quote: quote,
+                BoughtQuantity: boughtQuantity,
+                PaidPremium: NewMicrotickCoinFromDec(paidPremium),
+            })
         } else {
             fmt.Printf("Skipping quote %d\n", id)
         }
         index++
     }
-    return NewMicrotickQuantityFromDec(totalQuantity), NewMicrotickPremiumFromDec(totalPremium)
 }

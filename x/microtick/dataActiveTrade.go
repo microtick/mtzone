@@ -71,7 +71,7 @@ func NewDataQuoteParams(id MicrotickId, premium MicrotickPremium, quantity Micro
 
 type DataCounterParty struct {
     Backing MicrotickCoin `json:"backing"`
-    Premium MicrotickPremium `json:"premium"`
+    PaidPremium MicrotickCoin `json:"premium"`
     FilledQuantity MicrotickQuantity `json:"quantity"`
     Short MicrotickAccount `json:"short"`
     Quoted DataQuoteParams `json:"quoted"`
@@ -81,7 +81,7 @@ func NewDataCounterParty(backing MicrotickCoin, final bool, premium MicrotickCoi
     quantity MicrotickQuantity)  DataCounterParty {
     return DataCounterParty {
         Backing: backing,
-        Premium: premium,
+        PaidPremium: premium,
         FilledQuantity: quantity,
     }
 }
