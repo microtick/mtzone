@@ -138,10 +138,6 @@ func NewMicrotickCoinFromDec(d sdk.Dec) MicrotickCoin {
     return sdk.NewDecCoinFromDec(TokenType, d)
 }
 
-func NewMicrotickCoinFromPremium(p MicrotickPremium) MicrotickCoin {
-    return sdk.NewDecCoinFromDec(TokenType, p.Amount)
-}
-
 // Quantity
 
 type MicrotickQuantity = sdk.DecCoin

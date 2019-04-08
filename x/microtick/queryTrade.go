@@ -20,11 +20,13 @@ type ResponseTradeStatus struct {
     CounterParties []DataCounterParty `json:"counterParties"`
     Long MicrotickAccount `json:"long"`
     Backing MicrotickCoin `json:"backing"`
-    Premium MicrotickCoin `json:"premium"` 
+    Cost MicrotickCoin `json:"premium"` 
     FilledQuantity MicrotickQuantity `json:"quantity"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
     Strike MicrotickSpot `json:"strike"`
+    CurrentSpot MicrotickSpot `json:"currentSpot"`
+    CurrentValue MicrotickCoin `json:"currentValue"`
 }
 
 func (rat ResponseTradeStatus) String() string {
@@ -39,12 +41,14 @@ Duration: %s
 Type: %s
 Start: %s
 Expiration: %s
-Strike: %s 
 Filled Quantity: %s
 Backing: %s
-Premium: %s
+Cost: %s
 Commission: %s
-Counter Parties: %s`,
+Counter Parties: %s
+Strike: %s 
+Current Spot: %s
+Current Value: %s`,
     rat.Id, 
     rat.Long, 
     rat.Market, 
@@ -52,23 +56,25 @@ Counter Parties: %s`,
     MicrotickTradeTypeToString(rat.Type),
     rat.Start.String(),
     rat.Expiration.String(),
-    rat.Strike.String(),
     rat.FilledQuantity.String(),
     rat.Backing.String(), 
-    rat.Premium.String(),
+    rat.Cost.String(),
     rat.Commission.String(),
-    cpStrings))
+    cpStrings,
+    rat.Strike.String(),
+    rat.CurrentSpot.String(),
+    rat.CurrentValue.String()))
 }
 
 func formatCounterParty(cpData DataCounterParty) string {
     return fmt.Sprintf(`
     Short: %s
     Backing: %s
-    Paid Premium: %s
+    Cost: %s
     FilledQuantity: %s`,
         cpData.Short.String(),
         cpData.Backing.String(),
-        cpData.PaidPremium.String(),
+        cpData.Cost.String(),
         cpData.FilledQuantity.String(),
     )
 }
@@ -77,16 +83,16 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
-        panic("invalid trade id")
+        return nil, sdk.ErrInternal("Invalid trade ID")
     }
     data, err2 := keeper.GetActiveTrade(ctx, MicrotickId(id))
     if err2 != nil {
-        panic("could not fetch trade data")
+        return nil, sdk.ErrInternal("Could not fetch trade data")
     }
-    //dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
-    //if err3 != nil {
-        //panic("could not fetch market consensus")
-    //}
+    dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
+    if err3 != nil {
+        return nil, sdk.ErrInternal("Could not fetch market consensus")
+    }
     
     response := ResponseTradeStatus {
         Id: data.Id,
@@ -97,16 +103,18 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         CounterParties: data.CounterParties,
         Long: data.Long,
         Backing: data.Backing,
-        Premium: data.Premium,
+        Cost: data.Cost,
         FilledQuantity: data.FilledQuantity,
         Start: data.Start,
         Expiration: data.Expiration,
         Strike: data.Strike,
+        CurrentSpot: dataMarket.Consensus,
+        CurrentValue: data.CurrentValue(dataMarket.Consensus),
     }
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
     if err2 != nil {
-        panic("could not marshal result to JSON")
+        panic("Could not marshal result to JSON")
     }
     
     return bz, nil

@@ -87,7 +87,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         
         // Step 3 - Deduct premium from buyer account and add it to provider account
         // We do this first because if the funds aren't there we abort
-        keeper.WithdrawDecCoin(ctx, msg.Buyer, NewMicrotickCoinFromDec(matcher.TotalPremium))
+        keeper.WithdrawDecCoin(ctx, msg.Buyer, NewMicrotickCoinFromDec(matcher.TotalCost))
     
         // Step 4 - Finalize trade 
         matcher.Trade.Id = keeper.GetNextActiveTradeId(ctx)

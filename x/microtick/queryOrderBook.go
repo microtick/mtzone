@@ -29,9 +29,9 @@ func queryOrderBook(ctx sdk.Context, path []string,
     market := path[0]
     dur := NewMicrotickDurationFromString(path[1])
     
-    dataMarket, err3 := keeper.GetDataMarket(ctx, market)
-    if err3 != nil {
-        panic("Invalid market")
+    dataMarket, err2 := keeper.GetDataMarket(ctx, market)
+    if err2 != nil {
+        return nil, sdk.ErrInternal("Unknown market")
     }
     
     orderBook := dataMarket.GetOrderBook(dur)
@@ -51,9 +51,9 @@ func queryOrderBook(ctx sdk.Context, path []string,
         Puts: puts,
     }
     
-    bz, err4 := codec.MarshalJSONIndent(keeper.cdc, response)
-    if err4 != nil {
-        panic("could not marshal result to JSON")
+    bz, err3 := codec.MarshalJSONIndent(keeper.cdc, response)
+    if err3 != nil {
+        panic("Could not marshal result to JSON")
     }
     
     return bz, nil

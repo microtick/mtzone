@@ -1,7 +1,6 @@
 package microtick
 
 import (
-    "fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -111,7 +110,6 @@ func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
     orderBook := dm.GetOrderBook(quote.Duration)
     orderBook.Calls.Delete(quote.Id)
     orderBook.Puts.Delete(quote.Id)
-    fmt.Printf("Order Book: %+v\n", orderBook)
     dm.SetOrderBook(quote.Duration, orderBook)
 }
 
@@ -151,16 +149,16 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuanti
             }
             
             matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
-            paidPremium := premium.Amount.Mul(boughtQuantity)
-            matcher.TotalPremium = matcher.TotalPremium.Add(paidPremium)
+            cost := premium.Amount.Mul(boughtQuantity)
+            matcher.TotalCost = matcher.TotalCost.Add(cost)
             
             matcher.FillInfo = append(matcher.FillInfo, QuoteFillInfo {
                 Quote: quote,
                 BoughtQuantity: boughtQuantity,
-                PaidPremium: NewMicrotickCoinFromDec(paidPremium),
+                Cost: NewMicrotickCoinFromDec(cost),
             })
-        } else {
-            fmt.Printf("Skipping quote %d\n", id)
+        //} else {
+            //fmt.Printf("Skipping quote %d\n", id)
         }
         index++
     }
@@ -194,13 +192,13 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
                 var boughtQuantity sdk.Dec = quote.Quantity.Amount
                 
                 matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
-                paidPremium := premium.Amount.Mul(boughtQuantity)
-                matcher.TotalPremium = matcher.TotalPremium.Add(paidPremium)
+                cost := premium.Amount.Mul(boughtQuantity)
+                matcher.TotalCost = matcher.TotalCost.Add(cost)
                 
                 matcher.FillInfo = append(matcher.FillInfo, QuoteFillInfo {
                     Quote: quote,
                     BoughtQuantity: boughtQuantity,
-                    PaidPremium: NewMicrotickCoinFromDec(paidPremium),
+                    Cost: NewMicrotickCoinFromDec(cost),
                 })
             } else {
                 
@@ -208,8 +206,8 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
                 break
                 
             }
-        } else {
-            fmt.Printf("Skipping quote %d\n", id)
+        //} else {
+            //fmt.Printf("Skipping quote %d\n", id)
         }
         index++
     }

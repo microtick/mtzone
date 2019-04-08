@@ -48,7 +48,7 @@ func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     market := path[0]
     data, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
-        panic("could not fetch market data")
+        return nil, sdk.ErrInternal("Could not fetch market data")
     }
     
     orderbookStatus := make([]ResponseMarketOrderBookStatus, len(MicrotickDurations))
@@ -67,7 +67,7 @@ func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
     if err2 != nil {
-        panic("could not marshal result to JSON")
+        panic("Could not marshal result to JSON")
     }
     
     return bz, nil

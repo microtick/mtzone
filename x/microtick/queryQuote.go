@@ -50,15 +50,15 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
-        panic("invalid quote id")
+        return nil, sdk.ErrInternal("Invalid quote ID")
     }
     data, err2 := keeper.GetActiveQuote(ctx, MicrotickId(id))
     if err2 != nil {
-        panic("could not fetch quote data")
+        return nil, sdk.ErrInternal("Could not fetch quote data")
     }
     dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
     if err3 != nil {
-        panic("could not fetch market consensus")
+        return nil, sdk.ErrInternal("Could not fetch market consensus")
     }
     
     response := ResponseQuoteStatus {
@@ -76,7 +76,7 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
     if err2 != nil {
-        panic("could not marshal result to JSON")
+        panic("Could not marshal result to JSON")
     }
     
     return bz, nil

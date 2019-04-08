@@ -45,7 +45,7 @@ func queryAccountStatus(ctx sdk.Context, path []string,
     address, err2 := sdk.AccAddressFromBech32(acct)
     data := keeper.GetAccountStatus(ctx, address)
     if err2 != nil {
-        panic("could not get address balance")
+        return nil, sdk.ErrInternal("Could not fetch address information")
     }
     coins := keeper.coinKeeper.GetCoins(ctx, address)
     balance := data.Change
@@ -76,7 +76,7 @@ func queryAccountStatus(ctx sdk.Context, path []string,
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
     if err2 != nil {
-        panic("could not marshal result to JSON")
+        panic("Could not marshal result to JSON")
     }
     
     return bz, nil

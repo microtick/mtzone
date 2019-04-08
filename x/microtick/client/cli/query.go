@@ -20,7 +20,7 @@ func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/account/%s", queryRoute, acct), nil)
 			if err != nil {
-				fmt.Printf("could not resolve account %s \n", string(acct))
+				fmt.Printf("No such account: %s \n", string(acct))
 				return nil
 			}
 
@@ -43,7 +43,7 @@ func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/market/%s", queryRoute, market), nil)
 			if err != nil {
-				fmt.Printf("could not resolve market %s \n", string(market))
+				fmt.Printf("No such market: %s \n", string(market))
 				return nil
 			}
 
@@ -67,7 +67,7 @@ func GetCmdOrderBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/orderbook/%s/%s", queryRoute, market, dur), nil)
 			if err != nil {
-				fmt.Printf("could not resolve orderbook %s %s\n", market, dur)
+				fmt.Printf("No such orderbook: %s %s\n", market, dur)
 				return nil
 			}
 
@@ -90,7 +90,7 @@ func GetCmdActiveQuote(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/quote/%s", queryRoute, id), nil)
 			if err != nil {
-				fmt.Printf("could not resolve quote %s \n", string(id))
+				fmt.Printf("No such quote: %s \n", string(id))
 				return nil
 			}
 
@@ -113,7 +113,7 @@ func GetCmdActiveTrade(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/trade/%s", queryRoute, id), nil)
 			if err != nil {
-				fmt.Printf("could not resolve trade %s \n", string(id))
+				fmt.Printf("No such trade: %s \n", string(id))
 				return nil
 			}
 

@@ -7,7 +7,7 @@ import (
 type QuoteFillInfo struct {
     Quote DataActiveQuote
     BoughtQuantity sdk.Dec
-    PaidPremium MicrotickCoin
+    Cost MicrotickCoin
 }
 
 type FetchQuoteFunc func(MicrotickId) DataActiveQuote
@@ -15,7 +15,7 @@ type FetchQuoteFunc func(MicrotickId) DataActiveQuote
 type Matcher struct {
     Trade DataActiveTrade
     TotalQuantity sdk.Dec
-    TotalPremium sdk.Dec
+    TotalCost sdk.Dec
     FillInfo []QuoteFillInfo
     FetchQuote FetchQuoteFunc
 }
@@ -24,7 +24,7 @@ func NewMatcher(trade DataActiveTrade, fetchQuoteFunc FetchQuoteFunc) Matcher {
     return Matcher {
         Trade: trade,
         TotalQuantity: sdk.ZeroDec(),
-        TotalPremium: sdk.ZeroDec(),
+        TotalCost: sdk.ZeroDec(),
         FetchQuote: fetchQuoteFunc,
     }
 }
@@ -35,7 +35,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         thisQuote := thisFill.Quote
         
         // Pay premium
-        keeper.DepositDecCoin(ctx, thisQuote.Provider, NewMicrotickCoinFromPremium(thisFill.PaidPremium))
+        keeper.DepositDecCoin(ctx, thisQuote.Provider, thisFill.Cost)
         
         accountStatus := keeper.GetAccountStatus(ctx, thisQuote.Provider)
         
@@ -69,7 +69,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         
         // Adjust trade
         matcher.Trade.Backing = matcher.Trade.Backing.Plus(transferredBacking)
-        matcher.Trade.Premium = matcher.Trade.Premium.Plus(thisFill.PaidPremium)
+        matcher.Trade.Cost = matcher.Trade.Cost.Plus(thisFill.Cost)
         matcher.Trade.FilledQuantity = NewMicrotickQuantityFromDec(matcher.Trade.FilledQuantity.Amount.Add(thisFill.BoughtQuantity))
         
         // We save the current quote parameters in the trade because these may change
@@ -83,7 +83,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         // Append this counter party fill to the trade counterparty list
         matcher.Trade.CounterParties = append(matcher.Trade.CounterParties, DataCounterParty {
             Backing: transferredBacking,
-            PaidPremium: thisFill.PaidPremium,
+            Cost: thisFill.Cost,
             FilledQuantity: NewMicrotickQuantityFromDec(thisFill.BoughtQuantity),
             Short: thisQuote.Provider,
             Quoted: params,

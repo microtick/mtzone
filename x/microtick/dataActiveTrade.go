@@ -3,6 +3,7 @@ package microtick
 import (
     "fmt"
     "time"
+    sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type DataActiveTrade struct {
@@ -14,7 +15,7 @@ type DataActiveTrade struct {
     CounterParties []DataCounterParty `json:"counterParties"`
     Long MicrotickAccount `json:"long"`
     Backing MicrotickCoin `json:"backing"`
-    Premium MicrotickCoin `json:"premium"`  // for trades, premium is in Coin not Premium type
+    Cost MicrotickCoin `json:"cost"`
     FilledQuantity MicrotickQuantity `json:"quantity"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
@@ -37,7 +38,7 @@ func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
         Commission: NewMicrotickCoinFromInt(0), // commission computed later
         Long: long,
         Backing: NewMicrotickCoinFromInt(0),
-        Premium: NewMicrotickCoinFromInt(0),
+        Cost: NewMicrotickCoinFromInt(0),
         FilledQuantity: NewMicrotickQuantityFromInt(0), // computed later
         Start: now,
         Expiration: now.Add(expire),
@@ -68,17 +69,33 @@ func NewDataQuoteParams(id MicrotickId, premium MicrotickPremium, quantity Micro
 
 type DataCounterParty struct {
     Backing MicrotickCoin `json:"backing"`
-    PaidPremium MicrotickCoin `json:"premium"`
+    Cost MicrotickCoin `json:"premium"`
     FilledQuantity MicrotickQuantity `json:"quantity"`
     Short MicrotickAccount `json:"short"`
     Quoted DataQuoteParams `json:"quoted"`
 }
 
-func NewDataCounterParty(backing MicrotickCoin, final bool, premium MicrotickCoin, 
+func NewDataCounterParty(backing MicrotickCoin, final bool, cost MicrotickCoin, 
     quantity MicrotickQuantity)  DataCounterParty {
     return DataCounterParty {
         Backing: backing,
-        PaidPremium: premium,
+        Cost: cost,
         FilledQuantity: quantity,
     }
+}
+
+func (dat DataActiveTrade) CurrentValue(current MicrotickSpot) MicrotickCoin {
+    strike := dat.Strike.Amount
+    var delta sdk.Dec
+    if dat.Type {
+        // Put
+        delta = strike.Sub(current.Amount)
+    } else {
+        // Call
+        delta = current.Amount.Sub(strike)
+    }
+    if delta.IsNegative() {
+        return NewMicrotickCoinFromInt(0)
+    }
+    return NewMicrotickCoinFromDec(delta.Mul(dat.FilledQuantity.Amount))
 }
