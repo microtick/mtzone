@@ -105,9 +105,70 @@ func GetCmdCancelQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
+func GetCmdUpdateQuote(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "update-quote [id] [newspot] [newpremium]",
+		Short: "update a quote",
+		Args:  cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
+
+			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			if err := cliCtx.EnsureAccountExists(); err != nil {
+				return err
+			}
+			
+			id := microtick.NewMicrotickIdFromString(args[0])
+			newspot := microtick.NewMicrotickSpotFromString(args[1])
+			newpremium := microtick.NewMicrotickPremiumFromString(args[2])
+
+			msg := microtick.NewTxUpdateQuote(id, cliCtx.GetFromAddress(), newspot, newpremium)
+			err := msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			cliCtx.PrintResponse = true
+
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+		},
+	}
+}
+
+func GetCmdDepositQuote(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "deposit-quote [id] [amount]",
+		Short: "deposit more backing to a quote",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
+
+			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			if err := cliCtx.EnsureAccountExists(); err != nil {
+				return err
+			}
+			
+			id := microtick.NewMicrotickIdFromString(args[0])
+			deposit := microtick.NewMicrotickCoinFromString(args[1])
+
+			msg := microtick.NewTxDepositQuote(id, cliCtx.GetFromAddress(), deposit)
+			err := msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			cliCtx.PrintResponse = true
+
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+		},
+	}
+}
+
 func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "trade [market] [duration] [call/put] [quantity]",
+		Use:   "trade-market [market] [duration] [call/put] [quantity]",
 		Short: "create a new trade",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -141,7 +202,7 @@ func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdLimitTrade(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "limit [market] [duration] [call/put] [limit]",
+		Use:   "trade-limit [market] [duration] [call/put] [limit]",
 		Short: "create a new limit trade",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {

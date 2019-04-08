@@ -35,7 +35,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         thisQuote := thisFill.Quote
         
         // Pay premium
-        keeper.DepositDecCoin(ctx, thisQuote.Provider, thisFill.Cost)
+        keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Cost)
         
         accountStatus := keeper.GetAccountStatus(ctx, thisQuote.Provider)
         

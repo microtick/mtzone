@@ -71,7 +71,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     }
         
     // Subtract coins from quote provider
-    keeper.WithdrawDecCoin(ctx, msg.Provider, msg.Backing)
+    keeper.WithdrawMicrotickCoin(ctx, msg.Provider, msg.Backing)
 	
 	// DataActiveQuote
 	

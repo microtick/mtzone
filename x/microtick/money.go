@@ -6,7 +6,7 @@ import (
 
 // Money
 
-func (k Keeper) WithdrawDecCoin(ctx sdk.Context, account sdk.AccAddress, 
+func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress, 
     withdrawAmount MicrotickCoin) {
 	accountStatus := k.GetAccountStatus(ctx, account)
 	
@@ -37,7 +37,7 @@ func (k Keeper) WithdrawDecCoin(ctx sdk.Context, account sdk.AccAddress,
     }
 }
 
-func (k Keeper) DepositDecCoin(ctx sdk.Context, account sdk.AccAddress,
+func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	depositAmount MicrotickCoin) {
 	accountStatus := k.GetAccountStatus(ctx, account)
 	

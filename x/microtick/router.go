@@ -36,6 +36,10 @@ func NewHandler(keeper Keeper) sdk.Handler {
 			return handleTxCreateQuote(ctx, keeper, msg)
 		case TxCancelQuote:
 			return handleTxCancelQuote(ctx, keeper, msg)
+		case TxUpdateQuote:
+			return handleTxUpdateQuote(ctx, keeper, msg)
+		case TxDepositQuote:
+			return handleTxDepositQuote(ctx, keeper, msg)
 		case TxMarketTrade:
 			return handleTxMarketTrade(ctx, keeper, msg)
 		case TxLimitTrade:
@@ -53,6 +57,8 @@ func RegisterCodec(cdc *codec.Codec) {
     cdc.RegisterConcrete(TxCreateMarket{}, "microtick/CreateMarket", nil)
     cdc.RegisterConcrete(TxCreateQuote{}, "microtick/CreateQuote", nil)
     cdc.RegisterConcrete(TxCancelQuote{}, "microtick/CancelQuote", nil)
+    cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/UpdateQuote", nil)
+    cdc.RegisterConcrete(TxDepositQuote{}, "microtick/DepositQuote", nil)
     cdc.RegisterConcrete(TxMarketTrade{}, "microtick/MarketTrade", nil)
     cdc.RegisterConcrete(TxLimitTrade{}, "microtick/LimitTrade", nil)
 }
