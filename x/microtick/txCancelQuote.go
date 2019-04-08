@@ -55,15 +55,12 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     }
     
     // Everything ok, let's refund the backing and delete the quote
-    dataMarket, err2 := keeper.GetDataMarket(ctx, quote.Market)
-    if err2 != nil {
-        panic("Mismatched market / quote")
-    }
-    
     keeper.DepositDecCoin(ctx, msg.Requester, quote.Backing)
     
+    dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
     dataMarket.factorOut(quote)
     dataMarket.DeleteQuote(quote)
+    keeper.SetDataMarket(ctx, dataMarket)
     
     keeper.DeleteActiveQuote(ctx, quote.Id)
     
