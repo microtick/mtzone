@@ -97,5 +97,47 @@ func (dat DataActiveTrade) CurrentValue(current MicrotickSpot) MicrotickCoin {
     if delta.IsNegative() {
         return NewMicrotickCoinFromInt(0)
     }
-    return NewMicrotickCoinFromDec(delta.Mul(dat.FilledQuantity.Amount))
+    value := delta.Mul(dat.FilledQuantity.Amount)
+    if value.GT(dat.Backing.Amount) {
+        value = dat.Backing.Amount
+    }
+    return NewMicrotickCoinFromDec(value)
+}
+
+type CounterPartySettlement struct {
+    Settle MicrotickCoin
+    Refund MicrotickCoin
+    RefundAddress MicrotickAccount
+    Backing MicrotickCoin
+}
+
+func (dat DataActiveTrade) CounterPartySettlements(current MicrotickSpot) []CounterPartySettlement {
+    strike := dat.Strike.Amount
+    var delta sdk.Dec
+    if dat.Type {
+        // Put
+        delta = strike.Sub(current.Amount)
+    } else {
+        // Call
+        delta = current.Amount.Sub(strike)
+    }
+    if delta.IsNegative() {
+        delta = sdk.ZeroDec()
+    }
+    var result []CounterPartySettlement
+    for i := 0; i < len(dat.CounterParties); i++ {
+        cp := dat.CounterParties[i]
+        settle := delta.Mul(cp.FilledQuantity.Amount)
+        if settle.GT(cp.Backing.Amount) {
+            settle = cp.Backing.Amount
+        }
+        refund := cp.Backing.Amount.Sub(settle)
+        result = append(result, CounterPartySettlement {
+            Settle: NewMicrotickCoinFromDec(settle),
+            Refund: NewMicrotickCoinFromDec(refund),
+            RefundAddress: cp.Short,
+            Backing: cp.Backing,
+        })
+    }
+    return result   
 }

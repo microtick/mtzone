@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/params"
 )
 
 type MicrotickStores struct {
@@ -22,18 +23,32 @@ type Keeper struct {
 	coinKeeper bank.Keeper
 	storeKeys MicrotickStores
 	cdc *codec.Codec 
+	paramSubspace params.Subspace
 }
 
-func NewKeeper(coinKeeper bank.Keeper, storeKeys MicrotickStores, cdc *codec.Codec) Keeper {
+func NewKeeper(coinKeeper bank.Keeper, storeKeys MicrotickStores, cdc *codec.Codec,
+	paramstore params.Subspace) Keeper {
 	return Keeper {
 		coinKeeper: coinKeeper,
-		storeKeys:   storeKeys,
-		cdc:        cdc,
+		storeKeys: storeKeys,
+		cdc: cdc,
+		paramSubspace: paramstore.WithKeyTable(ParamKeyTable()),
 	}
 }
 
 // Keeper as used here contains access methods for data structures only - business logic
 // is maintained in the tx handlers
+
+// SetParams sets the module's parameters.
+func (keeper Keeper) SetParams(ctx sdk.Context, params Params) {
+	keeper.paramSubspace.SetParamSet(ctx, &params)
+}
+
+// GetParams gets the auth module's parameters.
+func (keeper Keeper) GetParams(ctx sdk.Context) (params Params) {
+	keeper.paramSubspace.GetParamSet(ctx, &params)
+	return
+}
 
 // DataAccountStatus
 

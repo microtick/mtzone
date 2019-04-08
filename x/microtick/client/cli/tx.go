@@ -233,3 +233,32 @@ func GetCmdLimitTrade(cdc *codec.Codec) *cobra.Command {
 		},
 	}
 }
+
+func GetCmdSettleTrade(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "settle [id]",
+		Short: "settle trade",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
+
+			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			if err := cliCtx.EnsureAccountExists(); err != nil {
+				return err
+			}
+			
+			id := microtick.NewMicrotickIdFromString(args[0])
+			
+			msg := microtick.NewTxSettleTrade(id, cliCtx.GetFromAddress())
+			err := msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			cliCtx.PrintResponse = true
+
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+		},
+	}
+}

@@ -50,6 +50,7 @@ func (mc ModuleClient) GetTxCmd() *cobra.Command {
 		cli.GetCmdDepositQuote(mc.cdc),
 		cli.GetCmdMarketTrade(mc.cdc),
 		cli.GetCmdLimitTrade(mc.cdc),
+		cli.GetCmdSettleTrade(mc.cdc),
 	)...)
 
 	return mtTxCmd

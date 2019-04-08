@@ -91,6 +91,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 		app.bankKeeper,
 		app.keyMT,
 		app.cdc,
+		app.paramsKeeper.Subspace(microtick.DefaultParamspace),
 	)
 
 	// The AnteHandler handles signature verification and transaction pre-processing
@@ -134,9 +135,11 @@ type GenesisState struct {
 	AuthData auth.GenesisState   `json:"auth"`
 	BankData bank.GenesisState   `json:"bank"`
 	Accounts []*auth.BaseAccount `json:"accounts"`
+	MicrotickData microtick.GenesisState `json:"microtick"`
 }
 
 func (app *mtApp) initChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+	
 	stateJSON := req.AppStateBytes
 
 	genesisState := new(GenesisState)
@@ -152,15 +155,15 @@ func (app *mtApp) initChainer(ctx sdk.Context, req abci.RequestInitChain) abci.R
 
 	auth.InitGenesis(ctx, app.accountKeeper, app.feeCollectionKeeper, genesisState.AuthData)
 	bank.InitGenesis(ctx, app.bankKeeper, genesisState.BankData)
-
+	microtick.InitGenesis(ctx, app.mtKeeper, genesisState.MicrotickData)
+	
 	return abci.ResponseInitChain{}
 }
 
-// ExportAppStateAndValidators does the things
 func (app *mtApp) ExportAppStateAndValidators() (appState json.RawMessage, validators []tmtypes.GenesisValidator, err error) {
 	ctx := app.NewContext(true, abci.Header{})
 	accounts := []*auth.BaseAccount{}
-
+	
 	appendAccountsFn := func(acc auth.Account) bool {
 		account := &auth.BaseAccount{
 			Address: acc.GetAddress(),
@@ -177,6 +180,7 @@ func (app *mtApp) ExportAppStateAndValidators() (appState json.RawMessage, valid
 		Accounts: accounts,
 		AuthData: auth.DefaultGenesisState(),
 		BankData: bank.DefaultGenesisState(),
+		MicrotickData: microtick.DefaultGenesisState(),
 	}
 
 	appState, err = codec.MarshalJSONIndent(app.cdc, genState)

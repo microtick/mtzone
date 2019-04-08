@@ -28,6 +28,7 @@ import (
 	cfg "github.com/tendermint/tendermint/config"
 	dbm "github.com/tendermint/tendermint/libs/db"
 	tmtypes "github.com/tendermint/tendermint/types"
+	"github.com/mjackson001/mtzone/x/microtick"
 )
 
 // DefaultNodeHome sets the folder where the application data and configuration will be stored
@@ -105,6 +106,7 @@ func InitCmd(ctx *server.Context, cdc *codec.Codec) *cobra.Command {
 			genesis := app.GenesisState{
 				AuthData: auth.DefaultGenesisState(),
 				BankData: bank.DefaultGenesisState(),
+				MicrotickData: microtick.DefaultGenesisState(),
 			}
 
 			appState, err = codec.MarshalJSONIndent(cdc, genesis)

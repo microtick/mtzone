@@ -44,6 +44,8 @@ func NewHandler(keeper Keeper) sdk.Handler {
 			return handleTxMarketTrade(ctx, keeper, msg)
 		case TxLimitTrade:
 			return handleTxLimitTrade(ctx, keeper, msg)
+		case TxSettleTrade:
+			return handleTxSettleTrade(ctx, keeper, msg)
 		default:
 			errMsg := fmt.Sprintf("Unrecognized microtick tx type: %v", msg.Type())
 			return sdk.ErrUnknownRequest(errMsg).Result()
@@ -61,4 +63,5 @@ func RegisterCodec(cdc *codec.Codec) {
     cdc.RegisterConcrete(TxDepositQuote{}, "microtick/DepositQuote", nil)
     cdc.RegisterConcrete(TxMarketTrade{}, "microtick/MarketTrade", nil)
     cdc.RegisterConcrete(TxLimitTrade{}, "microtick/LimitTrade", nil)
+    cdc.RegisterConcrete(TxSettleTrade{}, "microtick/SettleTrade", nil)
 }
