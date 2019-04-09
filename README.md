@@ -43,3 +43,4 @@ $ mtcli config trust-node true
 $ mtd start
 ```
 
+Next step: [Creating a Market](https://github.com/mjackson001/mtzone/blob/master/doc/createmarket.md)
