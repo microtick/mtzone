@@ -2,7 +2,7 @@
 
 For this step, trades can't be settled for the time duration they are active. Go grab a cup of coffee and come back in 5 minutes...!
 
-Once the time period of the trade has elapsed, issue the following command to settle the trade. Either key for the accounts involved will work to settle the trade,
+Once the time period of the trade has elapsed, issue the following command to settle the trade. Either key for the accounts involved (marketmaker1 or trader) will work to settle the trade,
 since both accounts were counterparties to it.
 
 ## Settle Trade Transaction
@@ -15,7 +15,7 @@ Settling a trade locks in any profits, and refunds the backing that is not used 
 
 ## Query Account
 
-Let's query both accounts and see how they fared:
+Let's query all the accounts and see how they fared:
 
 ```
 $ mtcli query microtick account $(mtcli keys show marketmaker1 -a)
