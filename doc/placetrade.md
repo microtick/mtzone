@@ -12,7 +12,7 @@ to buy 0.07quantity of calls on BTCUSD:
 ## Create Trade Transaction
 
 ```
-$ mtcli tx microtick trade-market BTCUSD 5minute call 0.07quantity --from mykey2
+$ mtcli tx microtick trade-market BTCUSD 5minute call 0.07quantity --from trader
 ```
 
 (note that you must use a different account to buy these calls because otherwise you'd be the counterparty to your own trade and
@@ -23,7 +23,7 @@ the marketplace would reject it)
 ```
 $ mtcli query microtick trade 1
 Trade Id: 1
-Long: cosmos179jq24nm45fku4n0mpqqe29f8etnp3zlhtc2tp
+Long: cosmos1ved24h424mhqa072dclwyjgjewy8cxj0tmsk34
 Market: BTCUSD
 Duration: 5minute
 Type: call
@@ -34,7 +34,7 @@ Backing: 7.000000000000000000fox
 Cost: 0.175000000000000000fox
 Commission: 0.000000000000000000fox
 Counter Parties: [
-    Short: cosmos1hdq4rhfaz33plxh0qk49wr40edp8mhzfr4ckq8
+    Short: cosmos1qwu9f6zk5klej0tfs8p40j6uu8j86nh80nm3t4
     Backing: 7.000000000000000000fox
     Cost: 0.175000000000000000fox
     FilledQuantity: 0.070000000000000000quantity]

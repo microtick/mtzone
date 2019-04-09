@@ -15,6 +15,8 @@ func NewQuerier(keeper Keeper) sdk.Querier {
             return queryAccountStatus(ctx, path[1:], req, keeper)
         case "market":
             return queryMarketStatus(ctx, path[1:], req, keeper)
+        case "consensus":
+            return queryMarketConsensus(ctx, path[1:], req, keeper)
         case "orderbook":
             return queryOrderBook(ctx, path[1:], req, keeper)
         case "quote":

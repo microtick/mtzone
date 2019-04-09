@@ -34,8 +34,8 @@ func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "market [acct]",
-		Short: "market acct",
+		Use:   "market [name]",
+		Short: "market name",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
@@ -48,6 +48,29 @@ func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 			}
 
 			var out microtick.ResponseMarketStatus
+			cdc.MustUnmarshalJSON(res, &out)
+			//fmt.Println(out.String())
+			return cliCtx.PrintOutput(out)
+		},
+	}
+}
+
+func GetCmdMarketConsensus(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "consensus [market]",
+		Short: "consensus market",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			market := args[0]
+
+			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/consensus/%s", queryRoute, market), nil)
+			if err != nil {
+				fmt.Printf("No such market: %s \n", string(market))
+				return nil
+			}
+
+			var out microtick.ResponseMarketConsensus
 			cdc.MustUnmarshalJSON(res, &out)
 			//fmt.Println(out.String())
 			return cliCtx.PrintOutput(out)

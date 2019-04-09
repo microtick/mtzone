@@ -25,10 +25,12 @@ $ rm -rf ~/.mtcli
 
 3. Create several keys and add the keys to the genesis file
 ```
-$ mtcli keys add mykey1
-$ mtcli keys add mykey2
-$ mtd add-genesis-account $(mtcli keys show mykey1 -a) 1000fox
-$ mtd add-genesis-account $(mtcli keys show mykey2 -a) 1000fox
+$ mtcli keys add marketmaker1
+$ mtcli keys add marketmaker2
+$ mtcli keys add trader
+$ mtd add-genesis-account $(mtcli keys show marketmaker1 -a) 1000fox
+$ mtd add-genesis-account $(mtcli keys show marketmaker2 -a) 1000fox
+$ mtd add-genesis-account $(mtcli keys show trader -a) 1000fox
 ```
 
 4. Set up the command line tool:

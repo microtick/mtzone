@@ -26,7 +26,7 @@ have more weight in the marketplace (quantity and weight are two terms used inte
 To create a quote, use the following form:
 
 ```
-$ mtcli tx microtick create-quote BTCUSD 5minute 10fox 5250spot 10premium --from mykey1
+$ mtcli tx microtick create-quote BTCUSD 5minute 10fox 5250spot 10premium --from marketmaker1
 ```
 
 The values above used in the command give the market (BTCUSD), the standardized duration (5minute), the token backing (10fox),
@@ -42,7 +42,7 @@ To check the quote status:
 ```
 $ mtcli query microtick quote 1
 Quote Id: 1
-Provider: cosmos1hdq4rhfaz33plxh0qk49wr40edp8mhzfr4ckq8
+Provider: cosmos1qwu9f6zk5klej0tfs8p40j6uu8j86nh80nm3t4
 Market: BTCUSD
 Duration: 5minute
 Backing: 10.000000000000000000fox

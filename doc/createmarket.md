@@ -17,12 +17,12 @@ You can name a market whatever you want, but it makes sense to name it something
 * Makes it easy for other market participants to find
 
 ```
-mtcli tx microtick create-market BTCUSD --from mykey1
+mtcli tx microtick create-market BTCUSD --from marketmaker1
 ```
 
 ## Query Market
 
-Once created, you can verify the market exists:
+Once created, a market can be used by anyone.  You can verify the market exists:
 
 ```
 $ mtcli query microtick market BTCUSD
@@ -67,7 +67,7 @@ These standardized durations concentrate market activity to facilitate trading.
 You can see more detail on a particular orderbook using the following command:
 
 ```
-$ mtcli query microtick orderbook ETHUSD 5minute
+$ mtcli query microtick orderbook BTCUSD 5minute
 Sum Backing: 0.000000000000000000fox
 SumWeight: 0.000000000000000000quantity
 Calls: []

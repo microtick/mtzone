@@ -3,7 +3,7 @@
 Now it's time to make things a bit more interesting. We're going to place a second quote on the market and see how that changes things.
 
 ```
-$ mtcli tx microtick create-quote BTCUSD 5minute 10fox 5280spot 10premium --from mykey1
+$ mtcli tx microtick create-quote BTCUSD 5minute 10fox 5280spot 10premium --from marketmaker2
 ```
 
 Let's query the first quote and this new quote, and check the market as well:
@@ -11,7 +11,7 @@ Let's query the first quote and this new quote, and check the market as well:
 ```
 $ mtcli query microtick quote 1
 Quote Id: 1
-Provider: cosmos1hdq4rhfaz33plxh0qk49wr40edp8mhzfr4ckq8
+Provider: cosmos1qwu9f6zk5klej0tfs8p40j6uu8j86nh80nm3t4
 Market: BTCUSD
 Duration: 5minute
 Backing: 10.000000000000000000fox
@@ -25,7 +25,7 @@ PremiumAsPut: 17.500000000000000000premium
 ```
 $ mtcli query microtick quote 2
 Quote Id: 2
-Provider: cosmos1hdq4rhfaz33plxh0qk49wr40edp8mhzfr4ckq8
+Provider: cosmos18ljxxk48nsx0u8trm0rylgndxrk7t9pvqh0knw
 Market: BTCUSD
 Duration: 5minute
 Backing: 10.000000000000000000fox
