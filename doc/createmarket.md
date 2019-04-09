@@ -1,4 +1,4 @@
-# Command line usage
+# Creating a Market
 
 Once the software is built and the blockchain is running, you can start to issue commands to better understand the operation of 
 the Microtick marketplace / BFT price feed.
@@ -9,7 +9,7 @@ Microtick is a decentralized byzantine fault tolerant marketplace for realtime p
 * Achieves an on-chain realtime global consensus price for the underlying asset that is usable by an Dapp for free
 * Creates market-based incentives that reward participants that converge on a [Schelling Point](https://en.wikipedia.org/wiki/Focal_point_(game_theory)) and punishes those that diverge from it
 
-## Step 1. Create a Market
+## Create Market Transaction
 
 You can name a market whatever you want, but it makes sense to name it something that:
 
@@ -19,6 +19,8 @@ You can name a market whatever you want, but it makes sense to name it something
 ```
 mtcli tx microtick create-market BTCUSD --from mykey1
 ```
+
+## Query Market
 
 Once created, you can verify the market exists:
 
@@ -59,6 +61,8 @@ These standardized durations concentrate market activity to facilitate trading.
 * **1hour**
 * **4hour**
 * **12hour**
+
+## Query Orderbook
 
 You can see more detail on a particular orderbook using the following command:
 
