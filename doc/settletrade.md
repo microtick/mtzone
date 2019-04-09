@@ -21,13 +21,13 @@ Let's query both accounts and see how they fared:
 ```
 $ mtcli query microtick account $(mtcli keys show mykey1 -a)
 Account: cosmos1hdq4rhfaz33plxh0qk49wr40edp8mhzfr4ckq8
-Balance: 976.609615384615384615fox
+Balance: 986.609615384615384615fox
 Change: 0.609615384615384615fox
-NumQuotes: 3
+NumQuotes: 2
 NumTrades: 0
-ActiveQuotes: [1 2 3]
+ActiveQuotes: [1 2]
 ActiveTrades: []
-QuoteBacking: 23.000000000000000000fox
+QuoteBacking: 13.000000000000000000fox
 TradeBacking: 0.000000000000000000fox
 ```
 
