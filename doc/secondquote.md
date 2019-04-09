@@ -70,3 +70,5 @@ What's happening here is the marketplace is doing several things at once:
 the same quantities so the consensus is an average of the two (5265spot).
 2. The premium of the first quote is discounted as a call, but increased as a put, because the first quote's spot (5250spot) is less than the consensus price.
 3. The premium of the second quote is increased as a call, but decreased as a put, because the second quote's spot (5280spot) is greater than the consensus price.
+
+Next: [Place a Trade](https://github.com/mjackson001/mtzone/blob/master/doc/placetrade.md)
