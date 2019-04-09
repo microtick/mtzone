@@ -56,7 +56,10 @@ PremiumAsPut: 10.000000000000000000premium
 Note that all the values are reflected in the quote status, and in addition we see Quantity, Premium as Call, and Premium as Put values.
 
 * Quantity = Backing / Premium, with a Leverage of 10x that is built in to every quantity calculation (more on this later).
-* Premium as Call and Premium as Put right now are equal to our quoted premium, but this is only because there are no other quotes on the marketplace and so our quote is the only source of consensus on the market.
+* Premium as Call = the actual price a trader would pay per unit of quantity to place a call trade against this quote's collateral.
+* Premium as Put = the actual price a trader would pay per unit of quantity to place a put trade against this quote's collateral.
+
+_Premium as Call and Premium as Put right now are equal to our quoted premium, but this is only because there are no other quotes on the marketplace and so our quote is the only source of consensus on the market._
 
 You can also see our new quote's token backing and weight in the market and orderbook queries:
 
