@@ -53,5 +53,5 @@ has caused the market to move higher as a result!
 
 You can also see that the trade start and trade expiration were assigned automatically.
 
-
+Next: [Settle the Trade](https://github.com/mjackson001/mtzone/blob/master/doc/settletrade.md)
 
