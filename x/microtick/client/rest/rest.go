@@ -17,7 +17,14 @@ import (
 
 // RegisterRoutes - Central function to define routes that get registered by the main application
 func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, storeName string) {
-	r.HandleFunc(fmt.Sprintf("/%s/status/{acct}", storeName), accountStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/account/{acct}", storeName), accountStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/market/{market}", storeName), marketStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/consensus/{market}", storeName), marketConsensusHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/orderbook/{market}/{duration}", storeName), marketOrderbookHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/quote/{id}", storeName), marketQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/trade/{id}", storeName), marketTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
+	
+	//r.HandleFunc(fmt.Spritnf("/%s/createmarket/{market}"))
 	//r.HandleFunc(fmt.Sprintf("/%s/names", storeName), buyNameHandler(cdc, cliCtx)).Methods("POST")
 	//r.HandleFunc(fmt.Sprintf("/%s/names", storeName), setNameHandler(cdc, cliCtx)).Methods("PUT")
 	//r.HandleFunc(fmt.Sprintf("/%s/names/{%s}", storeName, restName), resolveNameHandler(cdc, cliCtx, storeName)).Methods("GET")
@@ -114,7 +121,7 @@ func accountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		vars := mux.Vars(r)
 		account := vars["acct"]
 
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/status/%s", storeName, account), nil)
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/account/%s", storeName, account), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -123,3 +130,80 @@ func accountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
 	}
 }
+
+func marketStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		market := vars["market"]
+
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/market/%s", storeName, market), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+func marketConsensusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		market := vars["market"]
+
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/consensus/%s", storeName, market), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+func marketOrderbookHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		market := vars["market"]
+		duration := vars["duration"]
+
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/orderbook/%s/%s", storeName, market, duration), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+func marketQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/quote/%s", storeName, id), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+func marketTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/trade/%s", storeName, id), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+

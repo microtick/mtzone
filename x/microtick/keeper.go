@@ -183,3 +183,10 @@ func (k Keeper) SetActiveTrade(ctx sdk.Context, active DataActiveTrade) {
 	binary.LittleEndian.PutUint32(key, active.Id)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(active))
 }
+
+func (k Keeper) DeleteActiveTrade(ctx sdk.Context, id MicrotickId) {
+	store := ctx.KVStore(k.storeKeys.ActiveTrades)
+	key := make([]byte, 4)
+	binary.LittleEndian.PutUint32(key, id)
+	store.Delete(key)
+}

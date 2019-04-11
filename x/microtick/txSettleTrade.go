@@ -93,6 +93,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
         accountStatusLong := keeper.GetAccountStatus(ctx, trade.Long)
         accountStatusLong.ActiveTrades.Delete(trade.Id)
         keeper.SetAccountStatus(ctx, trade.Long, accountStatusLong)
+        keeper.DeleteActiveTrade(ctx, trade.Id)
         
     } else {
         
