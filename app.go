@@ -88,6 +88,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 	app.feeCollectionKeeper = auth.NewFeeCollectionKeeper(cdc, app.keyFeeCollection)
 	
 	app.mtKeeper = microtick.NewKeeper(
+		app.accountKeeper,
 		app.bankKeeper,
 		app.keyMT,
 		app.cdc,

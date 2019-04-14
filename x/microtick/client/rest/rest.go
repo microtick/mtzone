@@ -5,11 +5,8 @@ import (
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
-	//clientrest "github.com/cosmos/cosmos-sdk/client/rest"
 	"github.com/cosmos/cosmos-sdk/codec"
-	//sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
-	//"github.com/mjackson001/mtzone/x/microtick"
 
 	"github.com/gorilla/mux"
 )
@@ -17,106 +14,36 @@ import (
 
 // RegisterRoutes - Central function to define routes that get registered by the main application
 func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, storeName string) {
-	r.HandleFunc(fmt.Sprintf("/%s/account/{acct}", storeName), accountStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/market/{market}", storeName), marketStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/consensus/{market}", storeName), marketConsensusHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/orderbook/{market}/{duration}", storeName), marketOrderbookHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/quote/{id}", storeName), marketQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/trade/{id}", storeName), marketTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/account/{acct}", storeName), queryAccountStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/market/{market}", storeName), queryMarketStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/consensus/{market}", storeName), queryMarketConsensusHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/orderbook/{market}/{duration}", storeName), queryMarketOrderbookHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/quote/{id}", storeName), queryQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/trade/{id}", storeName), queryTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
 	
-	//r.HandleFunc(fmt.Spritnf("/%s/createmarket/{market}"))
-	//r.HandleFunc(fmt.Sprintf("/%s/names", storeName), buyNameHandler(cdc, cliCtx)).Methods("POST")
-	//r.HandleFunc(fmt.Sprintf("/%s/names", storeName), setNameHandler(cdc, cliCtx)).Methods("PUT")
-	//r.HandleFunc(fmt.Sprintf("/%s/names/{%s}", storeName, restName), resolveNameHandler(cdc, cliCtx, storeName)).Methods("GET")
-	//r.HandleFunc(fmt.Sprintf("/%s/names/{%s}/whois", storeName, restName), whoIsHandler(cdc, cliCtx, storeName)).Methods("GET")
+	// These tx functions actually just generate the signing bytes with correct chain ID, account and sequence numbers
+	r.HandleFunc(fmt.Sprintf("/%s/createmarket/{acct}/{market}", storeName), txCreateMarketHandler(cdc, cliCtx, storeName)).Methods("GET")
+	
+	// Broadcast signed tx
 }
 
-/*
-type buyNameReq struct {
-	BaseReq rest.BaseReq `json:"base_req"`
-	Name    string       `json:"name"`
-	Amount  string       `json:"amount"`
-	Buyer   string       `json:"buyer"`
-}
-
-func buyNameHandler(cdc *codec.Codec, cliCtx context.CLIContext) http.HandlerFunc {
+func txCreateMarketHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req buyNameReq
-
-		if !rest.ReadRESTReq(w, r, cdc, &req) {
-			rest.WriteErrorResponse(w, http.StatusBadRequest, "failed to parse request")
-			return
-		}
-
-		baseReq := req.BaseReq.Sanitize()
-		if !baseReq.ValidateBasic(w) {
-			return
-		}
-
-		addr, err := sdk.AccAddressFromBech32(req.Buyer)
+		vars := mux.Vars(r)
+		account := vars["acct"]
+		market := vars["market"]
+		
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/createmarket/%s/%s", storeName, account, market), nil)
 		if err != nil {
-			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		coins, err := sdk.ParseCoins(req.Amount)
-		if err != nil {
-			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		// create the message
-		msg := nameservice.NewMsgBuyName(req.Name, coins, addr)
-		err = msg.ValidateBasic()
-		if err != nil {
-			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		clientrest.CompleteAndBroadcastTxREST(w, cliCtx, baseReq, []sdk.Msg{msg}, cdc)
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
 	}
 }
 
-type setNameReq struct {
-	BaseReq rest.BaseReq `json:"base_req"`
-	Name    string       `json:"name"`
-	Value   string       `json:"value"`
-	Owner   string       `json:"owner"`
-}
-
-func setNameHandler(cdc *codec.Codec, cliCtx context.CLIContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req setNameReq
-		if !rest.ReadRESTReq(w, r, cdc, &req) {
-			rest.WriteErrorResponse(w, http.StatusBadRequest, "failed to parse request")
-			return
-		}
-
-		baseReq := req.BaseReq.Sanitize()
-		if !baseReq.ValidateBasic(w) {
-			return
-		}
-
-		addr, err := sdk.AccAddressFromBech32(req.Owner)
-		if err != nil {
-			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		// create the message
-		msg := nameservice.NewMsgSetName(req.Name, req.Value, addr)
-		err = msg.ValidateBasic()
-		if err != nil {
-			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		clientrest.CompleteAndBroadcastTxREST(w, cliCtx, baseReq, []sdk.Msg{msg}, cdc)
-	}
-}
-*/
-
-func accountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryAccountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		account := vars["acct"]
@@ -131,7 +58,7 @@ func accountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 	}
 }
 
-func marketStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryMarketStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -146,7 +73,7 @@ func marketStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName 
 	}
 }
 
-func marketConsensusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryMarketConsensusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -161,7 +88,7 @@ func marketConsensusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeNa
 	}
 }
 
-func marketOrderbookHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryMarketOrderbookHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -177,7 +104,7 @@ func marketOrderbookHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeNa
 	}
 }
 
-func marketQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -192,7 +119,7 @@ func marketQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName s
 	}
 }
 
-func marketTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]

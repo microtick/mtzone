@@ -7,11 +7,11 @@ import (
 )
 
 type TxCreateMarket struct {
-    Account sdk.AccAddress
+    Account MicrotickAccount
     Market MicrotickMarket
 }
 
-func NewTxCreateMarket(account sdk.AccAddress, market MicrotickMarket) TxCreateMarket {
+func NewTxCreateMarket(account MicrotickAccount, market MicrotickMarket) TxCreateMarket {
     return TxCreateMarket {
         Account: account,
         Market: market,

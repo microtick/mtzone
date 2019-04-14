@@ -6,6 +6,7 @@ import (
 	"fmt"
 	
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,15 +21,17 @@ type MicrotickStores struct {
 }
 
 type Keeper struct {
+	accountKeeper auth.AccountKeeper
 	coinKeeper bank.Keeper
 	storeKeys MicrotickStores
 	cdc *codec.Codec 
 	paramSubspace params.Subspace
 }
 
-func NewKeeper(coinKeeper bank.Keeper, storeKeys MicrotickStores, cdc *codec.Codec,
+func NewKeeper(accountKeeper auth.AccountKeeper, coinKeeper bank.Keeper, storeKeys MicrotickStores, cdc *codec.Codec,
 	paramstore params.Subspace) Keeper {
 	return Keeper {
+		accountKeeper: accountKeeper,
 		coinKeeper: coinKeeper,
 		storeKeys: storeKeys,
 		cdc: cdc,
