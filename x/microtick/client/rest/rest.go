@@ -5,8 +5,10 @@ import (
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/rest"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 
 	"github.com/gorilla/mux"
 )
@@ -25,6 +27,40 @@ func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, 
 	r.HandleFunc(fmt.Sprintf("/%s/createmarket/{acct}/{market}", storeName), txCreateMarketHandler(cdc, cliCtx, storeName)).Methods("GET")
 	
 	// Broadcast signed tx
+	r.HandleFunc(fmt.Sprintf("/%s/broadcast", storeName), broadcastSignedTx(cdc, cliCtx)).Methods("POST")
+}
+
+type signedReq struct {
+	Tx string `json:"tx"`
+}
+
+func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req signedReq
+		
+		if !rest.ReadRESTReq(w, r, cdc, &req) {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, "failed to parse request")
+			return	
+		}
+		
+		fmt.Printf("%s\n", req.Tx)
+		
+		var msg auth.StdTx
+		cdc.MustUnmarshalJSON([]byte(req.Tx), &msg)
+		
+		encoder := utils.GetTxEncoder(cdc)
+		
+		bytes, _ := encoder(msg)
+		
+		res, err := cliCtx.BroadcastTx(bytes)
+		if err != nil {
+			fmt.Printf("%s\n", err.Error())
+			rest.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
 }
 
 func txCreateMarketHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
