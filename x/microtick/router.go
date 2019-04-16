@@ -25,6 +25,8 @@ func NewQuerier(keeper Keeper) sdk.Querier {
             return queryTradeStatus(ctx, path[1:], req, keeper)
         case "createmarket":
             return generateTxCreateMarket(ctx, path[1:], req, keeper)
+        case "createquote":
+            return generateTxCreateQuote(ctx, path[1:], req, keeper)
         default:
             return nil, sdk.ErrUnknownRequest("unknown microtick query endpoint")
         }

@@ -7,6 +7,7 @@ import (
     "strings"
     "github.com/pkg/errors"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    "github.com/cosmos/cosmos-sdk/x/auth"
 )
 
 const TokenType = "fox"
@@ -200,3 +201,11 @@ func NewMicrotickPremiumFromDec(d sdk.Dec) MicrotickPremium {
     return sdk.NewDecCoinFromDec("premium", d)
 }
 
+// Generic tx generate struct
+
+type GenTx struct {
+    Tx auth.StdTx `json:"tx"`
+    AccountNumber uint64 `json:"accountNumber"`
+    ChainID string `json:"chainId"`
+    Sequence uint64 `json:"sequence"`
+}

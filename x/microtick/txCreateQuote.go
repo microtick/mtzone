@@ -16,7 +16,7 @@ type TxCreateQuote struct {
     Premium MicrotickPremium
 }
 
-func NewTxCreateQuote(market MicrotickMarket, dur MicrotickDuration, provider sdk.AccAddress, 
+func NewTxCreateQuote(market MicrotickMarket, dur MicrotickDuration, provider MicrotickAccount, 
     backing MicrotickCoin, spot MicrotickSpot, premium MicrotickPremium) TxCreateQuote {
     return TxCreateQuote {
         Market: market,

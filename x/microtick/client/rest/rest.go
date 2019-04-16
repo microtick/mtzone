@@ -25,6 +25,7 @@ func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, 
 	
 	// These tx functions actually just generate the signing bytes with correct chain ID, account and sequence numbers
 	r.HandleFunc(fmt.Sprintf("/%s/createmarket/{acct}/{market}", storeName), txCreateMarketHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/createquote/{acct}/{market}/{duration}/{backing}/{spot}/{premium}", storeName), txCreateQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
 	
 	// Broadcast signed tx
 	r.HandleFunc(fmt.Sprintf("/%s/broadcast", storeName), broadcastSignedTx(cdc, cliCtx)).Methods("POST")
@@ -70,6 +71,27 @@ func txCreateMarketHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeNam
 		market := vars["market"]
 		
 		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/createmarket/%s/%s", storeName, account, market), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+func txCreateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		account := vars["acct"]
+		market := vars["market"]
+		duration := vars["duration"]
+		backing := vars["backing"]
+		spot := vars["spot"]
+		premium := vars["premium"]
+		
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/createquote/%s/%s/%s/%s/%s/%s", storeName, 
+			account, market, duration, backing, spot, premium), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
