@@ -1,6 +1,7 @@
 package microtick
 
 import (
+    "fmt"
     "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -47,6 +48,24 @@ func (daq *DataActiveQuote) ComputeQuantity() {
         Denom: "quantity",
         Amount: daq.Backing.Amount.Quo(premiumLeverage),
     }
+}
+
+func (daq *DataActiveQuote) Freeze(params Params) {
+    now := time.Now()    
+    expire, err := time.ParseDuration(fmt.Sprintf("%d", params.FreezeTime) + "s")
+    if err != nil {
+        panic("invalid time")
+    }
+    daq.Modified = now
+    daq.CanModify = now.Add(expire)
+}
+
+func (daq DataActiveQuote) Frozen() bool {
+    now := time.Now()
+    if now.Before(daq.CanModify) {
+        return false
+    }
+    return true
 }
 
 func (daq DataActiveQuote) PremiumAsCall(strike MicrotickSpot) MicrotickPremium {

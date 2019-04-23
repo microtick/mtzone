@@ -50,13 +50,19 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 // Handler
 
 func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.Result {
+    params := keeper.GetParams(ctx)
+    
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()
     }
     
     if quote.Provider.String() != msg.Requester.String() {
-        return sdk.ErrInternal("Cannot modify quote").Result()
+        return sdk.ErrInternal("Account can't modify quote").Result()
+    }
+    
+    if quote.Frozen() {
+        return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     }
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
@@ -64,11 +70,13 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     
     if msg.NewSpot.Amount.IsPositive() {
         quote.Spot = msg.NewSpot
+        quote.Freeze(params)
     }
     
     if msg.NewPremium.Amount.IsPositive() {
         quote.Premium = msg.NewPremium
         quote.ComputeQuantity()
+        quote.Freeze(params)
     }
     
     dataMarket.factorIn(quote)

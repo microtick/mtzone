@@ -51,7 +51,11 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     }
     
     if quote.Provider.String() != msg.Requester.String() {
-        return sdk.ErrInternal("Cannot modify quote").Result()
+        return sdk.ErrInternal("Account can't modify quote").Result()
+    }
+    
+    if quote.Frozen() {
+        return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     }
     
     // Everything ok, let's refund the backing and delete the quote

@@ -4,6 +4,7 @@ import (
     "fmt"
     "strconv"
     "strings"
+    "time"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +22,8 @@ type ResponseQuoteStatus struct {
     Quantity MicrotickQuantity `json:"quantity"`
     PremiumAsCall MicrotickPremium `json:"premiumAsCall"`
     PremiumAsPut MicrotickPremium `json:"premiumAsPut"`
+    Modified time.Time `json:"modified"`
+    CanModify time.Time `json:"canModify"`
 }
 
 func (raq ResponseQuoteStatus) String() string {
@@ -33,7 +36,9 @@ Spot: %s
 Premium: %s
 Quantity: %s
 PremiumAsCall: %s
-PremiumAsPut: %s`, 
+PremiumAsPut: %s
+Modified: %s
+CanModify: %s`, 
     raq.Id, 
     raq.Provider, 
     raq.Market, 
@@ -43,7 +48,9 @@ PremiumAsPut: %s`,
     raq.Premium.String(),
     raq.Quantity.String(),
     raq.PremiumAsCall.String(),
-    raq.PremiumAsPut.String()))
+    raq.PremiumAsPut.String(),
+    raq.Modified.String(),
+    raq.CanModify.String()))
 }
 
 func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
@@ -72,6 +79,8 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Quantity: data.Quantity,
         PremiumAsCall: data.PremiumAsCall(dataMarket.Consensus),
         PremiumAsPut: data.PremiumAsPut(dataMarket.Consensus),
+        Modified: data.Modified,
+        CanModify: data.CanModify,
     }
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)

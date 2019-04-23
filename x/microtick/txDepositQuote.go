@@ -48,14 +48,21 @@ func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
 // Handler
 
 func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sdk.Result {
+    params := keeper.GetParams(ctx)
+    
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()
     }
     
     if quote.Provider.String() != msg.Requester.String() {
-        return sdk.ErrInternal("Cannot modify quote").Result()
+        return sdk.ErrInternal("Account can't modify quote").Result()
     }
+    
+    // No freeze for deposits
+    //if quote.Frozen() {
+        //return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
+    //}
     
     // Subtract coins from requester
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, msg.Deposit)
@@ -65,6 +72,9 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     
     quote.Backing = NewMicrotickCoinFromDec(quote.Backing.Amount.Add(msg.Deposit.Amount))
     quote.ComputeQuantity()
+    
+    // But we do freeze the new backing from any other updates
+    quote.Freeze(params)
     
     dataMarket.factorIn(quote)
     keeper.SetDataMarket(ctx, dataMarket)

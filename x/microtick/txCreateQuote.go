@@ -62,6 +62,8 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 func handleTxCreateQuote(ctx sdk.Context, keeper Keeper, 
     msg TxCreateQuote) sdk.Result {
         
+    params := keeper.GetParams(ctx)
+        
     if !keeper.HasDataMarket(ctx, msg.Market) {
         return sdk.ErrInternal("No such market: " + msg.Market).Result()
     }
@@ -80,6 +82,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     dataActiveQuote := NewDataActiveQuote(id, msg.Market, msg.Duration, msg.Provider,
         msg.Backing, msg.Spot, msg.Premium)
     dataActiveQuote.ComputeQuantity()
+    dataActiveQuote.Freeze(params)
     keeper.SetActiveQuote(ctx, dataActiveQuote)
     
     // DataAccountStatus

@@ -5,19 +5,30 @@ import (
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/x/params"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // DefaultParamspace defines the default microtick module parameter subspace
 const DefaultParamspace = "mtmparams"
 
 // Default parameter values
-const (
+var (
     DefaultEuropeanOptions bool = true
+    DefaultCommissionQuotePercent = sdk.MustNewDecFromStr("0.0005")
+    DefaultCommissionTradeFixed = sdk.MustNewDecFromStr("0.05")
+    DefaultCommissionUpdatePercent = sdk.MustNewDecFromStr("0.00005")
+    DefaultCommissionSettleFixed = sdk.MustNewDecFromStr("0.05")
+    DefaultFreezeTime = int8(30)
 )
 
 // Parameter keys
 var (
     KeyEuropeanOptions = []byte("EuropeanOptions")
+    KeyCommissionQuotePercent = []byte("CommissionQuotePercent")
+    KeyCommissionTradeFixed = []byte("KeyCommissionTradeFixed")
+    KeyCommissionUpdatePercent = []byte("KeyCommissionUpdatePercent")
+    KeyCommissionSettleFixed = []byte("KeyCommissionSettleFixed")
+    KeyFreezeTime = []byte("KeyFreezeTime")
 )
 
 var _ params.ParamSet = &Params{}
@@ -25,6 +36,11 @@ var _ params.ParamSet = &Params{}
 // Params defines the parameters for the microtick module.
 type Params struct {
     EuropeanOptions bool `json:"european_options"`
+    CommissionQuotePercent sdk.Dec `json:"commission_quote_percent"`
+    CommissionTradeFixed sdk.Dec `json:"commission_trade_fixed"`
+    CommissionUpdatePercent sdk.Dec `json:"commission_update_percent"`
+    CommissionSettleFixed sdk.Dec `json:"commission_settle_fixed"`
+    FreezeTime int8 `json:"freeze_time"`
 }
 
 // ParamKeyTable for microtick module
@@ -38,6 +54,11 @@ func ParamKeyTable() params.KeyTable {
 func (p *Params) ParamSetPairs() params.ParamSetPairs {
 	return params.ParamSetPairs{
 	    {KeyEuropeanOptions, &p.EuropeanOptions},
+	    {KeyCommissionQuotePercent, &p.CommissionQuotePercent},
+	    {KeyCommissionTradeFixed, &p.CommissionTradeFixed},
+	    {KeyCommissionUpdatePercent, &p.CommissionUpdatePercent},
+	    {KeyCommissionSettleFixed, &p.CommissionSettleFixed},
+	    {KeyFreezeTime, &p.FreezeTime},
 	}
 }
 
@@ -53,6 +74,11 @@ func (p Params) Equal(p2 Params) bool {
 func DefaultParams() Params {
 	return Params{
 	    EuropeanOptions: DefaultEuropeanOptions,
+	    CommissionQuotePercent: DefaultCommissionQuotePercent,
+	    CommissionTradeFixed: DefaultCommissionTradeFixed,
+	    CommissionUpdatePercent: DefaultCommissionUpdatePercent,
+	    CommissionSettleFixed: DefaultCommissionSettleFixed,
+	    FreezeTime: DefaultFreezeTime,
 	}
 }
 
@@ -61,5 +87,10 @@ func (p Params) String() string {
 	var sb strings.Builder
 	sb.WriteString("Params: \n")
 	sb.WriteString(fmt.Sprintf("EuropeanOptions: %t\n", p.EuropeanOptions))
+	sb.WriteString(fmt.Sprintf("CommissionQuotePercent: %t\n", p.CommissionQuotePercent))
+	sb.WriteString(fmt.Sprintf("CommissionTradeFixed: %t\n", p.CommissionTradeFixed))
+	sb.WriteString(fmt.Sprintf("CommissionUpdatePercent: %t\n", p.CommissionUpdatePercent))
+	sb.WriteString(fmt.Sprintf("CommissionSettleFixed: %t\n", p.CommissionSettleFixed))
+	sb.WriteString(fmt.Sprintf("FreezeTime: %t\n", p.FreezeTime))
 	return sb.String()
 }
