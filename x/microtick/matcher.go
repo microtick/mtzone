@@ -8,6 +8,7 @@ type QuoteFillInfo struct {
     Quote DataActiveQuote
     BoughtQuantity sdk.Dec
     Cost MicrotickCoin
+    FinalFill bool
 }
 
 type FetchQuoteFunc func(MicrotickId) DataActiveQuote

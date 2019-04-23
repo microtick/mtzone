@@ -76,5 +76,13 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Deposit)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
-    return sdk.Result {}
+    tags := sdk.NewTags(
+        fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit",
+        fmt.Sprintf("quote.%d", quote.Id), "deposit",
+        "mtm.MarketTick", quote.Market,
+    )
+    
+    return sdk.Result {
+        Tags: tags,
+    }
 }

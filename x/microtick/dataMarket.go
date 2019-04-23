@@ -139,6 +139,7 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuanti
             }
             
             var boughtQuantity sdk.Dec
+            finalFill := false
             
             if quote.Quantity.Amount.GTE(quantityToMatch) {
                 boughtQuantity = quantityToMatch
@@ -146,6 +147,7 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuanti
             } else {
                 boughtQuantity = quote.Quantity.Amount
                 quantityToMatch = quantityToMatch.Sub(quote.Quantity.Amount)
+                finalFill = true
             }
             
             matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
@@ -156,6 +158,7 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuanti
                 Quote: quote,
                 BoughtQuantity: boughtQuantity,
                 Cost: NewMicrotickCoinFromDec(cost),
+                FinalFill: finalFill,
             })
         //} else {
             //fmt.Printf("Skipping quote %d\n", id)
@@ -199,6 +202,7 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
                     Quote: quote,
                     BoughtQuantity: boughtQuantity,
                     Cost: NewMicrotickCoinFromDec(cost),
+                    FinalFill: true,
                 })
             } else {
                 

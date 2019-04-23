@@ -20,6 +20,7 @@ type DataActiveTrade struct {
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
     Strike MicrotickSpot `json:"strike"`
+    SettleCommission MicrotickCoin `json:"settleCommission"`
 }
 
 func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
@@ -43,11 +44,8 @@ func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
         Start: now,
         Expiration: now.Add(expire),
         Strike: strike,
+        SettleCommission: NewMicrotickCoinFromInt(0),
     }
-}
-
-func (trade DataActiveTrade) AddCounterParty(cp DataCounterParty) {
-    trade.CounterParties = append(trade.CounterParties, cp)
 }
 
 type DataQuoteParams struct {

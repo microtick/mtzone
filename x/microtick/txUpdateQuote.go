@@ -75,5 +75,13 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
     
-    return sdk.Result {}
+    tags := sdk.NewTags(
+        fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update",
+        fmt.Sprintf("quote.%d", quote.Id), "update",
+        "mtm.MarketTick", quote.Market,
+    )
+    
+    return sdk.Result {
+        Tags: tags,
+    }
 }

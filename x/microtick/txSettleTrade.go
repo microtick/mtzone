@@ -1,6 +1,7 @@
 package microtick
 
 import (
+    "fmt"
     "encoding/json"
     "time"
     
@@ -100,6 +101,17 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
         // American options not implemented yet
         return sdk.ErrInternal("American style option settlement not implemented yet").Result()
         
+    }
+    
+    tags := sdk.NewTags(
+        fmt.Sprintf("trade.%d", trade.Id), "settle",
+        fmt.Sprintf("acct.%s", trade.Long), "settle.long",
+    )
+    
+    for i := 0; i < len(trade.CounterParties); i++ {
+        cp := trade.CounterParties[i]
+        
+        tags.AppendTag(fmt.Sprintf("acct.%s", cp.Short), "settle.short")
     }
     
 	return sdk.Result {}

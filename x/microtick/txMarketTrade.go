@@ -67,7 +67,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
     // Step 1 - Obtain the strike spot price and create trade struct
     market, err2 := keeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
-        panic("Error fetching market")
+        return sdk.ErrInternal("Error fetching market").Result()
     }
     trade := NewDataActiveTrade(msg.Market, msg.Duration, msg.TradeType,
         msg.Buyer, market.Consensus)
@@ -75,6 +75,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
     matcher := NewMatcher(trade, func (id MicrotickId) DataActiveQuote {
         quote, err := keeper.GetActiveQuote(ctx, id)
         if err != nil {
+            // This function should always be called with an active quote
             panic("Invalid quote ID")
         }
         return quote
@@ -105,18 +106,33 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         keeper.SetActiveTrade(ctx, matcher.Trade)
     
         tags := sdk.NewTags(
-            "id", fmt.Sprintf("%d", matcher.Trade.Id),
+            "mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id),
             fmt.Sprintf("trade.%d", matcher.Trade.Id), "create",
+            fmt.Sprintf("acct.%s", msg.Buyer), "trade.long",
+            "mtm.MarketTick", msg.Market,
         )
+        
+        for i := 0; i < len(matcher.FillInfo); i++ {
+            thisFill := matcher.FillInfo[i]
+            
+            tags.AppendTag(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short")
+            
+            quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
+            if thisFill.FinalFill {
+                tags.AppendTag(quoteKey, "final")
+            } else {
+                tags.AppendTag(quoteKey, "match")
+            }
+        }
             
         return sdk.Result {
             Tags: tags,
         }
         
     } else {
-        
+       
         // No liquidity available
-        return sdk.Result {}
+        return sdk.ErrInternal("No liquidity available").Result()
         
     }
 }

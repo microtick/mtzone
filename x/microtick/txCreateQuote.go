@@ -103,9 +103,10 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     // Add tags
     
     tags := sdk.NewTags(
-        "id", fmt.Sprintf("%d", id),
+        "mtm.NewQuote", fmt.Sprintf("%d", id),
         fmt.Sprintf("quote.%d", id), "create",
         fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create",
+        "mtm.MarketTick", msg.Market,
     )
     
 	return sdk.Result {
