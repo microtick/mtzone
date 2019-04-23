@@ -10,6 +10,17 @@ import (
 func generateTx(ctx sdk.Context, txType string, path []string, 
     req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
         
+    defer func() {
+        if r := recover(); r != nil {
+            switch x := r.(type) {
+            case string:
+                err = sdk.ErrInternal(x)
+            default:
+                err = sdk.ErrInternal("Unknown error")
+            }
+        }
+    }()
+        
     var msg sdk.Msg
     
     acct := path[0]

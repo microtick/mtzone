@@ -26,12 +26,12 @@ func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, 
 	// These tx functions just generate the signing bytes with correct chain ID, account and sequence numbers
 	r.HandleFunc(fmt.Sprintf("/%s/createmarket/{acct}/{market}", storeName), txCreateMarketHandler(cdc, cliCtx, storeName)).Methods("GET")
 	r.HandleFunc(fmt.Sprintf("/%s/createquote/{acct}/{market}/{duration}/{backing}/{spot}/{premium}", storeName), txCreateQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/cancelquote/{requester}/{id}"), txCancelQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/depositquote/{requester}/{id}/{amount}"), txDepositQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/updatequote/{requester}/{id}/{spot}/{premium}"), txUpdateQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/markettrade/{buyer}/{market}/{duration}/{tradetype}/{quantity}"), txMarketTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/limittrade/{buyer}/{market}/{duration}/{tradetype}/{limit}"), txLimitTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/settletrade/{requester}/{id}"), txSettleTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/cancelquote/{requester}/{id}", storeName), txCancelQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/depositquote/{requester}/{id}/{amount}", storeName), txDepositQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/updatequote/{requester}/{id}/{spot}/{premium}", storeName), txUpdateQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/markettrade/{buyer}/{market}/{duration}/{tradetype}/{quantity}", storeName), txMarketTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/limittrade/{buyer}/{market}/{duration}/{tradetype}/{limit}", storeName), txLimitTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/settletrade/{requester}/{id}", storeName), txSettleTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
 	
 	// Broadcast signed tx
 	r.HandleFunc(fmt.Sprintf("/%s/broadcast", storeName), broadcastSignedTx(cdc, cliCtx)).Methods("POST")
@@ -170,7 +170,7 @@ func txMarketTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		tradetype := vars["tradetype"]
 		quantity := vars["quantity"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/limittrade/%s/%s/%s,%s/%s", storeName, 
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/markettrade/%s/%s/%s/%s/%s", storeName, 
 			buyer, market, duration, tradetype, quantity), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -190,7 +190,7 @@ func txLimitTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName 
 		tradetype := vars["tradetype"]
 		limit := vars["limit"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/limittrade/%s/%s/%s,%s/%s", storeName, 
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/limittrade/%s/%s/%s/%s/%s", storeName, 
 			buyer, market, duration, tradetype, limit), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
