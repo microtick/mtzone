@@ -133,7 +133,7 @@ func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
 func NewMicrotickCoinFromString(b string) MicrotickCoin {
     result, err2 := parseDecCoin(b)
     if err2 != nil || result.Denom != TokenType {
-        panic(fmt.Sprintf("Invalid coin suffix: %s", b))
+        panic(fmt.Sprintf("Invalid coin amount or token type: %s", b))
     }
     return result
 }
