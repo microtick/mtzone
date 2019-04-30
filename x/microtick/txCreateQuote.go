@@ -4,6 +4,7 @@ import (
     "fmt"
     "encoding/json"
     
+    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -26,6 +27,19 @@ func NewTxCreateQuote(market MicrotickMarket, dur MicrotickDuration, provider Mi
         Spot: spot,
         Premium: premium,
     }
+}
+
+type CreateQuoteData struct {
+    Id MicrotickId `json:"id"`
+    Originator string `json:"originator"`
+    Market MicrotickMarket `json:"market"`
+    Duration MicrotickDuration `json:"duration"`
+    Spot MicrotickSpot `json:"spot"`
+    Premium MicrotickPremium `json:"premium"`
+    Consensus MicrotickSpot `json:"consensus"`
+    Backing MicrotickCoin `json:"backing"`
+    Balance MicrotickCoin `json:"balance"`
+    Commission MicrotickCoin `json:"commission"`
 }
 
 func (msg TxCreateQuote) Route() string { return "microtick" }
@@ -91,6 +105,13 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     accountStatus.ActiveQuotes.Insert(NewListItem(id, sdk.NewDec(int64(id))))
     accountStatus.NumQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Backing)
+    balance := accountStatus.Change
+    coins := keeper.coinKeeper.GetCoins(ctx, msg.Provider)
+    for i := 0; i < len(coins); i++ {
+        if coins[i].Denom == TokenType {
+            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+        }
+    }
     keeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
     
     // DataMarket
@@ -103,8 +124,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     dataMarket.factorIn(dataActiveQuote)
     keeper.SetDataMarket(ctx, dataMarket)
     
-    // Add tags
-    
+    // Tags
     tags := sdk.NewTags(
         "mtm.NewQuote", fmt.Sprintf("%d", id),
         fmt.Sprintf("quote.%d", id), "create",
@@ -112,7 +132,23 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
         "mtm.MarketTick", msg.Market,
     )
     
+    // Data
+    data := CreateQuoteData {
+      Id: id,
+      Originator: "createQuote",
+      Market: msg.Market,
+      Duration: msg.Duration,
+      Spot: msg.Spot,
+      Premium: msg.Premium,
+      Consensus: dataMarket.Consensus,
+      Backing: msg.Backing,
+      Balance: balance,
+      Commission: NewMicrotickCoinFromInt(0),
+    }
+    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    
 	return sdk.Result {
+	    Data: bz,
 	    Tags: tags,
 	}
 }

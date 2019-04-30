@@ -59,7 +59,7 @@ func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.Handler
 		
 		bytes, _ := encoder(msg)
 		
-		res, err := cliCtx.BroadcastTx(bytes)
+		res, err := cliCtx.BroadcastTxAsync(bytes)
 		if err != nil {
 			fmt.Printf("%s\n", err.Error())
 			rest.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())

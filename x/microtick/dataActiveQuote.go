@@ -63,9 +63,9 @@ func (daq *DataActiveQuote) Freeze(params Params) {
 func (daq DataActiveQuote) Frozen() bool {
     now := time.Now()
     if now.Before(daq.CanModify) {
-        return false
+        return true
     }
-    return true
+    return false
 }
 
 func (daq DataActiveQuote) PremiumAsCall(strike MicrotickSpot) MicrotickPremium {

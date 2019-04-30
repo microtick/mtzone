@@ -14,7 +14,7 @@ import (
 type ResponseQuoteStatus struct {
     Id MicrotickId `json:"id"`
     Market MicrotickMarket `json:"market"`
-    Duration MicrotickDuration `json:"duration"`
+    Duration string `json:"duration"`
     Provider MicrotickAccount `json:"provider"`
     Backing MicrotickCoin `json:"backing"`
     Spot MicrotickSpot `json:"spot"`
@@ -42,7 +42,7 @@ CanModify: %s`,
     raq.Id, 
     raq.Provider, 
     raq.Market, 
-    MicrotickDurationNameFromDur(raq.Duration),
+    raq.Duration,
     raq.Backing.String(), 
     raq.Spot.String(),
     raq.Premium.String(),
@@ -71,7 +71,7 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     response := ResponseQuoteStatus {
         Id: data.Id,
         Market: data.Market,
-        Duration: data.Duration,
+        Duration: MicrotickDurationNameFromDur(data.Duration),
         Provider: data.Provider,
         Backing: data.Backing,
         Spot: data.Spot,

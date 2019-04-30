@@ -4,6 +4,7 @@ import (
     "fmt"
     "encoding/json"
     
+    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -22,6 +23,16 @@ func NewTxUpdateQuote(id MicrotickId, requester sdk.AccAddress,
         NewSpot: newSpot,
         NewPremium: newPremium,
     }
+}
+
+type UpdateQuoteData struct {
+    Id MicrotickId `json:"id"`
+    Originator string `json:"originator"`
+    Spot MicrotickSpot `json:"spot"`
+    Premium MicrotickPremium `json:"premium"`
+    Consensus MicrotickSpot `json:"consensus"`
+    Balance MicrotickCoin `json:"balance"`
+    Commission MicrotickCoin `json:"commission"`
 }
 
 func (msg TxUpdateQuote) Route() string { return "microtick" }
@@ -83,13 +94,27 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
     
+    // Tags
     tags := sdk.NewTags(
         fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update",
         fmt.Sprintf("quote.%d", quote.Id), "update",
         "mtm.MarketTick", quote.Market,
     )
     
+    // Data
+    data := CreateQuoteData {
+      Id: quote.Id,
+      Originator: "updateQuote",
+      Spot: quote.Spot,
+      Premium: quote.Premium,
+      Consensus: dataMarket.Consensus,
+      Balance: NewMicrotickCoinFromInt(0),
+      Commission: NewMicrotickCoinFromInt(0),
+    }
+    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    
     return sdk.Result {
+        Data: bz,
         Tags: tags,
     }
 }
