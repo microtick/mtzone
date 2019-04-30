@@ -4,6 +4,7 @@ import (
     "fmt"
     "encoding/json"
     
+    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -26,6 +27,12 @@ func NewTxLimitTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.Ac
         
         Limit: limit,
     }
+}
+
+type LimitTradeData struct {
+    Originator string `json:"originator"`
+    Trade DataActiveTrade `json:"trade"`
+    Consensus MicrotickSpot `json:"consensus"`
 }
 
 func (msg TxLimitTrade) Route() string { return "microtick" }
@@ -126,8 +133,17 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
                 tags.AppendTag(quoteKey, "match")
             }
         }
+        
+        // Data
+        data := LimitTradeData {
+            Originator: "limitTrade",
+            Consensus: market.Consensus,
+            Trade: trade,
+        }
+        bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
             
         return sdk.Result {
+            Data: bz,
             Tags: tags,
         }
         

@@ -4,6 +4,7 @@ import (
     "fmt"
     "encoding/json"
     
+    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -25,6 +26,12 @@ func NewTxMarketTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.A
         TradeType: tradeType,
         Quantity: quantity,
     }
+}
+
+type MarketTradeData struct {
+    Originator string `json:"originator"`
+    Trade DataActiveTrade `json:"trade"`
+    Consensus MicrotickSpot `json:"consensus"`
 }
 
 func (msg TxMarketTrade) Route() string { return "microtick" }
@@ -124,8 +131,17 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
                 tags.AppendTag(quoteKey, "match")
             }
         }
+        
+        // Data
+        data := MarketTradeData {
+            Originator: "marketTrade",
+            Consensus: market.Consensus,
+            Trade: trade,
+        }
+        bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
             
         return sdk.Result {
+            Data: bz,
             Tags: tags,
         }
         

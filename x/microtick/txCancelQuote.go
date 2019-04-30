@@ -4,6 +4,7 @@ import (
     "fmt"
     "encoding/json"
     
+    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -17,6 +18,14 @@ func NewTxCancelQuote(id MicrotickId, requester sdk.AccAddress) TxCancelQuote {
         Id: id,
         Requester: requester,
     }
+}
+
+type CancelQuoteData struct {
+    Id MicrotickId `json:"id"`
+    Originator string `json:"originator"`
+    Consensus MicrotickSpot `json:"consensus"`
+    Refund MicrotickCoin `json:"refund"`
+    Balance MicrotickCoin `json:"balance"`
 }
 
 func (msg TxCancelQuote) Route() string { return "microtick" }
@@ -79,7 +88,18 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
         "mtm.MarketTick", quote.Market,
     )
     
+    // Data
+    data := CancelQuoteData {
+      Id: quote.Id,
+      Originator: "cancelQuote",
+      Consensus: dataMarket.Consensus,
+      Refund: quote.Backing,
+      Balance: NewMicrotickCoinFromInt(0),
+    }
+    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    
     return sdk.Result {
+        Data: bz,
         Tags: tags,
     }
 }
