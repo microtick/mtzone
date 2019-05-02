@@ -138,7 +138,7 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
         data := LimitTradeData {
             Originator: "limitTrade",
             Consensus: market.Consensus,
-            Trade: trade,
+            Trade: matcher.Trade,
         }
         bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
             

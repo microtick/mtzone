@@ -136,7 +136,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         data := MarketTradeData {
             Originator: "marketTrade",
             Consensus: market.Consensus,
-            Trade: trade,
+            Trade: matcher.Trade,
         }
         bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
             
