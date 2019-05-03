@@ -2,7 +2,6 @@ package microtick
 
 import (
     "fmt"
-    "encoding/json"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -49,11 +48,7 @@ func (msg TxMarketTrade) ValidateBasic() sdk.Error {
 }
 
 func (msg TxMarketTrade) GetSignBytes() []byte {
-    b, err := json.Marshal(msg)
-    if err != nil {
-        panic(err)
-    }
-    return sdk.MustSortJSON(b)
+    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {

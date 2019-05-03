@@ -69,3 +69,9 @@ func RegisterCodec(cdc *codec.Codec) {
     cdc.RegisterConcrete(TxLimitTrade{}, "microtick/LimitTrade", nil)
     cdc.RegisterConcrete(TxSettleTrade{}, "microtick/SettleTrade", nil)
 }
+
+var msgCdc = codec.New()
+
+func init() {
+    RegisterCodec(msgCdc)
+}
