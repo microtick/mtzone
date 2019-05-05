@@ -32,7 +32,7 @@ type CreateQuoteData struct {
     Id MicrotickId `json:"id"`
     Originator string `json:"originator"`
     Market MicrotickMarket `json:"market"`
-    Duration MicrotickDuration `json:"duration"`
+    Duration MicrotickDurationName `json:"duration"`
     Spot MicrotickSpot `json:"spot"`
     Premium MicrotickPremium `json:"premium"`
     Consensus MicrotickSpot `json:"consensus"`
@@ -132,7 +132,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
       Id: id,
       Originator: "createQuote",
       Market: msg.Market,
-      Duration: msg.Duration,
+      Duration: MicrotickDurationNameFromDur(msg.Duration),
       Spot: msg.Spot,
       Premium: msg.Premium,
       Consensus: dataMarket.Consensus,

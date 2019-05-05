@@ -36,6 +36,7 @@ type MicrotickMarket = string
 // Duration
 
 type MicrotickDuration = uint16
+type MicrotickDurationName = string
 
 var MicrotickDurations = []MicrotickDuration {
     300, // 5 minutes
@@ -53,7 +54,7 @@ var MicrotickDurationNames = []string {
     "12hour",
 }
 
-func NewMicrotickDurationFromString(dur string) MicrotickDuration {
+func MicrotickDurationFromName(dur MicrotickDurationName) MicrotickDuration {
     for i, d := range MicrotickDurationNames {
         if dur == d {
             return MicrotickDurations[i]
@@ -62,7 +63,7 @@ func NewMicrotickDurationFromString(dur string) MicrotickDuration {
     panic(fmt.Sprintf("Invalid duration: %s", dur))
 }
 
-func MicrotickDurationNameFromDur(dur MicrotickDuration) string {
+func MicrotickDurationNameFromDur(dur MicrotickDuration) MicrotickDurationName {
     for i, d := range MicrotickDurations {
         if dur == d {
             return MicrotickDurationNames[i]
@@ -83,19 +84,20 @@ func ValidMicrotickDuration(mtd MicrotickDuration) bool {
 // Type
 
 type MicrotickTradeType = bool
+type MicrotickTradeTypeName = string
 
 const (
     MicrotickCall = false  // 0
     MicrotickPut = true    // 1
 )
 
-func NewMicrotickTradeTypeFromString(str string) MicrotickTradeType {
+func MicrotickTradeTypeFromName(str string) MicrotickTradeType {
     if str == "call" { return MicrotickCall }
     if str == "put" { return MicrotickPut }
     panic(fmt.Sprintf("Invalid trade type: %s", str))
 }
 
-func MicrotickTradeTypeToString(mtt MicrotickTradeType) string {
+func MicrotickTradeNameFromType(mtt MicrotickTradeType) MicrotickTradeTypeName {
     if mtt {
         return "put"
     }

@@ -14,7 +14,7 @@ import (
 type ResponseQuoteStatus struct {
     Id MicrotickId `json:"id"`
     Market MicrotickMarket `json:"market"`
-    Duration string `json:"duration"`
+    Duration MicrotickDurationName `json:"duration"`
     Provider MicrotickAccount `json:"provider"`
     Backing MicrotickCoin `json:"backing"`
     Spot MicrotickSpot `json:"spot"`
@@ -26,7 +26,7 @@ type ResponseQuoteStatus struct {
     CanModify time.Time `json:"canModify"`
 }
 
-func (raq ResponseQuoteStatus) String() string {
+func (rqs ResponseQuoteStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Quote Id: %d
 Provider: %s
 Market: %s
@@ -39,18 +39,18 @@ PremiumAsCall: %s
 PremiumAsPut: %s
 Modified: %s
 CanModify: %s`, 
-    raq.Id, 
-    raq.Provider, 
-    raq.Market, 
-    raq.Duration,
-    raq.Backing.String(), 
-    raq.Spot.String(),
-    raq.Premium.String(),
-    raq.Quantity.String(),
-    raq.PremiumAsCall.String(),
-    raq.PremiumAsPut.String(),
-    raq.Modified.String(),
-    raq.CanModify.String()))
+    rqs.Id, 
+    rqs.Provider, 
+    rqs.Market, 
+    rqs.Duration,
+    rqs.Backing.String(), 
+    rqs.Spot.String(),
+    rqs.Premium.String(),
+    rqs.Quantity.String(),
+    rqs.PremiumAsCall.String(),
+    rqs.PremiumAsPut.String(),
+    rqs.Modified.String(),
+    rqs.CanModify.String()))
 }
 
 func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {

@@ -27,7 +27,7 @@ func queryOrderBook(ctx sdk.Context, path []string,
     req abci.RequestQuery, keeper Keeper)(res []byte, err sdk.Error) {
         
     market := path[0]
-    dur := NewMicrotickDurationFromString(path[1])
+    dur := MicrotickDurationFromName(path[1])
     
     dataMarket, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {

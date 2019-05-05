@@ -9,7 +9,8 @@ import (
 type DataActiveTrade struct {
     Id MicrotickId `json:"id"`
     Market MicrotickMarket `json:"market"`
-    Duration MicrotickDuration `json:"duration"`
+    // Duration is only a tag at this point, not functional
+    Duration MicrotickDurationName `json:"duration"`
     Type MicrotickTradeType `json:"type"`
     Commission MicrotickCoin `json:"commission"`
     CounterParties []DataCounterParty `json:"counterParties"`
@@ -34,7 +35,7 @@ func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
     return DataActiveTrade {
         Id: 0, // set actual trade ID later after premium has been verified
         Market: market,
-        Duration: dur,
+        Duration: MicrotickDurationNameFromDur(dur),
         Type: ttype,
         Commission: NewMicrotickCoinFromInt(0), // commission computed later
         Long: long,

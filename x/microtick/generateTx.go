@@ -36,7 +36,7 @@ func generateTx(ctx sdk.Context, txType string, path []string,
         msg = NewTxCreateMarket(accAddr, market)
     case "createquote":
         market := path[1]
-        duration := NewMicrotickDurationFromString(path[2])
+        duration := MicrotickDurationFromName(path[2])
         backing := NewMicrotickCoinFromString(path[3])
         spot := NewMicrotickSpotFromString(path[4])
         premium := NewMicrotickPremiumFromString(path[5])
@@ -55,14 +55,14 @@ func generateTx(ctx sdk.Context, txType string, path []string,
         msg = NewTxUpdateQuote(id, accAddr, spot, premium)
     case "markettrade":
         market := path[1]
-        duration := NewMicrotickDurationFromString(path[2])
-        tradetype := NewMicrotickTradeTypeFromString(path[3])
+        duration := MicrotickDurationFromName(path[2])
+        tradetype := MicrotickTradeTypeFromName(path[3])
         quantity := NewMicrotickQuantityFromString(path[4])
         msg = NewTxMarketTrade(market, duration, accAddr, tradetype, quantity)
     case "limittrade":
         market := path[1]
-        duration := NewMicrotickDurationFromString(path[2])
-        tradetype := NewMicrotickTradeTypeFromString(path[3])
+        duration := MicrotickDurationFromName(path[2])
+        tradetype := MicrotickTradeTypeFromName(path[3])
         limit := NewMicrotickPremiumFromString(path[4])
         msg = NewTxLimitTrade(market, duration, accAddr, tradetype, limit)
     case "settletrade":

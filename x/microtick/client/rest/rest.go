@@ -50,7 +50,7 @@ func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.Handler
 			return	
 		}
 		
-		fmt.Printf("%s\n", req.Tx)
+		//fmt.Printf("%s\n", req.Tx)
 		
 		var msg auth.StdTx
 		cdc.MustUnmarshalJSON([]byte(req.Tx), &msg)

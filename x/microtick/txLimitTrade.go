@@ -118,14 +118,14 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
         for i := 0; i < len(matcher.FillInfo); i++ {
             thisFill := matcher.FillInfo[i]
             
-            tags.AppendTag(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short")
+            tags = tags.AppendTag(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short")
             
             quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
             if thisFill.FinalFill {
-                tags.AppendTag(quoteKey, "final")
+                tags = tags.AppendTag(quoteKey, "final")
             } else {
                 // should never get here, but in case logic changes for filling limit order
-                tags.AppendTag(quoteKey, "match")
+                tags = tags.AppendTag(quoteKey, "match")
             }
         }
         

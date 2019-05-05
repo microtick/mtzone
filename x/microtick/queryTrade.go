@@ -14,8 +14,8 @@ import (
 type ResponseTradeStatus struct {
     Id MicrotickId `json:"id"`
     Market MicrotickMarket `json:"market"`
-    Duration MicrotickDuration `json:"duration"`
-    Type MicrotickTradeType `json:"type"`
+    Duration MicrotickDurationName `json:"duration"`
+    Type MicrotickTradeTypeName `json:"type"`
     Commission MicrotickCoin `json:"commission"`
     CounterParties []DataCounterParty `json:"counterParties"`
     Long MicrotickAccount `json:"long"`
@@ -29,10 +29,10 @@ type ResponseTradeStatus struct {
     CurrentValue MicrotickCoin `json:"currentValue"`
 }
 
-func (rat ResponseTradeStatus) String() string {
-    cpStrings := make([]string, len(rat.CounterParties))
-    for i := 0; i < len(rat.CounterParties); i++ {
-        cpStrings[i] = formatCounterParty(rat.CounterParties[i])
+func (rts ResponseTradeStatus) String() string {
+    cpStrings := make([]string, len(rts.CounterParties))
+    for i := 0; i < len(rts.CounterParties); i++ {
+        cpStrings[i] = formatCounterParty(rts.CounterParties[i])
     }
     return strings.TrimSpace(fmt.Sprintf(`Trade Id: %d
 Long: %s
@@ -49,21 +49,21 @@ Counter Parties: %s
 Strike: %s 
 Current Spot: %s
 Current Value: %s`,
-    rat.Id, 
-    rat.Long, 
-    rat.Market, 
-    MicrotickDurationNameFromDur(rat.Duration),
-    MicrotickTradeTypeToString(rat.Type),
-    rat.Start.String(),
-    rat.Expiration.String(),
-    rat.FilledQuantity.String(),
-    rat.Backing.String(), 
-    rat.Cost.String(),
-    rat.Commission.String(),
+    rts.Id, 
+    rts.Long, 
+    rts.Market, 
+    rts.Duration,
+    rts.Type,
+    rts.Start.String(),
+    rts.Expiration.String(),
+    rts.FilledQuantity.String(),
+    rts.Backing.String(), 
+    rts.Cost.String(),
+    rts.Commission.String(),
     cpStrings,
-    rat.Strike.String(),
-    rat.CurrentSpot.String(),
-    rat.CurrentValue.String()))
+    rts.Strike.String(),
+    rts.CurrentSpot.String(),
+    rts.CurrentValue.String()))
 }
 
 func formatCounterParty(cpData DataCounterParty) string {
@@ -98,7 +98,7 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Id: data.Id,
         Market: data.Market,
         Duration: data.Duration,
-        Type: data.Type,
+        Type: MicrotickTradeNameFromType(data.Type),
         Commission: data.Commission,
         CounterParties: data.CounterParties,
         Long: data.Long,

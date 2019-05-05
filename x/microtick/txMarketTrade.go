@@ -117,13 +117,13 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         for i := 0; i < len(matcher.FillInfo); i++ {
             thisFill := matcher.FillInfo[i]
             
-            tags.AppendTag(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short")
+            tags = tags.AppendTag(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short")
             
             quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
             if thisFill.FinalFill {
-                tags.AppendTag(quoteKey, "final")
+                tags = tags.AppendTag(quoteKey, "final")
             } else {
-                tags.AppendTag(quoteKey, "match")
+                tags = tags.AppendTag(quoteKey, "match")
             }
         }
         

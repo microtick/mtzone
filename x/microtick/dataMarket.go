@@ -114,7 +114,7 @@ func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
 }
 
 func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuantity) {
-    orderBook := dm.GetOrderBook(matcher.Trade.Duration)
+    orderBook := dm.GetOrderBook(MicrotickDurationFromName(matcher.Trade.Duration))
     quantityToMatch := quantity.Amount
     
     var list OrderedList
@@ -168,7 +168,7 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuanti
 }
 
 func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
-    orderBook := dm.GetOrderBook(matcher.Trade.Duration)
+    orderBook := dm.GetOrderBook(MicrotickDurationFromName(matcher.Trade.Duration))
     
     var list OrderedList
     if matcher.Trade.Type == MicrotickCall {
