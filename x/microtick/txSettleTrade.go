@@ -4,6 +4,7 @@ import (
     "fmt"
     "time"
     
+    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -27,6 +28,20 @@ func NewTxSettleTrade(id MicrotickId, requester sdk.AccAddress) TxSettleTrade {
         Id: id,
         Requester: requester,
     }
+}
+
+type SettlementData struct {
+    Short MicrotickAccount `json:"short"`
+    Settle MicrotickCoin `json:"settle"`
+    Refund MicrotickCoin `json:"refund"`
+}
+
+type TradeSettlementData struct {
+    Id MicrotickId `json:"id"`
+    Final MicrotickSpot `json:"final"`
+    Long MicrotickAccount `json:"long"`
+    Settle MicrotickCoin `json:"settle"`
+    CounterParties []SettlementData `json:"counterparties"`
 }
 
 func (msg TxSettleTrade) Route() string { return "microtick" }
@@ -58,26 +73,39 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
         return sdk.ErrInternal("Invalid trade ID").Result()
     }
     
+    var settleData []SettlementData
+    totalPaid := sdk.NewDec(0)
+    
+    now := time.Now()
+        
+    // check if trade has expired
+    if now.Before(trade.Expiration) {
+        return sdk.ErrInternal("Trade cannot be settled until expiration").Result()
+    }
+        
+    dataMarket, err2 := keeper.GetDataMarket(ctx, trade.Market)
+    if err2 != nil {
+        return sdk.ErrInternal("Could not fetch market consensus").Result()
+    }
+        
     if params.EuropeanOptions {
-        now := time.Now()
-        
-        // check if trade has expired
-        if now.Before(trade.Expiration) {
-            return sdk.ErrInternal("Trade cannot be settled until expiration").Result()
-        }
-        
-        dataMarket, err2 := keeper.GetDataMarket(ctx, trade.Market)
-        if err2 != nil {
-            return sdk.ErrInternal("Could not fetch market consensus").Result()
-        }
-        
         settlements := trade.CounterPartySettlements(dataMarket.Consensus)
         
         // Payout and refunds
         for i := 0; i < len(settlements); i++ {
             pair := settlements[i]
+            
+            // Long
             keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
+            totalPaid = totalPaid.Add(pair.Settle.Amount)
+            
+            // Refund
             keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
+            settleData = append(settleData, SettlementData {
+                Short: pair.RefundAddress,
+                Settle: pair.Settle,
+                Refund: pair.Refund,
+            })
             
             // Adjust trade backing
             accountStatus := keeper.GetAccountStatus(ctx, pair.RefundAddress)
@@ -106,8 +134,20 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     for i := 0; i < len(trade.CounterParties); i++ {
         cp := trade.CounterParties[i]
         
-        tags.AppendTag(fmt.Sprintf("acct.%s", cp.Short), "settle.short")
+        tags = tags.AppendTag(fmt.Sprintf("acct.%s", cp.Short), "settle.short")
     }
     
-	return sdk.Result {}
+    data := TradeSettlementData {
+        Id: trade.Id,
+        Final: dataMarket.Consensus,
+        Long: trade.Long,
+        Settle: NewMicrotickCoinFromDec(totalPaid),
+        CounterParties: settleData,
+    }
+    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    
+	return sdk.Result {
+	    Data: bz,
+	    Tags: tags,
+	}
 }
