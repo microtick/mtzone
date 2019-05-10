@@ -73,6 +73,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
     dataMarket.factorOut(quote)
+    dataMarket.DeleteQuote(quote)
     
     if msg.NewSpot.Amount.IsPositive() {
         quote.Spot = msg.NewSpot
@@ -85,6 +86,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
         quote.Freeze(params)
     }
     
+    dataMarket.AddQuote(quote)
     dataMarket.factorIn(quote)
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)

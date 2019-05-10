@@ -12,6 +12,8 @@ import (
 type ResponseMarketOrderBookStatus struct {
     SumBacking MicrotickCoin `json:"sumBacking"`
     SumWeight MicrotickQuantity `json:"sumWeight"`
+    InsideCall MicrotickPremium `json:"insideCall"`
+    InsidePut MicrotickPremium `json:"insidePut"`
 }
 
 type ResponseMarketStatus struct {
@@ -39,9 +41,12 @@ func formatOrderBook(dur MicrotickDuration, rob ResponseMarketOrderBookStatus) s
     return fmt.Sprintf(`
   %s:
     Sum Backing: %s
-    Sum Weight: %s`, 
+    Sum Weight: %s
+    Inside Call: %s
+    Inside Put: %s`, 
         MicrotickDurationNameFromDur(dur),
-        rob.SumBacking.String(), rob.SumWeight.String())
+        rob.SumBacking.String(), rob.SumWeight.String(),
+        rob.InsideCall.String(), rob.InsidePut.String())
 }
 
 func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
@@ -55,6 +60,11 @@ func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     for i := 0; i < len(MicrotickDurations); i++ {
         orderbookStatus[i].SumBacking = data.OrderBooks[i].SumBacking
         orderbookStatus[i].SumWeight = data.OrderBooks[i].SumWeight
+        
+        call, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Calls.Data[0].Id)
+        orderbookStatus[i].InsideCall = call.PremiumAsCall(data.Consensus)
+        put, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Puts.Data[0].Id)
+        orderbookStatus[i].InsidePut = put.PremiumAsPut(data.Consensus)
     }
     
     response := ResponseMarketStatus {
