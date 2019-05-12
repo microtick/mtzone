@@ -167,7 +167,7 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity MicrotickQuanti
     }
 }
 
-func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
+func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium, maxCost MicrotickCoin) {
     orderBook := dm.GetOrderBook(MicrotickDurationFromName(matcher.Trade.Duration))
     
     var list OrderedList
@@ -194,9 +194,20 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
             if premium.Amount.LTE(limit.Amount) {
                 var boughtQuantity sdk.Dec = quote.Quantity.Amount
                 
-                matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
+                // Assume we're buying the entire quote's quantity
                 cost := premium.Amount.Mul(boughtQuantity)
+                
+                // Check if cost is > max cost
+                if cost.GT(maxCost.Amount) {
+                    // Adjust quantity to fit max amount
+                    boughtQuantity = maxCost.Amount.Quo(premium.Amount)
+                    cost = premium.Amount.Mul(boughtQuantity)
+                    maxCost.Amount = sdk.NewDec(0)
+                }
+                
+                matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
                 matcher.TotalCost = matcher.TotalCost.Add(cost)
+                maxCost.Amount = maxCost.Amount.Sub(cost)
                 
                 matcher.FillInfo = append(matcher.FillInfo, QuoteFillInfo {
                     Quote: quote,
@@ -204,6 +215,11 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit MicrotickPremium) {
                     Cost: NewMicrotickCoinFromDec(cost),
                     FinalFill: true,
                 })
+                
+                if maxCost.IsZero() {
+                    break
+                }
+                
             } else {
                 
                 // terminate - premium is > limit

@@ -64,14 +64,15 @@ func generateTx(ctx sdk.Context, txType string, path []string,
         duration := MicrotickDurationFromName(path[2])
         tradetype := MicrotickTradeTypeFromName(path[3])
         limit := NewMicrotickPremiumFromString(path[4])
-        msg = NewTxLimitTrade(market, duration, accAddr, tradetype, limit)
+        maxcost := NewMicrotickCoinFromString(path[5])
+        msg = NewTxLimitTrade(market, duration, accAddr, tradetype, limit, maxcost)
     case "settletrade":
         id := NewMicrotickIdFromString(path[1])
         msg = NewTxSettleTrade(id, accAddr)
     }
         
     response := GenTx {
-        Tx: auth.NewStdTx([]sdk.Msg{msg}, auth.NewStdFee(200000, nil), nil, ""),
+        Tx: auth.NewStdTx([]sdk.Msg{msg}, auth.NewStdFee(500000, nil), nil, ""),
         AccountNumber: account.GetAccountNumber(),
         ChainID: ctx.ChainID(),
         Sequence: account.GetSequence(),

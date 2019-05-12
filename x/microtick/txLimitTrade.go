@@ -13,10 +13,11 @@ type TxLimitTrade struct {
     Buyer sdk.AccAddress
     TradeType MicrotickTradeType
     Limit MicrotickPremium
+    MaxCost MicrotickCoin
 }
 
 func NewTxLimitTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.AccAddress,
-    tradeType MicrotickTradeType, limit MicrotickPremium) TxLimitTrade {
+    tradeType MicrotickTradeType, limit MicrotickPremium, maxCost MicrotickCoin) TxLimitTrade {
         
     return TxLimitTrade {
         Market: market,
@@ -25,6 +26,7 @@ func NewTxLimitTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.Ac
         TradeType: tradeType,
         
         Limit: limit,
+        MaxCost: maxCost,
     }
 }
 
@@ -85,7 +87,7 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
     })
         
     // Step 2 - Compute premium for quantity requested
-    market.MatchByLimit(&matcher, msg.Limit)
+    market.MatchByLimit(&matcher, msg.Limit, msg.MaxCost)
     
     if matcher.hasQuantity() {
         

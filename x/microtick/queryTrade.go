@@ -69,13 +69,28 @@ Current Value: %s`,
 func formatCounterParty(cpData DataCounterParty) string {
     return fmt.Sprintf(`
     Short: %s
-    Backing: %s
-    Cost: %s
-    FilledQuantity: %s`,
+        Quoted: %s
+        Backing: %s
+        Cost: %s
+        FilledQuantity: %s`,
         cpData.Short.String(),
+        formatQuoteParams(cpData.Quoted),
         cpData.Backing.String(),
         cpData.Cost.String(),
         cpData.FilledQuantity.String(),
+    )
+}
+
+func formatQuoteParams(params DataQuoteParams) string {
+    return fmt.Sprintf(`
+            Id: %d 
+            Premium: %s 
+            Quantity: %s 
+            Spot: %s`,
+        params.Id,
+        params.Premium.String(),
+        params.Quantity.String(),
+        params.Spot.String(),
     )
 }
 

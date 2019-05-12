@@ -202,9 +202,9 @@ func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdLimitTrade(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "trade-limit [market] [duration] [call/put] [limit]",
+		Use:   "trade-limit [market] [duration] [call/put] [limit] [maxcost]",
 		Short: "create a new limit trade",
-		Args:  cobra.ExactArgs(4),
+		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
 
@@ -219,9 +219,10 @@ func GetCmdLimitTrade(cdc *codec.Codec) *cobra.Command {
 			dur := microtick.MicrotickDurationFromName(args[1])
 			ttype := microtick.MicrotickTradeTypeFromName(args[2])
 			limit := microtick.NewMicrotickPremiumFromString(args[3])
+			maxcost := microtick.NewMicrotickCoinFromString(args[4])
 			
 			msg := microtick.NewTxLimitTrade(market, dur, cliCtx.GetFromAddress(), ttype,
-				limit)
+				limit, maxcost)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err

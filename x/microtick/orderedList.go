@@ -64,12 +64,10 @@ func (ol *OrderedList) Delete(id MicrotickId) {
     len := len(ol.Data)
     if len > 0 {
         cur := ol.Data
-        ol.Data = make([]ListItem, len-1, len-1)
-        pos := 0
+        ol.Data = make([]ListItem, 0)
         for i := 0; i < len; i++ {
             if cur[i].Id != id {
-                ol.Data[pos] = cur[i]
-                pos++
+                ol.Data = append(ol.Data, cur[i])
             }
         }
     }
