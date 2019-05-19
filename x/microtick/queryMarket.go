@@ -61,10 +61,14 @@ func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
         orderbookStatus[i].SumBacking = data.OrderBooks[i].SumBacking
         orderbookStatus[i].SumWeight = data.OrderBooks[i].SumWeight
         
-        call, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Calls.Data[0].Id)
-        orderbookStatus[i].InsideCall = call.PremiumAsCall(data.Consensus)
-        put, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Puts.Data[0].Id)
-        orderbookStatus[i].InsidePut = put.PremiumAsPut(data.Consensus)
+        if len(data.OrderBooks[i].Calls.Data) > 0 {
+            call, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Calls.Data[0].Id)
+            orderbookStatus[i].InsideCall = call.PremiumAsCall(data.Consensus)
+        }
+        if len(data.OrderBooks[i].Puts.Data) > 0 {
+            put, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Puts.Data[0].Id)
+            orderbookStatus[i].InsidePut = put.PremiumAsPut(data.Consensus)
+        }
     }
     
     response := ResponseMarketStatus {
