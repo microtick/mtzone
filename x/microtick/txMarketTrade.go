@@ -58,6 +58,8 @@ func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
 // Handler
 
 func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.Result {
+    params := keeper.GetParams(ctx)
+     
     if !keeper.HasDataMarket(ctx, msg.Market) {
         return sdk.ErrInternal("No such market: " + msg.Market).Result()
     }
@@ -90,7 +92,11 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         
         // Step 3 - Deduct premium from buyer account and add it to provider account
         // We do this first because if the funds aren't there we abort
-        keeper.WithdrawMicrotickCoin(ctx, msg.Buyer, NewMicrotickCoinFromDec(matcher.TotalCost))
+        commission := NewMicrotickCoinFromDec(params.CommissionTradeFixed)
+        total := NewMicrotickCoinFromDec(matcher.TotalCost.Add(commission.Amount))
+        keeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        fmt.Printf("Trade Commission: %s\n", commission.String())
+        keeper.PoolCommission(ctx, commission)
     
         // Step 4 - Finalize trade 
         matcher.Trade.Id = keeper.GetNextActiveTradeId(ctx)

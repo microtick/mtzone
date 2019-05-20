@@ -71,6 +71,14 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
         return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     }
     
+    commission := NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
+    
+    // Subtract coins from requester
+    keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    // Add commission to pool
+    fmt.Printf("Update Commission: %s\n", commission.String())
+    keeper.PoolCommission(ctx, commission)
+    
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
     dataMarket.factorOut(quote)
     dataMarket.DeleteQuote(quote)

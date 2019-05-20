@@ -20,8 +20,17 @@ import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
+	gv "github.com/cosmos/cosmos-sdk/x/gov"
+	sl "github.com/cosmos/cosmos-sdk/x/slashing"
+	st "github.com/cosmos/cosmos-sdk/x/staking"
+	distcmd "github.com/cosmos/cosmos-sdk/x/distribution"
+	
 	app "github.com/mjackson001/mtzone"
 	mtclient "github.com/mjackson001/mtzone/x/microtick/client"
+	distClient "github.com/cosmos/cosmos-sdk/x/distribution/client"
+	govClient "github.com/cosmos/cosmos-sdk/x/gov/client"
+	slashingclient "github.com/cosmos/cosmos-sdk/x/slashing/client"
+	stakingclient "github.com/cosmos/cosmos-sdk/x/staking/client"
 	mtrest "github.com/mjackson001/mtzone/x/microtick/client/rest"
 )
 
@@ -46,6 +55,10 @@ func main() {
 
 	mc := []sdk.ModuleClients{
 		mtclient.NewModuleClient(storeMT, cdc),
+		govClient.NewModuleClient(gv.StoreKey, cdc),
+		distClient.NewModuleClient(distcmd.StoreKey, cdc),
+		stakingclient.NewModuleClient(st.StoreKey, cdc),
+		slashingclient.NewModuleClient(sl.StoreKey, cdc),
 	}
 
 	rootCmd := &cobra.Command{

@@ -22,4 +22,4 @@ update_vendor_deps:
 
 install:
 	go install ./cmd/mtd
-	go install ./cmd/mtcli
+	go install -tags="ledger" ./cmd/mtcli

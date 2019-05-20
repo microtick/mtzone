@@ -38,7 +38,7 @@ var (
 	defaultMinSelfDelegation       = "1"
 )
 
-// GenTxCmd builds the gaiad gentx command.
+// GenTxCmd builds the mtd gentx command.
 // nolint: errcheck
 func GenTxCmd(ctx *server.Context, cdc *codec.Codec) *cobra.Command {
 	cmd := &cobra.Command{
@@ -119,7 +119,7 @@ following delegation and commission default parameters:
 				return err
 			}
 
-			// Run gaiad tx create-validator
+			// Run mtd tx create-validator
 			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			txBldr, msg, err := cli.BuildCreateValidatorMsg(cliCtx, txBldr)

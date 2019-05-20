@@ -80,9 +80,14 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     if !ValidMicrotickDuration(msg.Duration) {
         return sdk.ErrInternal(fmt.Sprintf("Invalid duration: %d", msg.Duration)).Result()
     }
+    
+    commission := NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
+    total := msg.Backing.Plus(commission)
         
     // Subtract coins from quote provider
-    keeper.WithdrawMicrotickCoin(ctx, msg.Provider, msg.Backing)
+    keeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
+    fmt.Printf("Create Commission: %s\n", commission.String())
+    keeper.PoolCommission(ctx, commission)
 	
 	// DataActiveQuote
 	

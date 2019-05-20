@@ -14,6 +14,7 @@ import (
 )
 
 type MicrotickStores struct {
+	AppGlobals sdk.StoreKey
 	AccountStatus sdk.StoreKey
 	ActiveQuotes sdk.StoreKey
 	ActiveTrades sdk.StoreKey
@@ -23,16 +24,18 @@ type MicrotickStores struct {
 type Keeper struct {
 	accountKeeper auth.AccountKeeper
 	coinKeeper bank.Keeper
+	feeKeeper auth.FeeCollectionKeeper
 	storeKeys MicrotickStores
 	cdc *codec.Codec 
 	paramSubspace params.Subspace
 }
 
-func NewKeeper(accountKeeper auth.AccountKeeper, coinKeeper bank.Keeper, storeKeys MicrotickStores, cdc *codec.Codec,
-	paramstore params.Subspace) Keeper {
+func NewKeeper(accountKeeper auth.AccountKeeper, coinKeeper bank.Keeper, feeKeeper auth.FeeCollectionKeeper, 
+    storeKeys MicrotickStores, cdc *codec.Codec, paramstore params.Subspace) Keeper {
 	return Keeper {
 		accountKeeper: accountKeeper,
 		coinKeeper: coinKeeper,
+		feeKeeper: feeKeeper,
 		storeKeys: storeKeys,
 		cdc: cdc,
 		paramSubspace: paramstore.WithKeyTable(ParamKeyTable()),

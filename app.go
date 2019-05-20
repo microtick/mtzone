@@ -81,6 +81,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
     bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc))
     
     var mtStores = microtick.MicrotickStores {
+    	AppGlobals: sdk.NewKVStoreKey("MTGlobals"),
     	AccountStatus: sdk.NewKVStoreKey("MTAccountStatus"),
     	ActiveQuotes: sdk.NewKVStoreKey("MTActiveQuotes"),
     	ActiveTrades: sdk.NewKVStoreKey("MTActiveTrades"),
@@ -165,6 +166,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 	app.mtKeeper = microtick.NewKeeper(
 		app.accountKeeper,
 		app.bankKeeper,
+		app.feeCollectionKeeper,
 		app.keyMT,
 		app.cdc,
 		app.paramsKeeper.Subspace(microtick.DefaultParamspace),
@@ -200,6 +202,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 		app.keyGov,
 		app.keyParams,
 		app.tkeyParams,
+		app.keyMT.AppGlobals,
 		app.keyMT.AccountStatus,
 		app.keyMT.ActiveQuotes,
 		app.keyMT.ActiveTrades,
@@ -454,7 +457,7 @@ func ValidateGenesisState(genesisState GenesisState) error {
 	return slashing.ValidateGenesis(genesisState.SlashingData)
 }
 
-// NewDefaultGenesisState generates the default state for gaia.
+// NewDefaultGenesisState generates the default state
 func NewDefaultGenesisState() GenesisState {
 	return GenesisState{
 		Accounts:     nil,
@@ -468,7 +471,7 @@ func NewDefaultGenesisState() GenesisState {
 	}
 }
 
-// Create the core parameters for genesis initialization for gaia
+// Create the core parameters for genesis initialization
 // note that the pubkey input is this machines pubkey
 func AppGenState(cdc *codec.Codec, genDoc tmtypes.GenesisDoc, appGenTxs []json.RawMessage) (
 	genesisState GenesisState, err error) {
