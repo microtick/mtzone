@@ -143,7 +143,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
       Consensus: dataMarket.Consensus,
       Backing: msg.Backing,
       Balance: balance,
-      Commission: NewMicrotickCoinFromInt(0),
+      Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
     

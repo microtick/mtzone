@@ -99,6 +99,15 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
     
+    accountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
+    balance := accountStatus.Change
+    coins := keeper.coinKeeper.GetCoins(ctx, msg.Requester)
+    for i := 0; i < len(coins); i++ {
+        if coins[i].Denom == TokenType {
+            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+        }
+    }
+   
     // Tags
     tags := sdk.NewTags(
         fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update",
@@ -113,8 +122,8 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
       Spot: quote.Spot,
       Premium: quote.Premium,
       Consensus: dataMarket.Consensus,
-      Balance: NewMicrotickCoinFromInt(0),
-      Commission: NewMicrotickCoinFromInt(0),
+      Balance: balance,
+      Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
     

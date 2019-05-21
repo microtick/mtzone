@@ -34,6 +34,9 @@ type LimitTradeData struct {
     Originator string `json:"originator"`
     Trade DataActiveTrade `json:"trade"`
     Consensus MicrotickSpot `json:"consensus"`
+    Balance MicrotickCoin `json:"balance"`
+    Commission MicrotickCoin `json:"commission"`
+    SettleIncentive MicrotickCoin `json:"settleIncentive"`
 }
 
 func (msg TxLimitTrade) Route() string { return "microtick" }
@@ -76,8 +79,10 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
     if err2 != nil {
         return sdk.ErrInternal("Error fetching market").Result()
     }
+    commission := NewMicrotickCoinFromDec(params.CommissionTradeFixed)
+    settleIncentive := NewMicrotickCoinFromDec(params.SettleIncentive)
     trade := NewDataActiveTrade(msg.Market, msg.Duration, msg.TradeType,
-        msg.Buyer, market.Consensus)
+        msg.Buyer, market.Consensus, commission, settleIncentive)
         
     matcher := NewMatcher(trade, func (id MicrotickId) DataActiveQuote {
         quote, err := keeper.GetActiveQuote(ctx, id)
@@ -95,11 +100,11 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
         
         // Step 3 - Deduct premium from buyer account and add it to provider account
         // We do this first because if the funds aren't there we abort
-        commission := NewMicrotickCoinFromDec(params.CommissionTradeFixed)
-        total := NewMicrotickCoinFromDec(matcher.TotalCost.Add(commission.Amount))
+        total := NewMicrotickCoinFromDec(matcher.TotalCost.Add(trade.Commission.Amount).Add(settleIncentive.Amount))
         keeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
-        fmt.Printf("Trade Commission: %s\n", commission.String())
-        keeper.PoolCommission(ctx, commission)
+        fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
+        fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
+        keeper.PoolCommission(ctx, trade.Commission)
     
         // Step 4 - Finalize trade 
         matcher.Trade.Id = keeper.GetNextActiveTradeId(ctx)
@@ -115,6 +120,14 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
         keeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
         keeper.SetDataMarket(ctx, market)
         keeper.SetActiveTrade(ctx, matcher.Trade)
+        
+        balance := accountStatus.Change
+        coins := keeper.coinKeeper.GetCoins(ctx, msg.Buyer)
+        for i := 0; i < len(coins); i++ {
+            if coins[i].Denom == TokenType {
+                balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+            }
+        }
     
         tags := sdk.NewTags(
             "mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id),
@@ -142,6 +155,9 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
             Originator: "limitTrade",
             Consensus: market.Consensus,
             Trade: matcher.Trade,
+            Balance: balance,
+            Commission: trade.Commission,
+            SettleIncentive: settleIncentive,
         }
         bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
             

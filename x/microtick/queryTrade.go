@@ -16,7 +16,6 @@ type ResponseTradeStatus struct {
     Market MicrotickMarket `json:"market"`
     Duration MicrotickDurationName `json:"duration"`
     Type MicrotickTradeTypeName `json:"type"`
-    Commission MicrotickCoin `json:"commission"`
     CounterParties []DataCounterParty `json:"counterParties"`
     Long MicrotickAccount `json:"long"`
     Backing MicrotickCoin `json:"backing"`
@@ -27,6 +26,8 @@ type ResponseTradeStatus struct {
     Strike MicrotickSpot `json:"strike"`
     CurrentSpot MicrotickSpot `json:"currentSpot"`
     CurrentValue MicrotickCoin `json:"currentValue"`
+    Commission MicrotickCoin `json:"commission"`
+    SettleIncentive MicrotickCoin `json:"settleIncentive"`
 }
 
 func (rts ResponseTradeStatus) String() string {
@@ -45,6 +46,7 @@ Filled Quantity: %s
 Backing: %s
 Cost: %s
 Commission: %s
+Settle Incentive: %s
 Counter Parties: %s
 Strike: %s 
 Current Spot: %s
@@ -60,6 +62,7 @@ Current Value: %s`,
     rts.Backing.String(), 
     rts.Cost.String(),
     rts.Commission.String(),
+    rts.SettleIncentive.String(),
     cpStrings,
     rts.Strike.String(),
     rts.CurrentSpot.String(),
@@ -114,7 +117,6 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Market: data.Market,
         Duration: data.Duration,
         Type: MicrotickTradeNameFromType(data.Type),
-        Commission: data.Commission,
         CounterParties: data.CounterParties,
         Long: data.Long,
         Backing: data.Backing,
@@ -125,6 +127,8 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Strike: data.Strike,
         CurrentSpot: dataMarket.Consensus,
         CurrentValue: data.CurrentValue(dataMarket.Consensus),
+        Commission: data.Commission,
+        SettleIncentive: data.SettleIncentive,
     }
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)

@@ -12,7 +12,6 @@ type DataActiveTrade struct {
     // Duration is only a tag at this point, not functional
     Duration MicrotickDurationName `json:"duration"`
     Type MicrotickTradeType `json:"type"`
-    Commission MicrotickCoin `json:"commission"`
     CounterParties []DataCounterParty `json:"counterParties"`
     Long MicrotickAccount `json:"long"`
     Backing MicrotickCoin `json:"backing"`
@@ -21,11 +20,13 @@ type DataActiveTrade struct {
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
     Strike MicrotickSpot `json:"strike"`
-    SettleCommission MicrotickCoin `json:"settleCommission"`
+    Commission MicrotickCoin `json:"commission"`
+    SettleIncentive MicrotickCoin `json:"settleIncentive"`
 }
 
 func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
-    ttype MicrotickTradeType, long MicrotickAccount, strike MicrotickSpot) DataActiveTrade {
+    ttype MicrotickTradeType, long MicrotickAccount, strike MicrotickSpot,
+    commission MicrotickCoin, settleIncentive MicrotickCoin) DataActiveTrade {
         
     now := time.Now()    
     expire, err := time.ParseDuration(fmt.Sprintf("%d", dur) + "s")
@@ -37,7 +38,6 @@ func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
         Market: market,
         Duration: MicrotickDurationNameFromDur(dur),
         Type: ttype,
-        Commission: NewMicrotickCoinFromInt(0), // commission computed later
         Long: long,
         Backing: NewMicrotickCoinFromInt(0),
         Cost: NewMicrotickCoinFromInt(0),
@@ -45,7 +45,8 @@ func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
         Start: now,
         Expiration: now.Add(expire),
         Strike: strike,
-        SettleCommission: NewMicrotickCoinFromInt(0),
+        Commission: commission,
+        SettleIncentive: settleIncentive,
     }
 }
 

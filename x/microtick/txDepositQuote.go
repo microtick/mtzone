@@ -99,6 +99,14 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Deposit)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
+    balance := accountStatus.Change
+    coins := keeper.coinKeeper.GetCoins(ctx, msg.Requester)
+    for i := 0; i < len(coins); i++ {
+        if coins[i].Denom == TokenType {
+            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+        }
+    }
+    
     tags := sdk.NewTags(
         fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit",
         fmt.Sprintf("quote.%d", quote.Id), "deposit",
@@ -112,8 +120,8 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
       Consensus: dataMarket.Consensus,
       Backing: msg.Deposit,
       QuoteBacking: quote.Backing,
-      Balance: NewMicrotickCoinFromInt(0),
-      Commission: NewMicrotickCoinFromInt(0),
+      Balance: balance,
+      Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
     

@@ -15,9 +15,10 @@ const DefaultParamspace = "mtmparams"
 var (
     DefaultEuropeanOptions bool = true
     DefaultCommissionQuotePercent = sdk.MustNewDecFromStr("0.0005")
-    DefaultCommissionTradeFixed = sdk.MustNewDecFromStr("0.05")
+    DefaultCommissionTradeFixed = sdk.MustNewDecFromStr("0.025")
     DefaultCommissionUpdatePercent = sdk.MustNewDecFromStr("0.00005")
-    DefaultCommissionSettleFixed = sdk.MustNewDecFromStr("0.05")
+    DefaultSettleIncentive = sdk.MustNewDecFromStr("0.025")
+    DefaultCommissionSettleFixed = sdk.MustNewDecFromStr("0.01")
     DefaultFreezeTime = int8(30)
 )
 
@@ -28,6 +29,7 @@ var (
     KeyCommissionTradeFixed = []byte("KeyCommissionTradeFixed")
     KeyCommissionUpdatePercent = []byte("KeyCommissionUpdatePercent")
     KeyCommissionSettleFixed = []byte("KeyCommissionSettleFixed")
+    KeySettleIncentive = []byte("KeySettleIncentive")
     KeyFreezeTime = []byte("KeyFreezeTime")
 )
 
@@ -40,6 +42,7 @@ type Params struct {
     CommissionTradeFixed sdk.Dec `json:"commission_trade_fixed"`
     CommissionUpdatePercent sdk.Dec `json:"commission_update_percent"`
     CommissionSettleFixed sdk.Dec `json:"commission_settle_fixed"`
+    SettleIncentive sdk.Dec `json:"settle_incentive"`
     FreezeTime int8 `json:"freeze_time"`
 }
 
@@ -58,6 +61,7 @@ func (p *Params) ParamSetPairs() params.ParamSetPairs {
 	    {KeyCommissionTradeFixed, &p.CommissionTradeFixed},
 	    {KeyCommissionUpdatePercent, &p.CommissionUpdatePercent},
 	    {KeyCommissionSettleFixed, &p.CommissionSettleFixed},
+	    {KeySettleIncentive, &p.SettleIncentive},
 	    {KeyFreezeTime, &p.FreezeTime},
 	}
 }
@@ -78,6 +82,7 @@ func DefaultParams() Params {
 	    CommissionTradeFixed: DefaultCommissionTradeFixed,
 	    CommissionUpdatePercent: DefaultCommissionUpdatePercent,
 	    CommissionSettleFixed: DefaultCommissionSettleFixed,
+	    SettleIncentive: DefaultSettleIncentive,
 	    FreezeTime: DefaultFreezeTime,
 	}
 }
@@ -91,6 +96,7 @@ func (p Params) String() string {
 	sb.WriteString(fmt.Sprintf("CommissionTradeFixed: %t\n", p.CommissionTradeFixed))
 	sb.WriteString(fmt.Sprintf("CommissionUpdatePercent: %t\n", p.CommissionUpdatePercent))
 	sb.WriteString(fmt.Sprintf("CommissionSettleFixed: %t\n", p.CommissionSettleFixed))
+	sb.WriteString(fmt.Sprintf("SettleIncentive: %t\n", p.SettleIncentive))
 	sb.WriteString(fmt.Sprintf("FreezeTime: %t\n", p.FreezeTime))
 	return sb.String()
 }
