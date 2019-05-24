@@ -49,8 +49,7 @@ func (daq *DataActiveQuote) ComputeQuantity() {
     }
 }
 
-func (daq *DataActiveQuote) Freeze(params Params) {
-    now := time.Now()    
+func (daq *DataActiveQuote) Freeze(now time.Time, params Params) {
     expire, err := time.ParseDuration(fmt.Sprintf("%d", params.FreezeTime) + "s")
     if err != nil {
         panic("invalid time")

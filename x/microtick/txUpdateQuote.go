@@ -83,15 +83,17 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     dataMarket.factorOut(quote)
     dataMarket.DeleteQuote(quote)
     
+    now := ctx.BlockHeader().Time
+    
     if msg.NewSpot.Amount.IsPositive() {
         quote.Spot = msg.NewSpot
-        quote.Freeze(params)
+        quote.Freeze(now, params)
     }
     
     if msg.NewPremium.Amount.IsPositive() {
         quote.Premium = msg.NewPremium
         quote.ComputeQuantity()
-        quote.Freeze(params)
+        quote.Freeze(now, params)
     }
     
     dataMarket.AddQuote(quote)

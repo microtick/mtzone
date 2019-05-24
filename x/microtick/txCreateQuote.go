@@ -97,7 +97,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     dataActiveQuote := NewDataActiveQuote(now, id, msg.Market, msg.Duration, msg.Provider,
         msg.Backing, msg.Spot, msg.Premium)
     dataActiveQuote.ComputeQuantity()
-    dataActiveQuote.Freeze(params)
+    dataActiveQuote.Freeze(now, params)
     keeper.SetActiveQuote(ctx, dataActiveQuote)
     
     // DataAccountStatus

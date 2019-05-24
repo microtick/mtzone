@@ -87,7 +87,8 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     quote.ComputeQuantity()
     
     // But we do freeze the new backing from any other updates
-    quote.Freeze(params)
+    now := ctx.BlockHeader().Time
+    quote.Freeze(now, params)
     
     dataMarket.factorIn(quote)
     keeper.SetDataMarket(ctx, dataMarket)
