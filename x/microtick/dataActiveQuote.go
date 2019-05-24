@@ -22,11 +22,10 @@ type DataActiveQuote struct {
     Spot MicrotickSpot `json:"spot"`
 }
 
-func NewDataActiveQuote(id MicrotickId, market MicrotickMarket, dur MicrotickDuration, 
+func NewDataActiveQuote(now time.Time, id MicrotickId, market MicrotickMarket, dur MicrotickDuration, 
     provider MicrotickAccount, backing MicrotickCoin, spot MicrotickSpot, 
     premium MicrotickPremium) DataActiveQuote {
         
-    now := time.Now()
     return DataActiveQuote {
         Id: id,
         Market: market,

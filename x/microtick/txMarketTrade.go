@@ -78,7 +78,8 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
     }
     commission := NewMicrotickCoinFromDec(params.CommissionTradeFixed)
     settleIncentive := NewMicrotickCoinFromDec(params.SettleIncentive)
-    trade := NewDataActiveTrade(msg.Market, msg.Duration, msg.TradeType,
+    now := ctx.BlockHeader().Time
+    trade := NewDataActiveTrade(now, msg.Market, msg.Duration, msg.TradeType,
         msg.Buyer, market.Consensus, commission, settleIncentive)
         
     matcher := NewMatcher(trade, func (id MicrotickId) DataActiveQuote {

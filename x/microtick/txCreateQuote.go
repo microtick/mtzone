@@ -93,7 +93,8 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
 	
     id := keeper.GetNextActiveQuoteId(ctx)
      
-    dataActiveQuote := NewDataActiveQuote(id, msg.Market, msg.Duration, msg.Provider,
+    now := ctx.BlockHeader().Time
+    dataActiveQuote := NewDataActiveQuote(now, id, msg.Market, msg.Duration, msg.Provider,
         msg.Backing, msg.Spot, msg.Premium)
     dataActiveQuote.ComputeQuantity()
     dataActiveQuote.Freeze(params)

@@ -175,7 +175,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 	// The app.Router is the main transaction router where each module registers its routes
 	// Register the bank and nameservice routes here
 	app.Router().
-		AddRoute("bank", bank.NewHandler(app.bankKeeper)).
+		AddRoute(bank.RouterKey, bank.NewHandler(app.bankKeeper)).
 		AddRoute(staking.RouterKey, staking.NewHandler(app.stakingKeeper)).
 		AddRoute(distr.RouterKey, distr.NewHandler(app.distrKeeper)).
 		AddRoute(slashing.RouterKey, slashing.NewHandler(app.slashingKeeper)).
@@ -184,6 +184,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 
 	// The app.QueryRouter is the main query router where each module registers its routes
 	app.QueryRouter().
+		AddRoute(auth.QuerierRoute, auth.NewQuerier(app.accountKeeper)).
 		AddRoute(distr.QuerierRoute, distr.NewQuerier(app.distrKeeper)).
 		AddRoute(gov.QuerierRoute, gov.NewQuerier(app.govKeeper)).
 		AddRoute(slashing.QuerierRoute, slashing.NewQuerier(app.slashingKeeper, app.cdc)).

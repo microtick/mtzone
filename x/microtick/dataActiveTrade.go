@@ -24,11 +24,10 @@ type DataActiveTrade struct {
     SettleIncentive MicrotickCoin `json:"settleIncentive"`
 }
 
-func NewDataActiveTrade(market MicrotickMarket, dur MicrotickDuration,
+func NewDataActiveTrade(now time.Time, market MicrotickMarket, dur MicrotickDuration,
     ttype MicrotickTradeType, long MicrotickAccount, strike MicrotickSpot,
     commission MicrotickCoin, settleIncentive MicrotickCoin) DataActiveTrade {
         
-    now := time.Now()    
     expire, err := time.ParseDuration(fmt.Sprintf("%d", dur) + "s")
     if err != nil {
         panic("invalid time")
