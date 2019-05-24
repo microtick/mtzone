@@ -82,7 +82,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     }
     
     commission := NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
-    total := msg.Backing.Plus(commission)
+    total := msg.Backing.Add(commission)
         
     // Subtract coins from quote provider
     keeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
@@ -104,12 +104,12 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     accountStatus := keeper.GetAccountStatus(ctx, msg.Provider)
     accountStatus.ActiveQuotes.Insert(NewListItem(id, sdk.NewDec(int64(id))))
     accountStatus.NumQuotes++
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Backing)
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Backing)
     balance := accountStatus.Change
     coins := keeper.coinKeeper.GetCoins(ctx, msg.Provider)
     for i := 0; i < len(coins); i++ {
         if coins[i].Denom == TokenType {
-            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
     keeper.SetAccountStatus(ctx, msg.Provider, accountStatus)

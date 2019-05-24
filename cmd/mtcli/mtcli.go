@@ -95,7 +95,6 @@ func main() {
 
 func registerRoutes(rs *lcd.RestServer) {
 	rs.CliCtx = rs.CliCtx.WithAccountDecoder(rs.Cdc)
-	keys.RegisterRoutes(rs.Mux, rs.CliCtx.Indent)
 	rpc.RegisterRoutes(rs.CliCtx, rs.Mux)
 	tx.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc)
 	auth.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeAcc)
@@ -120,7 +119,10 @@ func queryCmd(cdc *amino.Codec, mc []sdk.ModuleClients) *cobra.Command {
 	)
 
 	for _, m := range mc {
-		queryCmd.AddCommand(m.GetQueryCmd())
+		mQueryCmd := m.GetQueryCmd()
+		if mQueryCmd != nil {
+			queryCmd.AddCommand(mQueryCmd)
+		}
 	}
 
 	return queryCmd
@@ -136,7 +138,9 @@ func txCmd(cdc *amino.Codec, mc []sdk.ModuleClients) *cobra.Command {
 		bankcmd.SendTxCmd(cdc),
 		client.LineBreak,
 		authcmd.GetSignCommand(cdc),
-		authcmd.GetBroadcastCommand(cdc),
+		authcmd.GetMultiSignCommand(cdc),
+		tx.GetBroadcastCommand(cdc),
+		tx.GetEncodeCommand(cdc),
 		client.LineBreak,
 	)
 

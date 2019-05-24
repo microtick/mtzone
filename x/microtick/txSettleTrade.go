@@ -108,7 +108,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     coins := keeper.coinKeeper.GetCoins(ctx, msg.Requester)
     for i := 0; i < len(coins); i++ {
         if coins[i].Denom == TokenType {
-            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
    
@@ -133,7 +133,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
             // Adjust trade backing
             accountStatus := keeper.GetAccountStatus(ctx, pair.RefundAddress)
             accountStatus.ActiveTrades.Delete(trade.Id)
-            accountStatus.TradeBacking = accountStatus.TradeBacking.Minus(pair.Backing)
+            accountStatus.TradeBacking = accountStatus.TradeBacking.Sub(pair.Backing)
             keeper.SetAccountStatus(ctx, pair.RefundAddress, accountStatus)
         }
         

@@ -72,7 +72,7 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     
     commission := NewMicrotickCoinFromDec(msg.Deposit.Amount.Mul(params.CommissionQuotePercent))
     
-    total := msg.Deposit.Plus(commission)
+    total := msg.Deposit.Add(commission)
     
     // Subtract coins from requester
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
@@ -96,14 +96,14 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
      // DataAccountStatus
     
     accountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Plus(msg.Deposit)
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Deposit)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
     balance := accountStatus.Change
     coins := keeper.coinKeeper.GetCoins(ctx, msg.Requester)
     for i := 0; i < len(coins); i++ {
         if coins[i].Denom == TokenType {
-            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
     

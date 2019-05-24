@@ -54,7 +54,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         
         // Subtract out bought quantity and corresponding backing
         thisQuote.Quantity = NewMicrotickQuantityFromDec(thisQuote.Quantity.Amount.Sub(thisFill.BoughtQuantity))
-        thisQuote.Backing = thisQuote.Backing.Minus(transferredBacking)
+        thisQuote.Backing = thisQuote.Backing.Sub(transferredBacking)
         
         if thisQuote.Quantity.Amount.IsZero() {
             // If no quantity is left, delete quote from market, active quote list, and
@@ -69,8 +69,8 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         }
         
         // Adjust trade
-        matcher.Trade.Backing = matcher.Trade.Backing.Plus(transferredBacking)
-        matcher.Trade.Cost = matcher.Trade.Cost.Plus(thisFill.Cost)
+        matcher.Trade.Backing = matcher.Trade.Backing.Add(transferredBacking)
+        matcher.Trade.Cost = matcher.Trade.Cost.Add(thisFill.Cost)
         matcher.Trade.FilledQuantity = NewMicrotickQuantityFromDec(matcher.Trade.FilledQuantity.Amount.Add(thisFill.BoughtQuantity))
         
         // We save the current quote parameters in the trade because these may change
@@ -92,8 +92,8 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         
         // Update the account status of this counterparty
         accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
-        accountStatus.QuoteBacking = accountStatus.QuoteBacking.Minus(transferredBacking)
-        accountStatus.TradeBacking = accountStatus.TradeBacking.Plus(transferredBacking)
+        accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(transferredBacking)
+        accountStatus.TradeBacking = accountStatus.TradeBacking.Add(transferredBacking)
         
         // Save the counterparty account status in the store
         keeper.SetAccountStatus(ctx, thisQuote.Provider, accountStatus)

@@ -73,7 +73,7 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     keeper.DeleteActiveQuote(ctx, quote.Id)
     
     accountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Minus(quote.Backing)
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(quote.Backing)
     accountStatus.ActiveQuotes.Delete(quote.Id)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     

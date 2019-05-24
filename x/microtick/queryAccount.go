@@ -51,7 +51,7 @@ func queryAccountStatus(ctx sdk.Context, path []string,
     balance := data.Change
     for i := 0; i < len(coins); i++ {
         if coins[i].Denom == TokenType {
-            balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
     activeQuotes := make([]MicrotickId, len(data.ActiveQuotes.Data))

@@ -68,32 +68,32 @@ func (dm *DataMarket) SetOrderBook(dur MicrotickDuration, ob DataOrderBook) {
 }
 
 func (dm *DataMarket) factorIn(quote DataActiveQuote) {
-    dm.SumBacking = dm.SumBacking.Plus(quote.Backing)
+    dm.SumBacking = dm.SumBacking.Add(quote.Backing)
     dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(
         quote.Quantity.Amount))
-    dm.SumWeight = dm.SumWeight.Plus(quote.Quantity)
+    dm.SumWeight = dm.SumWeight.Add(quote.Quantity)
     if (dm.SumWeight.Amount.IsPositive()) {
         dm.Consensus = NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
     }
     
     orderBook := dm.GetOrderBook(quote.Duration)
-    orderBook.SumBacking = orderBook.SumBacking.Plus(quote.Backing)
-    orderBook.SumWeight = orderBook.SumWeight.Plus(quote.Quantity)
+    orderBook.SumBacking = orderBook.SumBacking.Add(quote.Backing)
+    orderBook.SumWeight = orderBook.SumWeight.Add(quote.Quantity)
     dm.SetOrderBook(quote.Duration, orderBook)
 }
 
 func (dm *DataMarket) factorOut(quote DataActiveQuote) {
-    dm.SumBacking = dm.SumBacking.Minus(quote.Backing)
+    dm.SumBacking = dm.SumBacking.Sub(quote.Backing)
     dm.SumSpots = dm.SumSpots.Sub(quote.Spot.Amount.Mul(
         quote.Quantity.Amount))
-    dm.SumWeight = dm.SumWeight.Minus(quote.Quantity)
+    dm.SumWeight = dm.SumWeight.Sub(quote.Quantity)
     if (dm.SumWeight.Amount.IsPositive()) {
         dm.Consensus = NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
     }
     
     orderBook := dm.GetOrderBook(quote.Duration)
-    orderBook.SumBacking = orderBook.SumBacking.Minus(quote.Backing)
-    orderBook.SumWeight = orderBook.SumWeight.Minus(quote.Quantity)
+    orderBook.SumBacking = orderBook.SumBacking.Sub(quote.Backing)
+    orderBook.SumWeight = orderBook.SumWeight.Sub(quote.Quantity)
     dm.SetOrderBook(quote.Duration, orderBook)
 }
 

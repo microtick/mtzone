@@ -18,7 +18,7 @@ func (k Keeper) PoolCommission(ctx sdk.Context, amount MicrotickCoin) {
 		k.cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
 	
-	pool = pool.Plus(amount)
+	pool = pool.Add(amount)
 	fmt.Printf("Pool: %s\n", pool.String())
 	whole, pool := pool.TruncateDecimal()
 	
@@ -39,9 +39,9 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	
     if (accountStatus.Change.IsGTE(withdrawAmount)) {
         // handle without needing from the coin balance
-        accountStatus.Change = accountStatus.Change.Minus(withdrawAmount)
+        accountStatus.Change = accountStatus.Change.Sub(withdrawAmount)
     } else {
-        neededAmount := withdrawAmount.Minus(accountStatus.Change)
+        neededAmount := withdrawAmount.Sub(accountStatus.Change)
 	
 	    // Load total coin balance + change into DecCoin
 	    var amt sdk.Coin
@@ -49,8 +49,8 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	    amt, change = neededAmount.TruncateDecimal()
 	    
 	    if change.IsPositive() {
-	        amt = amt.Plus(sdk.NewInt64Coin(TokenType, 1))
-	        accountStatus.Change = sdk.NewDecCoinFromDec(TokenType, sdk.OneDec()).Minus(change)
+	        amt = amt.Add(sdk.NewInt64Coin(TokenType, 1))
+	        accountStatus.Change = sdk.NewDecCoinFromDec(TokenType, sdk.OneDec()).Sub(change)
 	    } else {
 	        accountStatus.Change = NewMicrotickCoinFromInt(0)
 	    }
@@ -68,7 +68,7 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	depositAmount MicrotickCoin) {
 	accountStatus := k.GetAccountStatus(ctx, account)
 	
-	totalDecCoin := accountStatus.Change.Plus(depositAmount)
+	totalDecCoin := accountStatus.Change.Add(depositAmount)
 	
 	var amt sdk.Coin
 	var change sdk.DecCoin

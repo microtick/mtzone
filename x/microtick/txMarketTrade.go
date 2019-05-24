@@ -122,7 +122,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         coins := keeper.coinKeeper.GetCoins(ctx, msg.Buyer)
         for i := 0; i < len(coins); i++ {
             if coins[i].Denom == TokenType {
-                balance = balance.Plus(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+                balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
             }
         }
     
