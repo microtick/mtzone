@@ -2,6 +2,7 @@ package microtick
 
 import (
     "fmt"
+    "time"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,6 +27,7 @@ type DepositQuoteData struct {
     Id MicrotickId `json:"id"`
     Originator string `json:"originator"`
     Consensus MicrotickSpot `json:"consensus"`
+    Time time.Time `json:"time"`
     Backing MicrotickCoin `json:"backing"`
     QuoteBacking MicrotickCoin `json:"quoteBacking"`
     Balance MicrotickCoin `json:"balance"`
@@ -119,6 +121,7 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
       Id: quote.Id,
       Originator: "depositQuote",
       Consensus: dataMarket.Consensus,
+      Time: now,
       Backing: msg.Deposit,
       QuoteBacking: quote.Backing,
       Balance: balance,

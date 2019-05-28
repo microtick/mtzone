@@ -2,6 +2,7 @@ package microtick
 
 import (
     "fmt"
+    "time"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,6 +37,7 @@ type CreateQuoteData struct {
     Spot MicrotickSpot `json:"spot"`
     Premium MicrotickPremium `json:"premium"`
     Consensus MicrotickSpot `json:"consensus"`
+    Time time.Time `json:"time"`
     Backing MicrotickCoin `json:"backing"`
     Balance MicrotickCoin `json:"balance"`
     Commission MicrotickCoin `json:"commission"`
@@ -142,6 +144,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
       Spot: msg.Spot,
       Premium: msg.Premium,
       Consensus: dataMarket.Consensus,
+      Time: now,
       Backing: msg.Backing,
       Balance: balance,
       Commission: commission,

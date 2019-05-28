@@ -2,6 +2,7 @@ package microtick
 
 import (
     "fmt"
+    "time"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -31,6 +32,7 @@ type MarketTradeData struct {
     Originator string `json:"originator"`
     Trade DataActiveTrade `json:"trade"`
     Consensus MicrotickSpot `json:"consensus"`
+    Time time.Time `json:"time"`
     Balance MicrotickCoin `json:"balance"`
     Commission MicrotickCoin `json:"commission"`
     SettleIncentive MicrotickCoin `json:"settleIncentive"`
@@ -151,6 +153,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         data := MarketTradeData {
             Originator: "marketTrade",
             Consensus: market.Consensus,
+            Time: now,
             Trade: matcher.Trade,
             Balance: balance,
             Commission: trade.Commission,

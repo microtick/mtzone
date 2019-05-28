@@ -2,6 +2,7 @@ package microtick
 
 import (
     "fmt"
+    "time"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,6 +31,7 @@ type UpdateQuoteData struct {
     Spot MicrotickSpot `json:"spot"`
     Premium MicrotickPremium `json:"premium"`
     Consensus MicrotickSpot `json:"consensus"`
+    Time time.Time `json:"time"`
     Balance MicrotickCoin `json:"balance"`
     Commission MicrotickCoin `json:"commission"`
 }
@@ -124,6 +126,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
       Spot: quote.Spot,
       Premium: quote.Premium,
       Consensus: dataMarket.Consensus,
+      Time: now,
       Balance: balance,
       Commission: commission,
     }

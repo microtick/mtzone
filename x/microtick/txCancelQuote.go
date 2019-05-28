@@ -2,6 +2,7 @@ package microtick
 
 import (
     "fmt"
+    "time"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -23,6 +24,7 @@ type CancelQuoteData struct {
     Id MicrotickId `json:"id"`
     Originator string `json:"originator"`
     Consensus MicrotickSpot `json:"consensus"`
+    Time time.Time `json:"time"`
     Refund MicrotickCoin `json:"refund"`
     Balance MicrotickCoin `json:"balance"`
 }
@@ -88,6 +90,7 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
       Id: quote.Id,
       Originator: "cancelQuote",
       Consensus: dataMarket.Consensus,
+      Time: ctx.BlockHeader().Time,
       Refund: quote.Backing,
       Balance: NewMicrotickCoinFromInt(0),
     }

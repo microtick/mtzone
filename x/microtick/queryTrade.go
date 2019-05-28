@@ -47,7 +47,7 @@ Backing: %s
 Cost: %s
 Commission: %s
 Settle Incentive: %s
-Counter Parties: %s
+Counterparties: %s
 Strike: %s 
 Current Spot: %s
 Current Value: %s`,
@@ -75,7 +75,7 @@ func formatCounterParty(cpData DataCounterParty) string {
         Quoted: %s
         Backing: %s
         Cost: %s
-        FilledQuantity: %s`,
+        Filled Quantity: %s`,
         cpData.Short.String(),
         formatQuoteParams(cpData.Quoted),
         cpData.Backing.String(),
