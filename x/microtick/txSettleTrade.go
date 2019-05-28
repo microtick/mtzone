@@ -38,6 +38,7 @@ type SettlementData struct {
 
 type TradeSettlementData struct {
     Id MicrotickId `json:"id"`
+    Time time.Time `json:"time"`
     Final MicrotickSpot `json:"final"`
     Long MicrotickAccount `json:"long"`
     Settle MicrotickCoin `json:"settle"`
@@ -79,7 +80,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     var settleData []SettlementData
     totalPaid := sdk.NewDec(0)
     
-    now := time.Now()
+    now := ctx.BlockHeader().Time
         
     // check if trade has expired
     if now.Before(trade.Expiration) {
@@ -163,6 +164,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     
     data := TradeSettlementData {
         Id: trade.Id,
+        Time: now,
         Final: dataMarket.Consensus,
         Long: trade.Long,
         Settle: NewMicrotickCoinFromDec(totalPaid),
