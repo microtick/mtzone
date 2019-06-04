@@ -21,6 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/codec"
+	kbkeys "github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -56,7 +57,7 @@ following delegation and commission default parameters:
 	minimum self delegation:     %s
 `, defaultAmount, defaultCommissionRate, defaultCommissionMaxRate, defaultCommissionMaxChangeRate, defaultMinSelfDelegation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
+			
 			config := ctx.Config
 			config.SetRoot(viper.GetString(tmcli.HomeFlag))
 			nodeID, valPubKey, err := InitializeNodeValidatorFiles(ctx.Config)
@@ -103,9 +104,14 @@ following delegation and commission default parameters:
 					return err
 				}
 			}
+			
+			website := viper.GetString(cli.FlagWebsite)
+			details := viper.GetString(cli.FlagDetails)
+			identity := viper.GetString(cli.FlagIdentity)
 
 			// Set flags for creating gentx
-			prepareFlagsForTxCreateValidator(config, nodeID, ip, genDoc.ChainID, valPubKey)
+			prepareFlagsForTxCreateValidator(config, nodeID, ip, genDoc.ChainID, valPubKey, website, details, identity)
+
 
 			// Fetch the amount of coins staked
 			amount := viper.GetString(cli.FlagAmount)
@@ -122,14 +128,33 @@ following delegation and commission default parameters:
 			// Run mtd tx create-validator
 			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			
+			// XXX: Set the generate-only flag here after the CLI context has
+			// been created. This allows the from name/key to be correctly populated.
+			//
+			// TODO: Consider removing the manual setting of generate-only in
+			// favor of a 'gentx' flag in the create-validator command.
+			viper.Set(client.FlagGenerateOnly, true)
+			
 			txBldr, msg, err := cli.BuildCreateValidatorMsg(cliCtx, txBldr)
 			if err != nil {
 				return err
+			}
+			
+			info, err := txBldr.Keybase().Get(name)
+			if err != nil {
+				return err
+			}
+
+			if info.GetType() == kbkeys.TypeOffline || info.GetType() == kbkeys.TypeMulti {
+				fmt.Println("Offline key passed in. Use `mtcli tx sign` command to sign:")
+				return utils.PrintUnsignedStdTx(txBldr, cliCtx, []sdk.Msg{msg}, true)
 			}
 
 			// write the unsigned transaction to the buffer
 			w := bytes.NewBuffer([]byte{})
 			cliCtx = cliCtx.WithOutput(w)
+			
 			if err = utils.PrintUnsignedStdTx(txBldr, cliCtx, []sdk.Msg{msg}, true); err != nil {
 				return err
 			}
@@ -173,6 +198,9 @@ following delegation and commission default parameters:
 		"write the genesis transaction JSON document to the given file instead of the default location")
 	cmd.Flags().String(cli.FlagIP, ip, "The node's public IP")
 	cmd.Flags().String(cli.FlagNodeID, "", "The node's NodeID")
+	cmd.Flags().String(cli.FlagWebsite, "", "The validator's (optional) website")
+	cmd.Flags().String(cli.FlagDetails, "", "The validator's (optional) details")
+	cmd.Flags().String(cli.FlagIdentity, "", "The (optional) identity signature (ex. UPort or Keybase)")
 	cmd.Flags().AddFlagSet(cli.FsCommissionCreate)
 	cmd.Flags().AddFlagSet(cli.FsMinSelfDelegation)
 	cmd.Flags().AddFlagSet(cli.FsAmount)
@@ -209,16 +237,20 @@ func accountInGenesis(genesisState app.GenesisState, key sdk.AccAddress, coins s
 	return fmt.Errorf("account %s in not in the app_state.accounts array of genesis.json", key)
 }
 
-func prepareFlagsForTxCreateValidator(config *cfg.Config, nodeID, ip, chainID string,
-	valPubKey crypto.PubKey) {
-	viper.Set(tmcli.HomeFlag, viper.GetString(flagClientHome)) // --home
+func prepareFlagsForTxCreateValidator(
+	config *cfg.Config, nodeID, ip, chainID string, valPubKey crypto.PubKey, website, details, identity string,
+) {
+	viper.Set(tmcli.HomeFlag, viper.GetString(flagClientHome))
 	viper.Set(client.FlagChainID, chainID)
-	viper.Set(client.FlagFrom, viper.GetString(client.FlagName))   // --from
-	viper.Set(cli.FlagNodeID, nodeID)                              // --node-id
-	viper.Set(cli.FlagIP, ip)                                      // --ip
-	viper.Set(cli.FlagPubKey, sdk.MustBech32ifyConsPub(valPubKey)) // --pubkey
-	viper.Set(client.FlagGenerateOnly, true)                       // --genesis-format
-	viper.Set(cli.FlagMoniker, config.Moniker)                     // --moniker
+	viper.Set(client.FlagFrom, viper.GetString(client.FlagName))
+	viper.Set(cli.FlagNodeID, nodeID)
+	viper.Set(cli.FlagIP, ip)
+	viper.Set(cli.FlagPubKey, sdk.MustBech32ifyConsPub(valPubKey))
+	viper.Set(cli.FlagMoniker, config.Moniker)
+	viper.Set(cli.FlagWebsite, website)
+	viper.Set(cli.FlagDetails, details)
+	viper.Set(cli.FlagIdentity, identity)
+
 	if config.Moniker == "" {
 		viper.Set(cli.FlagMoniker, viper.GetString(client.FlagName))
 	}

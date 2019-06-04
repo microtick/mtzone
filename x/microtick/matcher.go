@@ -81,14 +81,6 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             Quantity: thisQuote.Quantity,
             Spot: thisQuote.Spot,
         }
-        // Append this counter party fill to the trade counterparty list
-        matcher.Trade.CounterParties = append(matcher.Trade.CounterParties, DataCounterParty {
-            Backing: transferredBacking,
-            Cost: thisFill.Cost,
-            FilledQuantity: NewMicrotickQuantityFromDec(thisFill.BoughtQuantity),
-            Short: thisQuote.Provider,
-            Quoted: params,
-        })
         
         // Update the account status of this counterparty
         accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
@@ -97,6 +89,16 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         
         // Save the counterparty account status in the store
         keeper.SetAccountStatus(ctx, thisQuote.Provider, accountStatus)
+        
+        // Append this counter party fill to the trade counterparty list
+        matcher.Trade.CounterParties = append(matcher.Trade.CounterParties, DataCounterParty {
+            Backing: transferredBacking,
+            Cost: thisFill.Cost,
+            FilledQuantity: NewMicrotickQuantityFromDec(thisFill.BoughtQuantity),
+            Short: thisQuote.Provider,
+            Quoted: params,
+            Balance: keeper.GetTotalBalance(ctx, thisQuote.Provider),
+        })
     }
 }
 

@@ -175,7 +175,7 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 	// The app.Router is the main transaction router where each module registers its routes
 	// Register the bank and nameservice routes here
 	app.Router().
-		AddRoute(bank.RouterKey, bank.NewHandler(app.bankKeeper)).
+		AddRoute(bank.RouterKey, NewBankHandler(app.bankKeeper, app.mtKeeper, app.cdc)).
 		AddRoute(staking.RouterKey, staking.NewHandler(app.stakingKeeper)).
 		AddRoute(distr.RouterKey, distr.NewHandler(app.distrKeeper)).
 		AddRoute(slashing.RouterKey, slashing.NewHandler(app.slashingKeeper)).
@@ -708,6 +708,45 @@ func CollectStdTxs(cdc *codec.Codec, moniker string, genTxsDir string, genDoc tm
 	persistentPeers = strings.Join(addressesIPs, ",")
 
 	return appGenTxs, persistentPeers, nil
+}
+
+//______________________________________________________________________________________________
+
+// Here we append Microtick specific tags to the MsgSend Tx
+
+type msgSendData struct {
+	Time time.Time `json:"time"`
+	Originator string `json:"originator"`
+	Transfer sdk.Coins `json:"transfer"`
+	BalanceFrom microtick.MicrotickCoin `json:"balanceFrom"`
+	BalanceTo microtick.MicrotickCoin `json:"balanceTo"`
+}
+
+func NewBankHandler(bankKeeper bank.Keeper, mtk microtick.Keeper, cdc *codec.Codec) sdk.Handler {
+	bankHandler := bank.NewHandler(bankKeeper)
+	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
+		result := bankHandler(ctx, msg)
+		switch msg := msg.(type) {
+		case bank.MsgSend:
+			fromBalance := mtk.GetTotalBalance(ctx, msg.FromAddress)
+			toBalance := mtk.GetTotalBalance(ctx, msg.ToAddress)
+			tags := sdk.NewTags(
+				fmt.Sprintf("acct.%s", msg.FromAddress), "account.withdraw",
+				fmt.Sprintf("acct.%s", msg.ToAddress), "account.deposit",
+			)
+			result.Tags = result.Tags.AppendTags(tags)
+			data := msgSendData {
+				Time: ctx.BlockHeader().Time,
+				Originator: "send",
+				Transfer: msg.Amount,
+				BalanceFrom: fromBalance,
+				BalanceTo: toBalance,
+			}
+			bz, _ := codec.MarshalJSONIndent(cdc, data)
+			result.Data = bz
+		}
+		return result
+	}
 }
 
 //______________________________________________________________________________________________

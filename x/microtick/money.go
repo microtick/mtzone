@@ -84,3 +84,15 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	accountStatus.Change = change
 	k.SetAccountStatus(ctx, account, accountStatus)
 }
+
+func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) MicrotickCoin {
+	status := k.GetAccountStatus(ctx, addr)
+	coins := k.coinKeeper.GetCoins(ctx, addr)
+    balance := status.Change
+    for i := 0; i < len(coins); i++ {
+        if coins[i].Denom == TokenType {
+            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+        }
+    }
+    return balance
+}

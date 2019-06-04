@@ -34,18 +34,22 @@ type SettlementData struct {
     Short MicrotickAccount `json:"short"`
     Settle MicrotickCoin `json:"settle"`
     Refund MicrotickCoin `json:"refund"`
+    Balance MicrotickCoin `json:"balance"`
 }
 
 type TradeSettlementData struct {
+    Originator string `json:"originator"`
     Id MicrotickId `json:"id"`
     Time time.Time `json:"time"`
     Final MicrotickSpot `json:"final"`
     Long MicrotickAccount `json:"long"`
     Settle MicrotickCoin `json:"settle"`
     CounterParties []SettlementData `json:"counterparties"`
-    Balance MicrotickCoin `json:"balance"`
     Incentive MicrotickCoin `json:"incentive"`
     Commission MicrotickCoin `json:"commission"`
+    Balance MicrotickCoin `json:"balance"`
+    Settler MicrotickAccount `json:"settler"`
+    SettlerBalance MicrotickCoin `json:"settlerBalance"`
 }
 
 func (msg TxSettleTrade) Route() string { return "microtick" }
@@ -104,15 +108,6 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     fmt.Printf("Settle Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, commission)
     
-    msgAccountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
-    balance := msgAccountStatus.Change
-    coins := keeper.coinKeeper.GetCoins(ctx, msg.Requester)
-    for i := 0; i < len(coins); i++ {
-        if coins[i].Denom == TokenType {
-            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
-        }
-    }
-   
     if params.EuropeanOptions {
         
         // Payout and refunds
@@ -125,17 +120,19 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
             
             // Refund
             keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
-            settleData = append(settleData, SettlementData {
-                Short: pair.RefundAddress,
-                Settle: pair.Settle,
-                Refund: pair.Refund,
-            })
             
             // Adjust trade backing
             accountStatus := keeper.GetAccountStatus(ctx, pair.RefundAddress)
             accountStatus.ActiveTrades.Delete(trade.Id)
             accountStatus.TradeBacking = accountStatus.TradeBacking.Sub(pair.Backing)
             keeper.SetAccountStatus(ctx, pair.RefundAddress, accountStatus)
+            
+            settleData = append(settleData, SettlementData {
+                Short: pair.RefundAddress,
+                Settle: pair.Settle,
+                Refund: pair.Refund,
+                Balance: keeper.GetTotalBalance(ctx, pair.RefundAddress),
+            })
         }
         
         accountStatusLong := keeper.GetAccountStatus(ctx, trade.Long)
@@ -153,25 +150,40 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     tags := sdk.NewTags(
         fmt.Sprintf("trade.%d", trade.Id), "settle",
         fmt.Sprintf("acct.%s", trade.Long), "settle.long",
-        fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize",
     )
+    
+    var found bool = false
+    if trade.Long.Equals(msg.Requester) {
+        found = true
+    }
     
     for i := 0; i < len(trade.CounterParties); i++ {
         cp := trade.CounterParties[i]
         
         tags = tags.AppendTag(fmt.Sprintf("acct.%s", cp.Short), "settle.short")
+        if cp.Short.Equals(msg.Requester) {
+            found = true
+        }
+    }
+    
+    if !found {
+        // msg.Requester is not a long or short account for this trade
+        tags = tags.AppendTag(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize")
     }
     
     data := TradeSettlementData {
+        Originator: "settleTrade",
         Id: trade.Id,
         Time: now,
         Final: dataMarket.Consensus,
         Long: trade.Long,
         Settle: NewMicrotickCoinFromDec(totalPaid),
         CounterParties: settleData,
-        Balance: balance,
         Incentive: trade.SettleIncentive,
         Commission: commission,
+        Balance: keeper.GetTotalBalance(ctx, trade.Long),
+        Settler: msg.Requester,
+        SettlerBalance: keeper.GetTotalBalance(ctx, msg.Requester),
     }
     bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
     

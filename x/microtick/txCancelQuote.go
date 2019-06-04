@@ -80,8 +80,8 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
     tags := sdk.NewTags(
-        fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel",
         fmt.Sprintf("quote.%d", quote.Id), "cancel",
+        fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel",
         "mtm.MarketTick", quote.Market,
     )
     

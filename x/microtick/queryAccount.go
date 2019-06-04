@@ -43,16 +43,10 @@ func queryAccountStatus(ctx sdk.Context, path []string,
     req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
     acct := path[0]
     address, err2 := sdk.AccAddressFromBech32(acct)
+    balance := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
     if err2 != nil {
         return nil, sdk.ErrInternal("Could not fetch address information")
-    }
-    coins := keeper.coinKeeper.GetCoins(ctx, address)
-    balance := data.Change
-    for i := 0; i < len(coins); i++ {
-        if coins[i].Denom == TokenType {
-            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
-        }
     }
     activeQuotes := make([]MicrotickId, len(data.ActiveQuotes.Data))
     activeTrades := make([]MicrotickId, len(data.ActiveTrades.Data))

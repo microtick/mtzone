@@ -36,9 +36,6 @@ type LimitTradeData struct {
     Trade DataActiveTrade `json:"trade"`
     Consensus MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
-    Balance MicrotickCoin `json:"balance"`
-    Commission MicrotickCoin `json:"commission"`
-    SettleIncentive MicrotickCoin `json:"settleIncentive"`
 }
 
 func (msg TxLimitTrade) Route() string { return "microtick" }
@@ -122,15 +119,9 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
         // Commit changes
         keeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
         keeper.SetDataMarket(ctx, market)
-        keeper.SetActiveTrade(ctx, matcher.Trade)
         
-        balance := accountStatus.Change
-        coins := keeper.coinKeeper.GetCoins(ctx, msg.Buyer)
-        for i := 0; i < len(coins); i++ {
-            if coins[i].Denom == TokenType {
-                balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
-            }
-        }
+        matcher.Trade.Balance = keeper.GetTotalBalance(ctx, msg.Buyer)
+        keeper.SetActiveTrade(ctx, matcher.Trade)
     
         tags := sdk.NewTags(
             "mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id),
@@ -159,9 +150,6 @@ func handleTxLimitTrade(ctx sdk.Context, keeper Keeper, msg TxLimitTrade) sdk.Re
             Consensus: market.Consensus,
             Time: now,
             Trade: matcher.Trade,
-            Balance: balance,
-            Commission: trade.Commission,
-            SettleIncentive: settleIncentive,
         }
         bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
             
