@@ -79,6 +79,8 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     accountStatus.ActiveQuotes.Delete(quote.Id)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
+    balance := keeper.GetTotalBalance(ctx, msg.Requester)
+    
     tags := sdk.NewTags(
         fmt.Sprintf("quote.%d", quote.Id), "cancel",
         fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel",
@@ -92,7 +94,7 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
       Consensus: dataMarket.Consensus,
       Time: ctx.BlockHeader().Time,
       Refund: quote.Backing,
-      Balance: NewMicrotickCoinFromInt(0),
+      Balance: balance,
     }
     bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
     

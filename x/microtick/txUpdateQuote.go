@@ -103,14 +103,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
     
-    accountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
-    balance := accountStatus.Change
-    coins := keeper.coinKeeper.GetCoins(ctx, msg.Requester)
-    for i := 0; i < len(coins); i++ {
-        if coins[i].Denom == TokenType {
-            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
-        }
-    }
+    balance := keeper.GetTotalBalance(ctx, msg.Requester)
    
     // Tags
     tags := sdk.NewTags(

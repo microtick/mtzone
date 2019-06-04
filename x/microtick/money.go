@@ -59,9 +59,8 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	    if err != nil {
 	        panic("Not enough funds")
 	    }
-	
-	    k.SetAccountStatus(ctx, account, accountStatus)
     }
+	k.SetAccountStatus(ctx, account, accountStatus)
 }
 
 func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
