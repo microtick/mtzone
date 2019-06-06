@@ -113,7 +113,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     )
     
     // Data
-    data := CreateQuoteData {
+    data := UpdateQuoteData {
       Id: quote.Id,
       Originator: "updateQuote",
       Spot: quote.Spot,
