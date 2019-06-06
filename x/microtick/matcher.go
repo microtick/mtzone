@@ -35,6 +35,15 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         thisFill := matcher.FillInfo[i]
         thisQuote := thisFill.Quote
         
+        // We save the current quote parameters in the trade because these may change
+        // and we use them for historical and accounting purposes
+        params := DataQuoteParams {
+            Id: thisQuote.Id,
+            Premium: thisQuote.Premium,
+            Quantity: thisQuote.Quantity,
+            Spot: thisQuote.Spot,
+        }
+        
         // Pay premium
         keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Cost)
         
@@ -72,15 +81,6 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         matcher.Trade.Backing = matcher.Trade.Backing.Add(transferredBacking)
         matcher.Trade.Cost = matcher.Trade.Cost.Add(thisFill.Cost)
         matcher.Trade.FilledQuantity = NewMicrotickQuantityFromDec(matcher.Trade.FilledQuantity.Amount.Add(thisFill.BoughtQuantity))
-        
-        // We save the current quote parameters in the trade because these may change
-        // and we use them for historical and accounting purposes
-        params := DataQuoteParams {
-            Id: thisQuote.Id,
-            Premium: thisQuote.Premium,
-            Quantity: thisQuote.Quantity,
-            Spot: thisQuote.Spot,
-        }
         
         // Update the account status of this counterparty
         accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))

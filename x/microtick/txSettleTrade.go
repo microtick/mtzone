@@ -148,7 +148,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     }
     
     tags := sdk.NewTags(
-        fmt.Sprintf("trade.%d", trade.Id), "settle",
+        fmt.Sprintf("trade.%d", trade.Id), "event.settle",
         fmt.Sprintf("acct.%s", trade.Long), "settle.long",
     )
     

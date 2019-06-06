@@ -107,7 +107,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
    
     // Tags
     tags := sdk.NewTags(
-        fmt.Sprintf("quote.%d", quote.Id), "update",
+        fmt.Sprintf("quote.%d", quote.Id), "event.update",
         fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update",
         "mtm.MarketTick", quote.Market,
     )

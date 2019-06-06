@@ -111,7 +111,7 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     }
     
     tags := sdk.NewTags(
-        fmt.Sprintf("quote.%d", quote.Id), "deposit",
+        fmt.Sprintf("quote.%d", quote.Id), "event.deposit",
         fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit",
         "mtm.MarketTick", quote.Market,
     )

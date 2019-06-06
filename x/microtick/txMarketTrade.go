@@ -122,7 +122,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
     
         tags := sdk.NewTags(
             "mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id),
-            fmt.Sprintf("trade.%d", matcher.Trade.Id), "create",
+            fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create",
             fmt.Sprintf("acct.%s", msg.Buyer), "trade.long",
             "mtm.MarketTick", msg.Market,
         )
@@ -134,9 +134,9 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
             
             quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
             if thisFill.FinalFill {
-                tags = tags.AppendTag(quoteKey, "final")
+                tags = tags.AppendTag(quoteKey, "event.final")
             } else {
-                tags = tags.AppendTag(quoteKey, "match")
+                tags = tags.AppendTag(quoteKey, "event.match")
             }
         }
         
