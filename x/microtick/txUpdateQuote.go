@@ -28,6 +28,8 @@ func NewTxUpdateQuote(id MicrotickId, requester sdk.AccAddress,
 type UpdateQuoteData struct {
     Id MicrotickId `json:"id"`
     Originator string `json:"originator"`
+    Market MicrotickMarket `json:"market"`
+    Duration MicrotickDurationName `json:"duration"`
     Spot MicrotickSpot `json:"spot"`
     Premium MicrotickPremium `json:"premium"`
     Consensus MicrotickSpot `json:"consensus"`
@@ -116,6 +118,8 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     data := UpdateQuoteData {
       Id: quote.Id,
       Originator: "updateQuote",
+      Market: quote.Market,
+      Duration: MicrotickDurationNameFromDur(quote.Duration),
       Spot: quote.Spot,
       Premium: quote.Premium,
       Consensus: dataMarket.Consensus,
