@@ -58,8 +58,7 @@ func (daq *DataActiveQuote) Freeze(now time.Time, params Params) {
     daq.CanModify = now.Add(expire)
 }
 
-func (daq DataActiveQuote) Frozen() bool {
-    now := time.Now()
+func (daq DataActiveQuote) Frozen(now time.Time) bool {
     if now.Before(daq.CanModify) {
         return true
     }

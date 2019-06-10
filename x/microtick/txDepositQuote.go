@@ -68,7 +68,7 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     }
     
     // No freeze for deposits
-    //if quote.Frozen() {
+    //if quote.Frozen(ctx.BlockHeader().Time) {
         //return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     //}
     

@@ -60,7 +60,7 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
         return sdk.ErrInternal("Account can't modify quote").Result()
     }
     
-    if quote.Frozen() {
+    if quote.Frozen(ctx.BlockHeader().Time) {
         return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     }
     
