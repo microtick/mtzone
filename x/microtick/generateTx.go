@@ -72,7 +72,7 @@ func generateTx(ctx sdk.Context, txType string, path []string,
     }
         
     response := GenTx {
-        Tx: auth.NewStdTx([]sdk.Msg{msg}, auth.NewStdFee(500000, nil), nil, ""),
+        Tx: auth.NewStdTx([]sdk.Msg{msg}, auth.NewStdFee(1000000, nil), nil, ""),
         AccountNumber: account.GetAccountNumber(),
         ChainID: ctx.ChainID(),
         Sequence: account.GetSequence(),
