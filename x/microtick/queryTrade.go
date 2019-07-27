@@ -106,15 +106,15 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
-        return nil, sdk.ErrInternal("Invalid trade ID")
+        return nil, sdk.ErrInternal(fmt.Sprintf("Invalid trade ID: %s", err2))
     }
     data, err2 := keeper.GetActiveTrade(ctx, MicrotickId(id))
     if err2 != nil {
-        return nil, sdk.ErrInternal("Could not fetch trade data")
+        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch trade data: %s", err2))
     }
     dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
     if err3 != nil {
-        return nil, sdk.ErrInternal("Could not fetch market consensus")
+        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market consensus: %s", err3))
     }
     
     response := ResponseTradeStatus {

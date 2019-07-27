@@ -10,7 +10,7 @@ import (
 
 type TxCancelQuote struct {
     Id MicrotickId
-    Requester sdk.AccAddress
+    Requester MicrotickAccount
 }
 
 func NewTxCancelQuote(id MicrotickId, requester sdk.AccAddress) TxCancelQuote {

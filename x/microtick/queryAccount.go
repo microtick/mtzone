@@ -46,7 +46,7 @@ func queryAccountStatus(ctx sdk.Context, path []string,
     balance := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
     if err2 != nil {
-        return nil, sdk.ErrInternal("Could not fetch address information")
+        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch address information: %s", err2))
     }
     activeQuotes := make([]MicrotickId, len(data.ActiveQuotes.Data))
     activeTrades := make([]MicrotickId, len(data.ActiveTrades.Data))

@@ -53,7 +53,7 @@ func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     market := path[0]
     data, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
-        return nil, sdk.ErrInternal("Could not fetch market data")
+        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market data: %s", err2))
     }
     
     orderbookStatus := make([]ResponseMarketOrderBookStatus, len(MicrotickDurations))

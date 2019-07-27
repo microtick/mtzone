@@ -11,7 +11,7 @@ import (
 type TxMarketTrade struct {
     Market MicrotickMarket
     Duration MicrotickDuration
-    Buyer sdk.AccAddress
+    Buyer MicrotickAccount
     TradeType MicrotickTradeType
     Quantity MicrotickQuantity
 }

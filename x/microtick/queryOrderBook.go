@@ -31,7 +31,7 @@ func queryOrderBook(ctx sdk.Context, path []string,
     
     dataMarket, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
-        return nil, sdk.ErrInternal("Unknown market")
+        return nil, sdk.ErrInternal(fmt.Sprintf("Unknown market: %s", err2))
     }
     
     orderBook := dataMarket.GetOrderBook(dur)

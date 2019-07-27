@@ -10,7 +10,7 @@ import (
 
 type TxUpdateQuote struct {
     Id MicrotickId
-    Requester sdk.AccAddress
+    Requester MicrotickAccount
     NewSpot MicrotickSpot
     NewPremium MicrotickPremium
 }

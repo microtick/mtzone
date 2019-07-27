@@ -11,7 +11,7 @@ import (
 type TxLimitTrade struct {
     Market MicrotickMarket
     Duration MicrotickDuration
-    Buyer sdk.AccAddress
+    Buyer MicrotickAccount
     TradeType MicrotickTradeType
     Limit MicrotickPremium
     MaxCost MicrotickCoin

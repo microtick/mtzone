@@ -11,7 +11,7 @@ import (
 type TxCreateQuote struct {
     Market MicrotickMarket
     Duration MicrotickDuration
-    Provider sdk.AccAddress
+    Provider MicrotickAccount
     Backing MicrotickCoin
     Spot MicrotickSpot
     Premium MicrotickPremium

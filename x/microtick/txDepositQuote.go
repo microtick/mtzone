@@ -10,7 +10,7 @@ import (
 
 type TxDepositQuote struct {
     Id MicrotickId
-    Requester sdk.AccAddress
+    Requester MicrotickAccount
     Deposit MicrotickCoin
 }
 
