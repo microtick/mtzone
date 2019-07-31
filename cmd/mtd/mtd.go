@@ -32,7 +32,7 @@ import (
 )
 
 // DefaultNodeHome sets the folder where the application data and configuration will be stored
-var DefaultNodeHome = os.ExpandEnv("$HOME/.mtd")
+var DefaultNodeHome = os.ExpandEnv("$MTROOT/mtd")
 
 func main() {
 	cobra.EnableCommandSorting = false

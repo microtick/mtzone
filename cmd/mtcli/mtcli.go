@@ -39,7 +39,7 @@ const (
 	storeMT  = "microtick"
 )
 
-var defaultCLIHome = os.ExpandEnv("$HOME/.mtcli")
+var defaultCLIHome = os.ExpandEnv("$MTROOT/mtcli")
 
 func main() {
 	cobra.EnableCommandSorting = false

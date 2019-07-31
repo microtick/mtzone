@@ -37,8 +37,8 @@ const (
 )
 
 var (
-	DefaultCLIHome = os.ExpandEnv("$HOME/.mtcli")
-	DefaultNodeHome = os.ExpandEnv("$HOME/.mtd")
+	DefaultCLIHome = os.ExpandEnv("$MTROOT/mtcli")
+	DefaultNodeHome = os.ExpandEnv("$MTROOT/mtd")
 )
 
 func init() {
