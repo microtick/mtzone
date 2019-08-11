@@ -19,24 +19,27 @@ type ResponseAccountStatus struct {
     ActiveTrades []MicrotickId `json:"activeTrades"`
     QuoteBacking MicrotickCoin `json:"quoteBacking"`
     TradeBacking MicrotickCoin `json:"tradeBacking"`
+    SettleBacking MicrotickCoin `json:"settleBacking"`
 }
 
 func (ras ResponseAccountStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Account: %s
 Balance: %s
 Change: %s
-NumQuotes: %d
-NumTrades: %d
-ActiveQuotes: %v
-ActiveTrades: %v
-QuoteBacking: %s
-TradeBacking: %s`, ras.Account, 
+Num Quotes: %d
+Num Trades: %d
+Active Quotes: %v
+Active Trades: %v
+Quote Backing: %s
+Trade Backing: %s
+Settle Backing: %s`, ras.Account, 
     ras.Balance.String(),
     ras.Change,
     ras.NumQuotes, 
     ras.NumTrades, 
     ras.ActiveQuotes, ras.ActiveTrades,
-    ras.QuoteBacking.String(), ras.TradeBacking.String()))
+    ras.QuoteBacking.String(), ras.TradeBacking.String(),
+    ras.SettleBacking.String()))
 }
 
 func queryAccountStatus(ctx sdk.Context, path []string, 
@@ -66,6 +69,7 @@ func queryAccountStatus(ctx sdk.Context, path []string,
         ActiveTrades: activeTrades,
         QuoteBacking: data.QuoteBacking,
         TradeBacking: data.TradeBacking,
+        SettleBacking: data.SettleBacking,
     }
     
     bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)

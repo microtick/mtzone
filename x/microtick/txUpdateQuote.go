@@ -80,7 +80,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     // Subtract coins from requester
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     // Add commission to pool
-    fmt.Printf("Update Commission: %s\n", commission.String())
+    //fmt.Printf("Update Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, commission)
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)

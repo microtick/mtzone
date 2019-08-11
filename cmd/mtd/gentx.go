@@ -219,10 +219,11 @@ func accountInGenesis(genesisState app.GenesisState, key sdk.AccAddress, coins s
 		if acc.Address.Equals(key) {
 
 			// Ensure account contains enough funds of default bond denom
-			if coins.AmountOf(bondDenom).GT(acc.Coins.AmountOf(bondDenom)) {
+			coin, _ := acc.Balance.TruncateDecimal()
+			if coins.AmountOf(bondDenom).GT(coin.Amount) {
 				return fmt.Errorf(
 					"account %v is in genesis, but it only has %v%v available to stake, not %v%v",
-					key.String(), acc.Coins.AmountOf(bondDenom), bondDenom, coins.AmountOf(bondDenom), bondDenom,
+					key.String(), coin.Amount, bondDenom, coins.AmountOf(bondDenom), bondDenom,
 				)
 			}
 			accountIsInGenesis = true

@@ -1,7 +1,6 @@
 package microtick
 
 import (
-	"fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -19,12 +18,12 @@ func (k Keeper) PoolCommission(ctx sdk.Context, amount MicrotickCoin) {
 	}
 	
 	pool = pool.Add(amount)
-	fmt.Printf("Pool: %s\n", pool.String())
+	//fmt.Printf("Pool: %s\n", pool.String())
 	whole, pool := pool.TruncateDecimal()
 	
-	fmt.Printf("Amount: %s\n", amount.String())
+	//fmt.Printf("Amount: %s\n", amount.String())
 	if whole.IsPositive() {
-		fmt.Printf("Adding commission: %s\n", whole.String())
+		//fmt.Printf("Adding commission: %s\n", whole.String())
 		k.feeKeeper.AddCollectedFees(ctx, sdk.Coins{whole})
 	}
 	

@@ -99,8 +99,8 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         // We do this first because if the funds aren't there we abort
         total := NewMicrotickCoinFromDec(matcher.TotalCost.Add(trade.Commission.Amount).Add(settleIncentive.Amount))
         keeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
-        fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
-        fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
+        //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
+        //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
         keeper.PoolCommission(ctx, trade.Commission)
     
         // Step 4 - Finalize trade 
@@ -111,6 +111,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         // Update the account status for the buyer
         accountStatus := keeper.GetAccountStatus(ctx, msg.Buyer)
         accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
+        accountStatus.SettleBacking = accountStatus.SettleBacking.Add(settleIncentive)
         accountStatus.NumTrades++
         
         // Commit changes

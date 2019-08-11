@@ -115,14 +115,14 @@ func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
 
 	matches := reDecCoin.FindStringSubmatch(coinStr)
 	if matches == nil {
-		return sdk.DecCoin{}, fmt.Errorf("invalid decimal coin expression: %s", coinStr)
+		return sdk.DecCoin{}, fmt.Errorf("Invalid decimal coin expression: %s", coinStr)
 	}
 
 	amountStr, denomStr := matches[1], matches[2]
 
 	amount, err := sdk.NewDecFromStr(amountStr)
 	if err != nil {
-		return sdk.DecCoin{}, errors.Wrap(err, fmt.Sprintf("failed to parse decimal coin amount: %s", amountStr))
+		return sdk.DecCoin{}, errors.Wrap(err, fmt.Sprintf("Failed to parse decimal coin amount: %s", amountStr))
 	}
 
 	return sdk.NewDecCoinFromDec(denomStr, amount), nil

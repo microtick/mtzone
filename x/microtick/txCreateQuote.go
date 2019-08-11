@@ -88,7 +88,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
         
     // Subtract coins from quote provider
     keeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
-    fmt.Printf("Create Commission: %s\n", commission.String())
+    //fmt.Printf("Create Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, commission)
 	
 	// DataActiveQuote

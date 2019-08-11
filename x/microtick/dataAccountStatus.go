@@ -11,6 +11,7 @@ type DataAccountStatus struct {
     Change MicrotickCoin `json:"change"`
     QuoteBacking MicrotickCoin `json:"quoteBacking"`
     TradeBacking MicrotickCoin `json:"tradeBacking"`
+    SettleBacking MicrotickCoin `json:"settleBacking"`
 }
 
 func NewDataAccountStatus(account MicrotickAccount) DataAccountStatus {
@@ -23,6 +24,7 @@ func NewDataAccountStatus(account MicrotickAccount) DataAccountStatus {
         Change: NewMicrotickCoinFromInt(0),
         QuoteBacking: NewMicrotickCoinFromInt(0),
         TradeBacking: NewMicrotickCoinFromInt(0),
+        SettleBacking: NewMicrotickCoinFromInt(0),
     }
 }
 

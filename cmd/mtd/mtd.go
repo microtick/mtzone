@@ -62,14 +62,23 @@ func main() {
 }
 
 func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
-	return app.NewMTApp(logger, db)
+	return app.NewMTApp(logger, db, traceStore, true)
 }
 
 func appExporter() server.AppExporter {
-	return func(logger log.Logger, db dbm.DB, _ io.Writer, _ int64, _ bool, _ []string) (
-		json.RawMessage, []tmtypes.GenesisValidator, error) {
-		dapp := app.NewMTApp(logger, db)
-		return dapp.ExportAppStateAndValidators()
+	return func(logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, 
+		jailWhiteList []string) (json.RawMessage, []tmtypes.GenesisValidator, error) {
+			
+		if height != -1 {
+			dapp := app.NewMTApp(logger, db, traceStore, false)
+			err := dapp.LoadHeight(height)
+			if err != nil {
+				return nil, nil, err
+			}
+			return dapp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
+		}
+		dapp := app.NewMTApp(logger, db, traceStore, true)
+		return dapp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 	}
 }
 

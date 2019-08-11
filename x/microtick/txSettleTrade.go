@@ -47,7 +47,7 @@ type TradeSettlementData struct {
     CounterParties []SettlementData `json:"counterparties"`
     Incentive MicrotickCoin `json:"incentive"`
     Commission MicrotickCoin `json:"commission"`
-    Balance MicrotickCoin `json:"balance"`
+    Balance MicrotickCoin `json/:"balance"`
     Settler MicrotickAccount `json:"settler"`
     SettlerBalance MicrotickCoin `json:"settlerBalance"`
 }
@@ -100,12 +100,12 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     
     // Incentive 
     keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
-    fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
+    //fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
     
     // Commission
     commission := NewMicrotickCoinFromDec(params.CommissionSettleFixed)
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
-    fmt.Printf("Settle Commission: %s\n", commission.String())
+    //fmt.Printf("Settle Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, commission)
     
     if params.EuropeanOptions {
@@ -137,6 +137,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
         
         accountStatusLong := keeper.GetAccountStatus(ctx, trade.Long)
         accountStatusLong.ActiveTrades.Delete(trade.Id)
+        accountStatusLong.SettleBacking = accountStatusLong.SettleBacking.Sub(trade.SettleIncentive)
         keeper.SetAccountStatus(ctx, trade.Long, accountStatusLong)
         keeper.DeleteActiveTrade(ctx, trade.Id)
         

@@ -79,7 +79,7 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     // Subtract coins from requester
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
     // Add commission to pool
-    fmt.Printf("Deposit Commission: %s\n", commission.String())
+    //fmt.Printf("Deposit Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, commission)
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)

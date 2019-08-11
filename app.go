@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"io/ioutil"
 	"path/filepath"
@@ -10,8 +11,9 @@ import (
 	"sort"
 	"time"
 	"encoding/json"
+	"log"
 
-	"github.com/tendermint/tendermint/libs/log"
+	tlog "github.com/tendermint/tendermint/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -75,10 +77,13 @@ type mtApp struct {
 	mtKeeper            microtick.Keeper
 }
 
-func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
+func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, 
+	baseAppOptions ...func(*bam.BaseApp)) *mtApp {
+		
     cdc := MakeCodec()
 
-    bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc))
+    bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc), baseAppOptions...)
+    bApp.SetCommitMultiStoreTracer(traceStore)
     
     var mtStores = microtick.MicrotickStores {
     	AppGlobals: sdk.NewKVStoreKey("MTGlobals"),
@@ -215,9 +220,11 @@ func NewMTApp(logger log.Logger, db dbm.DB) *mtApp {
 	app.SetAnteHandler(auth.NewAnteHandler(app.accountKeeper, app.feeCollectionKeeper))
 	app.SetEndBlocker(app.EndBlocker)
 
-	err := app.LoadLatestVersion(app.keyMain)
-	if err != nil {
-		cmn.Exit(err.Error())
+	if loadLatest {
+		err := app.LoadLatestVersion(app.keyMain)
+		if err != nil {
+			cmn.Exit(err.Error())
+		}
 	}
 
     return app
@@ -234,6 +241,37 @@ type GenesisState struct {
 	SlashingData slashing.GenesisState `json:"slashing"`	
 	MicrotickData microtick.GenesisState `json:"microtick"`
 	GenTxs []json.RawMessage `json:"gentxs"`
+}
+
+// NewDefaultGenesisState generates the default state
+func NewDefaultGenesisState() GenesisState {
+	return GenesisState{
+		Accounts:     nil,
+		AuthData:     auth.DefaultGenesisState(),
+		BankData:     bank.DefaultGenesisState(),
+		StakingData:  staking.DefaultGenesisState(),
+		DistrData:    distr.DefaultGenesisState(),
+		GovData:      gov.DefaultGenesisState(),
+		SlashingData: slashing.DefaultGenesisState(),
+		MicrotickData: microtick.DefaultGenesisState(),
+	}
+}
+
+func NewGenesisState(accounts []GenesisAccount, authData auth.GenesisState,
+	bankData bank.GenesisState,
+	stakingData staking.GenesisState, distrData distr.GenesisState, govData gov.GenesisState, 
+	slashingData slashing.GenesisState, microtickData microtick.GenesisState) GenesisState {
+
+	return GenesisState{
+		Accounts:     accounts,
+		AuthData:     authData,
+		BankData:     bankData,
+		StakingData:  stakingData,
+		DistrData:    distrData,
+		GovData:      govData,
+		SlashingData: slashingData,
+		MicrotickData: microtickData,
+	}
 }
 
 // application updates every end block
@@ -275,6 +313,8 @@ func (app *mtApp) initFromGenesisState(ctx sdk.Context, genesisState GenesisStat
 		acc := gacc.ToAccount()
 		acc = app.accountKeeper.NewAccount(ctx, acc) // set account number
 		app.accountKeeper.SetAccount(ctx, acc)
+		mtacc := gacc.ToMTAccount()
+		app.mtKeeper.SetAccountStatus(ctx, acc.GetAddress(), mtacc)
 	}
 
 	// initialize distribution (must happen before staking)
@@ -353,7 +393,9 @@ func (app *mtApp) initChainer(ctx sdk.Context, req abci.RequestInitChain) abci.R
 // GenesisAccount defines an account initialized at genesis.
 type GenesisAccount struct {
 	Address       sdk.AccAddress `json:"address"`
-	Coins         sdk.Coins      `json:"coins"`
+	NumQuotes	uint32 `json:"numquotes"`
+	NumTrades	uint32 `json:"numtrades"`
+	Balance		sdk.DecCoin `json:"balance"`
 	Sequence      uint64         `json:"sequence_number"`
 	AccountNumber uint64         `json:"account_number"`
 
@@ -368,7 +410,9 @@ type GenesisAccount struct {
 func NewGenesisAccount(acc *auth.BaseAccount) GenesisAccount {
 	return GenesisAccount{
 		Address:       acc.Address,
-		Coins:         acc.Coins,
+		NumQuotes:     0,
+		NumTrades:     0,
+		Balance:       sdk.NewDecCoin(microtick.TokenType, acc.Coins.AmountOf(microtick.TokenType)),
 		AccountNumber: acc.AccountNumber,
 		Sequence:      acc.Sequence,
 	}
@@ -377,7 +421,9 @@ func NewGenesisAccount(acc *auth.BaseAccount) GenesisAccount {
 func NewGenesisAccountI(acc auth.Account) GenesisAccount {
 	gacc := GenesisAccount{
 		Address:       acc.GetAddress(),
-		Coins:         acc.GetCoins(),
+		NumQuotes:     0,
+		NumTrades:     0,
+		Balance:       sdk.NewDecCoin(microtick.TokenType, acc.GetCoins().AmountOf(microtick.TokenType)),
 		AccountNumber: acc.GetAccountNumber(),
 		Sequence:      acc.GetSequence(),
 	}
@@ -396,9 +442,10 @@ func NewGenesisAccountI(acc auth.Account) GenesisAccount {
 
 // convert GenesisAccount to auth.BaseAccount
 func (ga *GenesisAccount) ToAccount() auth.Account {
+	coin, _ := ga.Balance.TruncateDecimal()
 	bacc := &auth.BaseAccount{
 		Address:       ga.Address,
-		Coins:         ga.Coins.Sort(),
+		Coins:         sdk.NewCoins(coin),
 		AccountNumber: ga.AccountNumber,
 		Sequence:      ga.Sequence,
 	}
@@ -429,6 +476,21 @@ func (ga *GenesisAccount) ToAccount() auth.Account {
 	return bacc
 }
 
+func (ga *GenesisAccount) ToMTAccount() microtick.DataAccountStatus {
+	_, change := ga.Balance.TruncateDecimal()
+	return microtick.DataAccountStatus {
+		Account: ga.Address,
+		ActiveQuotes: microtick.NewOrderedList(),
+		ActiveTrades: microtick.NewOrderedList(),
+		NumQuotes: ga.NumQuotes,
+		NumTrades: ga.NumTrades,
+		Change: change,
+		QuoteBacking: microtick.NewMicrotickCoinFromInt(0),
+		TradeBacking: microtick.NewMicrotickCoinFromInt(0),
+		SettleBacking: microtick.NewMicrotickCoinFromInt(0),
+	}
+}
+
 func ValidateGenesisState(genesisState GenesisState) error {
 	if err := validateGenesisStateAccounts(genesisState.Accounts); err != nil {
 		return err
@@ -456,20 +518,6 @@ func ValidateGenesisState(genesisState GenesisState) error {
 	}
 
 	return slashing.ValidateGenesis(genesisState.SlashingData)
-}
-
-// NewDefaultGenesisState generates the default state
-func NewDefaultGenesisState() GenesisState {
-	return GenesisState{
-		Accounts:     nil,
-		AuthData:     auth.DefaultGenesisState(),
-		BankData:     bank.DefaultGenesisState(),
-		StakingData:  staking.DefaultGenesisState(),
-		DistrData:    distr.DefaultGenesisState(),
-		GovData:      gov.DefaultGenesisState(),
-		SlashingData: slashing.DefaultGenesisState(),
-		MicrotickData: microtick.DefaultGenesisState(),
-	}
 }
 
 // Create the core parameters for genesis initialization
@@ -506,12 +554,12 @@ func AppGenState(cdc *codec.Codec, genDoc tmtypes.GenesisDoc, appGenTxs []json.R
 	}
 
 	for _, acc := range genesisState.Accounts {
-		for _, coin := range acc.Coins {
-			if coin.Denom == genesisState.StakingData.Params.BondDenom {
-				stakingData.Pool.NotBondedTokens = stakingData.Pool.NotBondedTokens.
-					Add(coin.Amount) // increase the supply
-			}
-		}
+		coin, _ := acc.Balance.TruncateDecimal()
+		// Will always be fox
+		//if coin.Denom == genesisState.StakingData.Params.BondDenom {
+			stakingData.Pool.NotBondedTokens = stakingData.Pool.NotBondedTokens.
+				Add(coin.Amount) // increase the supply
+		//}
 	}
 
 	genesisState.StakingData = stakingData
@@ -566,33 +614,176 @@ func validateGenesisStateAccounts(accs []GenesisAccount) error {
 	return nil
 }
 
-func (app *mtApp) ExportAppStateAndValidators() (appState json.RawMessage, validators []tmtypes.GenesisValidator, err error) {
-	/*
-	ctx := app.NewContext(true, abci.Header{})
+func (app *mtApp) ExportAppStateAndValidators(forZeroHeight bool, jailWhiteList []string) (
+	appState json.RawMessage, validators []tmtypes.GenesisValidator, err error) {
+		
+	ctx := app.NewContext(true, abci.Header{ Height: app.LastBlockHeight() })
 	
-	accounts := []*auth.BaseAccount{}
+	if forZeroHeight {
+		app.prepForZeroHeightGenesis(ctx, jailWhiteList)
+	}
 	
-	appendAccountsFn := func(acc auth.Account) bool {
-		account := &auth.BaseAccount{
-			Address: acc.GetAddress(),
-			Coins:   acc.GetCoins(),
-		}
-
+	// iterate to get the accounts
+	
+	accounts := []GenesisAccount{}
+	appendAccountsFn := func(acc auth.Account) (stop bool) {
+		account := NewGenesisAccountI(acc)
+		status := app.mtKeeper.GetAccountStatus(ctx, acc.GetAddress())
+		account.Balance = account.Balance.Add(status.Change).Add(status.QuoteBacking).
+			Add(status.TradeBacking).Add(status.SettleBacking)
+		account.NumQuotes = status.NumQuotes
+		account.NumTrades = status.NumTrades
 		accounts = append(accounts, account)
 		return false
 	}
-
 	app.accountKeeper.IterateAccounts(ctx, appendAccountsFn)
-	*/
-
-	genState := NewDefaultGenesisState()
+	
+	genState := NewGenesisState(
+		accounts,
+		auth.ExportGenesis(ctx, app.accountKeeper, app.feeCollectionKeeper),
+		bank.ExportGenesis(ctx, app.bankKeeper),
+		staking.ExportGenesis(ctx, app.stakingKeeper),
+		distr.ExportGenesis(ctx, app.distrKeeper),
+		gov.ExportGenesis(ctx, app.govKeeper),
+		slashing.ExportGenesis(ctx, app.slashingKeeper),
+		microtick.ExportGenesis(ctx, app.mtKeeper),
+	)
 
 	appState, err = codec.MarshalJSONIndent(app.cdc, genState)
 	if err != nil {
 		return nil, nil, err
 	}
-
+	validators = staking.WriteValidators(ctx, app.stakingKeeper)
 	return appState, validators, err
+}
+
+// prepare for fresh start at zero height
+func (app *mtApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []string) {
+	applyWhiteList := false
+
+	//Check if there is a whitelist
+	if len(jailWhiteList) > 0 {
+		applyWhiteList = true
+	}
+
+	whiteListMap := make(map[string]bool)
+
+	for _, addr := range jailWhiteList {
+		_, err := sdk.ValAddressFromBech32(addr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		whiteListMap[addr] = true
+	}
+
+	/* Just to be safe, assert the invariants on current state. */
+	//app.assertRuntimeInvariantsOnContext(ctx)
+
+	/* Handle fee distribution state. */
+
+	// withdraw all validator commission
+	app.stakingKeeper.IterateValidators(ctx, func(_ int64, val sdk.Validator) (stop bool) {
+		_, _ = app.distrKeeper.WithdrawValidatorCommission(ctx, val.GetOperator())
+		return false
+	})
+
+	// withdraw all delegator rewards
+	dels := app.stakingKeeper.GetAllDelegations(ctx)
+	for _, delegation := range dels {
+		_, _ = app.distrKeeper.WithdrawDelegationRewards(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
+	}
+
+	// clear validator slash events
+	app.distrKeeper.DeleteAllValidatorSlashEvents(ctx)
+
+	// clear validator historical rewards
+	app.distrKeeper.DeleteAllValidatorHistoricalRewards(ctx)
+
+	// set context height to zero
+	height := ctx.BlockHeight()
+	ctx = ctx.WithBlockHeight(0)
+
+	// reinitialize all validators
+	app.stakingKeeper.IterateValidators(ctx, func(_ int64, val sdk.Validator) (stop bool) {
+
+		// donate any unwithdrawn outstanding reward fraction tokens to the community pool
+		scraps := app.distrKeeper.GetValidatorOutstandingRewards(ctx, val.GetOperator())
+		feePool := app.distrKeeper.GetFeePool(ctx)
+		feePool.CommunityPool = feePool.CommunityPool.Add(scraps)
+		app.distrKeeper.SetFeePool(ctx, feePool)
+
+		app.distrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator())
+		return false
+	})
+
+	// reinitialize all delegations
+	for _, del := range dels {
+		app.distrKeeper.Hooks().BeforeDelegationCreated(ctx, del.DelegatorAddress, del.ValidatorAddress)
+		app.distrKeeper.Hooks().AfterDelegationModified(ctx, del.DelegatorAddress, del.ValidatorAddress)
+	}
+
+	// reset context height
+	ctx = ctx.WithBlockHeight(height)
+
+	/* Handle staking state. */
+
+	// iterate through redelegations, reset creation height
+	app.stakingKeeper.IterateRedelegations(ctx, func(_ int64, red staking.Redelegation) (stop bool) {
+		for i := range red.Entries {
+			red.Entries[i].CreationHeight = 0
+		}
+		app.stakingKeeper.SetRedelegation(ctx, red)
+		return false
+	})
+
+	// iterate through unbonding delegations, reset creation height
+	app.stakingKeeper.IterateUnbondingDelegations(ctx, func(_ int64, ubd staking.UnbondingDelegation) (stop bool) {
+		for i := range ubd.Entries {
+			ubd.Entries[i].CreationHeight = 0
+		}
+		app.stakingKeeper.SetUnbondingDelegation(ctx, ubd)
+		return false
+	})
+
+	// Iterate through validators by power descending, reset bond heights, and
+	// update bond intra-tx counters.
+	store := ctx.KVStore(app.keyStaking)
+	iter := sdk.KVStoreReversePrefixIterator(store, staking.ValidatorsKey)
+	counter := int16(0)
+
+	var valConsAddrs []sdk.ConsAddress
+	for ; iter.Valid(); iter.Next() {
+		addr := sdk.ValAddress(iter.Key()[1:])
+		validator, found := app.stakingKeeper.GetValidator(ctx, addr)
+		if !found {
+			panic("expected validator, not found")
+		}
+
+		validator.UnbondingHeight = 0
+		valConsAddrs = append(valConsAddrs, validator.ConsAddress())
+		if applyWhiteList && !whiteListMap[addr.String()] {
+			validator.Jailed = true
+		}
+
+		app.stakingKeeper.SetValidator(ctx, validator)
+		counter++
+	}
+
+	iter.Close()
+
+	_ = app.stakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
+
+	/* Handle slashing state. */
+
+	// reset start height on signing infos
+	app.slashingKeeper.IterateValidatorSigningInfos(
+		ctx,
+		func(addr sdk.ConsAddress, info slashing.ValidatorSigningInfo) (stop bool) {
+			info.StartHeight = 0
+			app.slashingKeeper.SetValidatorSigningInfo(ctx, addr, info)
+			return false
+		},
+	)
 }
 
 // MakeCodec generates the necessary codecs for Amino
@@ -691,10 +882,11 @@ func CollectStdTxs(cdc *codec.Codec, moniker string, genTxsDir string, genDoc tm
 				"account(s) %v not in genesis.json: %+v", strings.Join(accsNotInGenesis, " "), addrMap)
 		}
 
-		if delAcc.Coins.AmountOf(msg.Value.Denom).LT(msg.Value.Amount) {
+		amount, _ := delAcc.Balance.TruncateDecimal()
+		if amount.Amount.LT(msg.Value.Amount) {
 			return appGenTxs, persistentPeers, fmt.Errorf(
 				"insufficient fund for delegation %v: %v < %v",
-				delAcc.Address, delAcc.Coins.AmountOf(msg.Value.Denom), msg.Value.Amount,
+				delAcc.Address, amount.Amount, msg.Value.Amount,
 			)
 		}
 
@@ -747,6 +939,11 @@ func NewBankHandler(bankKeeper bank.Keeper, mtk microtick.Keeper, cdc *codec.Cod
 		}
 		return result
 	}
+}
+
+// load a particular height
+func (app *mtApp) LoadHeight(height int64) error {
+	return app.LoadVersion(height, app.keyMain)
 }
 
 //______________________________________________________________________________________________
