@@ -47,7 +47,7 @@ type TradeSettlementData struct {
     CounterParties []SettlementData `json:"counterparties"`
     Incentive MicrotickCoin `json:"incentive"`
     Commission MicrotickCoin `json:"commission"`
-    Balance MicrotickCoin `json/:"balance"`
+    Balance MicrotickCoin `json:"balance"`
     Settler MicrotickAccount `json:"settler"`
     SettlerBalance MicrotickCoin `json:"settlerBalance"`
 }
