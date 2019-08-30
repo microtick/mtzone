@@ -85,19 +85,11 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
     bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc), baseAppOptions...)
     bApp.SetCommitMultiStoreTracer(traceStore)
     
-    var mtStores = microtick.MicrotickStores {
-    	AppGlobals: sdk.NewKVStoreKey("MTGlobals"),
-    	AccountStatus: sdk.NewKVStoreKey("MTAccountStatus"),
-    	ActiveQuotes: sdk.NewKVStoreKey("MTActiveQuotes"),
-    	ActiveTrades: sdk.NewKVStoreKey("MTActiveTrades"),
-    	Markets: sdk.NewKVStoreKey("MTMarkets"),
-    }
-
     var app = &mtApp{
         BaseApp: bApp,
         cdc:     cdc,
         
-		keyMain:          sdk.NewKVStoreKey("main"),
+		keyMain:          sdk.NewKVStoreKey(bam.MainStoreKey),
 		keyAccount:       sdk.NewKVStoreKey(auth.StoreKey),
 		keyFeeCollection: sdk.NewKVStoreKey(auth.FeeStoreKey),
 		
@@ -111,9 +103,15 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
 		keyParams:        sdk.NewKVStoreKey(params.StoreKey),
 		tkeyParams:       sdk.NewTransientStoreKey(params.TStoreKey),
 		
-		keyMT:			  mtStores,
+		keyMT:			  microtick.MicrotickStores {
+    						AppGlobals: sdk.NewKVStoreKey("MTGlobals"),
+    						AccountStatus: sdk.NewKVStoreKey("MTAccountStatus"),
+    						ActiveQuotes: sdk.NewKVStoreKey("MTActiveQuotes"),
+    						ActiveTrades: sdk.NewKVStoreKey("MTActiveTrades"),
+    						Markets: sdk.NewKVStoreKey("MTMarkets"),
+    				      },
     }
-    
+
  	// The ParamsKeeper handles parameter storage for the application
 	app.paramsKeeper = params.NewKeeper(app.cdc, app.keyParams, app.tkeyParams)
 
@@ -308,6 +306,7 @@ func (app *mtApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 
 // initialize store from a genesis state
 func (app *mtApp) initFromGenesisState(ctx sdk.Context, genesisState GenesisState) []abci.ValidatorUpdate {
+	
 	// load the accounts
 	for _, gacc := range genesisState.Accounts {
 		acc := gacc.ToAccount()
