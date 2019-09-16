@@ -20,6 +20,11 @@ import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
+  dist "github.com/cosmos/cosmos-sdk/x/distribution/client/rest"
+  gov "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
+  slash "github.com/cosmos/cosmos-sdk/x/slashing/client/rest"
+  stake "github.com/cosmos/cosmos-sdk/x/staking/client/rest"
+
 	gv "github.com/cosmos/cosmos-sdk/x/gov"
 	sl "github.com/cosmos/cosmos-sdk/x/slashing"
 	st "github.com/cosmos/cosmos-sdk/x/staking"
@@ -99,6 +104,10 @@ func registerRoutes(rs *lcd.RestServer) {
 	tx.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc)
 	auth.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeAcc)
 	bank.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, rs.KeyBase)
+  dist.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, distcmd.StoreKey)
+  stake.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, rs.KeyBase)
+  slash.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, rs.KeyBase)
+  gov.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc)
 	mtrest.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeMT)
 }
 
