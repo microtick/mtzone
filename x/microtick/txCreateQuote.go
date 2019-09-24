@@ -76,7 +76,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     params := keeper.GetParams(ctx)
         
     if !keeper.HasDataMarket(ctx, msg.Market) {
-        return sdk.ErrInternal("No such market: " + msg.Market).Result()
+        keeper.SetDataMarket(ctx, NewDataMarket(msg.Market))
     }
     
     if !ValidMicrotickDuration(msg.Duration) {
