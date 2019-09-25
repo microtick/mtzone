@@ -65,6 +65,18 @@ func (daq DataActiveQuote) Frozen(now time.Time) bool {
     return false
 }
 
+func (daq DataActiveQuote) Stale(now time.Time) bool {
+    interval, err := time.ParseDuration(fmt.Sprintf("%d", daq.Duration * 2) + "s")
+    if err != nil {
+        panic("invalid time")
+    }
+    threshold := daq.Modified.Add(interval)
+    if now.After(threshold) {
+        return true
+    }
+    return false
+}
+
 func (daq DataActiveQuote) PremiumAsCall(strike MicrotickSpot) MicrotickPremium {
     premium := daq.Premium.Amount
     delta := strike.Amount.Sub(daq.Spot.Amount)

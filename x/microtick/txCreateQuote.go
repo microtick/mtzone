@@ -86,11 +86,6 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     commission := NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
     total := msg.Backing.Add(commission)
         
-    // Subtract coins from quote provider
-    keeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
-    //fmt.Printf("Create Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, commission)
-	
 	// DataActiveQuote
 	
     id := keeper.GetNextActiveQuoteId(ctx)
@@ -115,7 +110,6 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
             balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
-    keeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
     
     // DataMarket
     
@@ -124,8 +118,18 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
         panic("Invalid market")
     }
     dataMarket.AddQuote(dataActiveQuote)
-    dataMarket.factorIn(dataActiveQuote)
+    if !dataMarket.factorIn(dataActiveQuote) {
+        return sdk.ErrInternal("Quote params out of range").Result()
+    }
+    
+    keeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
     keeper.SetDataMarket(ctx, dataMarket)
+    
+    // Subtract coins from quote provider
+    //fmt.Printf("Total: %s\n", total.String())
+    keeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
+    //fmt.Printf("Create Commission: %s\n", commission.String())
+    keeper.PoolCommission(ctx, commission)
     
     // Tags
     tags := sdk.NewTags(

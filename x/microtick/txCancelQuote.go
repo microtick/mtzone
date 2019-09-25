@@ -56,8 +56,15 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
         return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()
     }
     
+    // Time 2x invariant:
+    // If a quote has not been updated within 2x the time duration of the quote, the
+    // backing is forfeited.
+    // Purpose: keeps market makers out of short-term orderbooks if they do not intend
+    // to keep the quotes timely.
     if quote.Provider.String() != msg.Requester.String() {
-        return sdk.ErrInternal("Account can't modify quote").Result()
+        if !quote.Stale(ctx.BlockHeader().Time) {
+            return sdk.ErrInternal("Quote is not stale").Result()
+        }
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
@@ -74,12 +81,12 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     
     keeper.DeleteActiveQuote(ctx, quote.Id)
     
-    accountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
+    accountStatus := keeper.GetAccountStatus(ctx, quote.Provider)
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(quote.Backing)
     accountStatus.ActiveQuotes.Delete(quote.Id)
-    keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
+    keeper.SetAccountStatus(ctx, quote.Provider, accountStatus)
     
-    balance := keeper.GetTotalBalance(ctx, msg.Requester)
+    balance := keeper.GetTotalBalance(ctx, quote.Provider)
     
     tags := sdk.NewTags(
         fmt.Sprintf("quote.%d", quote.Id), "event.cancel",

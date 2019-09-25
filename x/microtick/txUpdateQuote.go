@@ -77,12 +77,6 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     
     commission := NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
     
-    // Subtract coins from requester
-    keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
-    // Add commission to pool
-    //fmt.Printf("Update Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, commission)
-    
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
     dataMarket.factorOut(quote)
     dataMarket.DeleteQuote(quote)
@@ -101,9 +95,18 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     }
     
     dataMarket.AddQuote(quote)
-    dataMarket.factorIn(quote)
+    if !dataMarket.factorIn(quote) {
+        return sdk.ErrInternal("Quote params out of range").Result()
+    }
+    
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
+    
+    // Subtract coins from requester
+    keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    // Add commission to pool
+    //fmt.Printf("Update Commission: %s\n", commission.String())
+    keeper.PoolCommission(ctx, commission)
     
     balance := keeper.GetTotalBalance(ctx, msg.Requester)
    

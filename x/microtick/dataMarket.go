@@ -67,19 +67,44 @@ func (dm *DataMarket) SetOrderBook(dur MicrotickDuration, ob DataOrderBook) {
     panic("Invalid duration")
 }
 
-func (dm *DataMarket) factorIn(quote DataActiveQuote) {
+func (dm *DataMarket) factorIn(quote DataActiveQuote) bool {
     dm.SumBacking = dm.SumBacking.Add(quote.Backing)
     dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(
         quote.Quantity.Amount))
     dm.SumWeight = dm.SumWeight.Add(quote.Quantity)
-    if (dm.SumWeight.Amount.IsPositive()) {
+    if dm.SumWeight.Amount.IsPositive() {
         dm.Consensus = NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
+    }
+    
+    // Test quote invariant:
+    // Spot 2x limitation
+    // A quote cannot be placed or updated that will be a free call or put on the 
+    // resulting order book (spot more than 2x premium from resulting consensus)
+    // Purpose: protects market maker from damaging quotes
+    if quote.Spot.Amount.Sub(quote.Premium.Amount.MulInt64(2)).GT(dm.Consensus.Amount) {
+        return false
+    }
+    if quote.Spot.Amount.Add(quote.Premium.Amount.MulInt64(2)).LT(dm.Consensus.Amount) {
+        return false
     }
     
     orderBook := dm.GetOrderBook(quote.Duration)
     orderBook.SumBacking = orderBook.SumBacking.Add(quote.Backing)
     orderBook.SumWeight = orderBook.SumWeight.Add(quote.Quantity)
+    
+    // Test quote invariant:
+    // Premium 2x limitation
+    // A quote cannot be placed or updated with a premium of more than 2x the 
+    // current market consensus premium (backing / (leverage * weight) for that time duration
+    // Purpose: keeps premium realistic and tradeable within the quote's time frame
+    if orderBook.SumWeight.Amount.IsPositive() {
+        if orderBook.SumBacking.Amount.Quo(orderBook.SumWeight.Amount.MulInt64(Leverage)).MulInt64(2).LT(quote.Premium.Amount) {
+            return false
+        }
+    }
+    
     dm.SetOrderBook(quote.Duration, orderBook)
+    return true
 }
 
 func (dm *DataMarket) factorOut(quote DataActiveQuote) {
@@ -87,7 +112,7 @@ func (dm *DataMarket) factorOut(quote DataActiveQuote) {
     dm.SumSpots = dm.SumSpots.Sub(quote.Spot.Amount.Mul(
         quote.Quantity.Amount))
     dm.SumWeight = dm.SumWeight.Sub(quote.Quantity)
-    if (dm.SumWeight.Amount.IsPositive()) {
+    if dm.SumWeight.Amount.IsPositive() {
         dm.Consensus = NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
     }
     
