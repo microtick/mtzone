@@ -3,6 +3,7 @@ package microtick
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/x/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -31,6 +32,7 @@ var (
     KeyCommissionSettleFixed = []byte("KeyCommissionSettleFixed")
     KeySettleIncentive = []byte("KeySettleIncentive")
     KeyFreezeTime = []byte("KeyFreezeTime")
+    KeyHaltTime = []byte("KeyHaltTime")
 )
 
 var _ params.ParamSet = &Params{}
@@ -44,6 +46,7 @@ type Params struct {
     CommissionSettleFixed sdk.Dec `json:"commission_settle_fixed"`
     SettleIncentive sdk.Dec `json:"settle_incentive"`
     FreezeTime int8 `json:"freeze_time"`
+    HaltTime int64 `json:"halt_time"`
 }
 
 // ParamKeyTable for microtick module
@@ -63,6 +66,7 @@ func (p *Params) ParamSetPairs() params.ParamSetPairs {
 	    {KeyCommissionSettleFixed, &p.CommissionSettleFixed},
 	    {KeySettleIncentive, &p.SettleIncentive},
 	    {KeyFreezeTime, &p.FreezeTime},
+	    {KeyHaltTime, &p.HaltTime},
 	}
 }
 
@@ -76,6 +80,8 @@ func (p Params) Equal(p2 Params) bool {
 
 // DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
+    interval, _ := time.ParseDuration("5m")
+    defaultHaltTime := time.Now().Add(interval)
 	return Params{
 	    EuropeanOptions: DefaultEuropeanOptions,
 	    CommissionQuotePercent: DefaultCommissionQuotePercent,
@@ -84,6 +90,7 @@ func DefaultParams() Params {
 	    CommissionSettleFixed: DefaultCommissionSettleFixed,
 	    SettleIncentive: DefaultSettleIncentive,
 	    FreezeTime: DefaultFreezeTime,
+	    HaltTime: defaultHaltTime.Unix(),
 	}
 }
 
@@ -98,5 +105,6 @@ func (p Params) String() string {
 	sb.WriteString(fmt.Sprintf("CommissionSettleFixed: %t\n", p.CommissionSettleFixed))
 	sb.WriteString(fmt.Sprintf("SettleIncentive: %t\n", p.SettleIncentive))
 	sb.WriteString(fmt.Sprintf("FreezeTime: %t\n", p.FreezeTime))
+	sb.WriteString(fmt.Sprintf("FreezeTime: %t\n", p.HaltTime))
 	return sb.String()
 }

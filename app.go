@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	"github.com/cosmos/cosmos-sdk/x/crisis"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
@@ -50,6 +51,8 @@ func init() {
 type mtApp struct {
     *bam.BaseApp
 	cdc *codec.Codec
+	
+	invCheckPeriod uint
 
 	keyMain          *sdk.KVStoreKey
 	keyAccount       *sdk.KVStoreKey
@@ -73,11 +76,13 @@ type mtApp struct {
 	slashingKeeper		slashing.Keeper
 	distrKeeper			distr.Keeper
 	govKeeper			gov.Keeper
+	crisisKeeper		crisis.Keeper
 	paramsKeeper        params.Keeper
 	mtKeeper            microtick.Keeper
 }
 
 func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, 
+	invCheckPeriod uint,
 	baseAppOptions ...func(*bam.BaseApp)) *mtApp {
 		
     cdc := MakeCodec()
@@ -88,6 +93,8 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
     var app = &mtApp{
         BaseApp: bApp,
         cdc:     cdc,
+        
+        invCheckPeriod:   invCheckPeriod,
         
 		keyMain:          sdk.NewKVStoreKey(bam.MainStoreKey),
 		keyAccount:       sdk.NewKVStoreKey(auth.StoreKey),
@@ -166,6 +173,13 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
 		NewStakingHooks(app.distrKeeper.Hooks(), app.slashingKeeper.Hooks()),
 	)
 	
+	app.crisisKeeper = crisis.NewKeeper(
+		app.paramsKeeper.Subspace(crisis.DefaultParamspace),
+		app.distrKeeper,
+		app.bankKeeper,
+		app.feeCollectionKeeper,
+	)
+	
 	app.mtKeeper = microtick.NewKeeper(
 		app.accountKeeper,
 		app.bankKeeper,
@@ -174,6 +188,12 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
 		app.cdc,
 		app.paramsKeeper.Subspace(microtick.DefaultParamspace),
 	)
+	
+	// register the crisis routes
+	bank.RegisterInvariants(&app.crisisKeeper, app.accountKeeper)
+	distr.RegisterInvariants(&app.crisisKeeper, app.distrKeeper, app.stakingKeeper)
+	//staking.RegisterInvariants(&app.crisisKeeper, app.stakingKeeper, app.feeCollectionKeeper, app.distrKeeper, app.accountKeeper)
+	microtick.RegisterInvariants(&app.crisisKeeper, app.stakingKeeper, app.feeCollectionKeeper, app.distrKeeper, app.accountKeeper, app.mtKeeper)
 
 	// The app.Router is the main transaction router where each module registers its routes
 	// Register the bank and nameservice routes here
@@ -183,6 +203,7 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
 		AddRoute(distr.RouterKey, distr.NewHandler(app.distrKeeper)).
 		AddRoute(slashing.RouterKey, slashing.NewHandler(app.slashingKeeper)).
 		AddRoute(gov.RouterKey, gov.NewHandler(app.govKeeper)).
+		AddRoute(crisis.RouterKey, crisis.NewHandler(app.crisisKeeper)).
 		AddRoute("microtick", microtick.NewHandler(app.mtKeeper))
 
 	// The app.QueryRouter is the main query router where each module registers its routes
@@ -236,6 +257,7 @@ type GenesisState struct {
 	StakingData  staking.GenesisState  `json:"staking"`
 	DistrData    distr.GenesisState    `json:"distr"`
 	GovData      gov.GenesisState      `json:"gov"`
+	CrisisData   crisis.GenesisState   `json:"crisis"`
 	SlashingData slashing.GenesisState `json:"slashing"`	
 	MicrotickData microtick.GenesisState `json:"microtick"`
 	GenTxs []json.RawMessage `json:"gentxs"`
@@ -250,6 +272,7 @@ func NewDefaultGenesisState() GenesisState {
 		StakingData:  staking.DefaultGenesisState(),
 		DistrData:    distr.DefaultGenesisState(),
 		GovData:      gov.DefaultGenesisState(),
+		CrisisData:   crisis.DefaultGenesisState(),
 		SlashingData: slashing.DefaultGenesisState(),
 		MicrotickData: microtick.DefaultGenesisState(),
 	}
@@ -258,6 +281,7 @@ func NewDefaultGenesisState() GenesisState {
 func NewGenesisState(accounts []GenesisAccount, authData auth.GenesisState,
 	bankData bank.GenesisState,
 	stakingData staking.GenesisState, distrData distr.GenesisState, govData gov.GenesisState, 
+	crisisData crisis.GenesisState,
 	slashingData slashing.GenesisState, microtickData microtick.GenesisState) GenesisState {
 
 	return GenesisState{
@@ -295,13 +319,38 @@ func (app *mtApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 	tags := gov.EndBlocker(ctx, app.govKeeper)
 	validatorUpdates, endBlockerTags := staking.EndBlocker(ctx, app.stakingKeeper)
 	tags = append(tags, endBlockerTags...)
+	
+	if app.invCheckPeriod != 0 && ctx.BlockHeight()%int64(app.invCheckPeriod) == 0 {
+		app.assertRuntimeInvariants()
+	}
 
-	//app.assertRuntimeInvariants()
+	microtick.EndBlocker(ctx, app.mtKeeper)
 
 	return abci.ResponseEndBlock{
 		ValidatorUpdates: validatorUpdates,
 		Tags:             tags,
 	}
+}
+
+func (app *mtApp) assertRuntimeInvariants() {
+	ctx := app.NewContext(false, abci.Header{Height: app.LastBlockHeight() + 1})
+	app.assertRuntimeInvariantsOnContext(ctx)
+}
+
+func (app *mtApp) assertRuntimeInvariantsOnContext(ctx sdk.Context) {
+	start := time.Now()
+	invarRoutes := app.crisisKeeper.Routes()
+	for _, ir := range invarRoutes {
+		if err := ir.Invar(ctx); err != nil {
+			panic(fmt.Errorf("invariant broken: %s\n"+
+				"\tCRITICAL please submit the following transaction:\n"+
+				"\t\t gaiacli tx crisis invariant-broken %v %v", err, ir.ModuleName, ir.Route))
+		}
+	}
+	end := time.Now()
+	diff := end.Sub(start)
+	app.BaseApp.Logger().With("module", "invariants").Info(
+		"Asserted all invariants", "duration", diff, "height", app.LastBlockHeight())
 }
 
 // initialize store from a genesis state
@@ -330,6 +379,7 @@ func (app *mtApp) initFromGenesisState(ctx sdk.Context, genesisState GenesisStat
 	bank.InitGenesis(ctx, app.bankKeeper, genesisState.BankData)
 	slashing.InitGenesis(ctx, app.slashingKeeper, genesisState.SlashingData, genesisState.StakingData.Validators.ToSDKValidators())
 	gov.InitGenesis(ctx, app.govKeeper, genesisState.GovData)
+	crisis.InitGenesis(ctx, app.crisisKeeper, genesisState.CrisisData)
 
 	// validate genesis state
 	if err := ValidateGenesisState(genesisState); err != nil {
@@ -383,6 +433,9 @@ func (app *mtApp) initChainer(ctx sdk.Context, req abci.RequestInitChain) abci.R
 	}
 
 	microtick.InitGenesis(ctx, app.mtKeeper, genesisState.MicrotickData)
+	
+	// assert runtime invariants
+	app.assertRuntimeInvariants()
 	
 	return abci.ResponseInitChain{
 		Validators: validators,
@@ -515,6 +568,9 @@ func ValidateGenesisState(genesisState GenesisState) error {
 	if err := gov.ValidateGenesis(genesisState.GovData); err != nil {
 		return err
 	}
+	if err := crisis.ValidateGenesis(genesisState.CrisisData); err != nil {
+		return err
+	}
 
 	return slashing.ValidateGenesis(genesisState.SlashingData)
 }
@@ -644,8 +700,9 @@ func (app *mtApp) ExportAppStateAndValidators(forZeroHeight bool, jailWhiteList 
 		staking.ExportGenesis(ctx, app.stakingKeeper),
 		distr.ExportGenesis(ctx, app.distrKeeper),
 		gov.ExportGenesis(ctx, app.govKeeper),
+		crisis.ExportGenesis(ctx, app.crisisKeeper),
 		slashing.ExportGenesis(ctx, app.slashingKeeper),
-		microtick.ExportGenesis(ctx, app.mtKeeper),
+		microtick.ExportGenesis(ctx, app.mtKeeper, app.distrKeeper),
 	)
 
 	appState, err = codec.MarshalJSONIndent(app.cdc, genState)
@@ -794,6 +851,7 @@ func MakeCodec() *codec.Codec {
 	distr.RegisterCodec(cdc)
 	slashing.RegisterCodec(cdc)
 	gov.RegisterCodec(cdc)
+	crisis.RegisterCodec(cdc)
 	microtick.RegisterCodec(cdc)
 	sdk.RegisterCodec(cdc)
 	codec.RegisterCrypto(cdc)

@@ -1,7 +1,11 @@
 package microtick
 
 import (
+    "fmt"
+    "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    "github.com/cosmos/cosmos-sdk/x/distribution/types"
+    distr "github.com/cosmos/cosmos-sdk/x/distribution"
 )
 
 type GenesisState struct {
@@ -27,9 +31,18 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data GenesisState) {
     key := []byte("commissionPool")
     
     store.Set(key, keeper.cdc.MustMarshalBinaryBare(data.Pool))
+    
+    fmt.Printf("Prearranged halt time: %s\n", time.Unix(data.Params.HaltTime, 0).String())
 }
 
-func ExportGenesis(ctx sdk.Context, keeper Keeper) GenesisState {
+func ExportGenesis(ctx sdk.Context, keeper Keeper, distrKeeper distr.Keeper) GenesisState {
+    distrKeeper.IterateValidatorOutstandingRewards(ctx, 
+        func(addr sdk.ValAddress, rewards types.ValidatorOutstandingRewards) (stop bool) {
+            fmt.Printf("Reward: %+v\n", rewards)
+            return false
+        },
+    )
+    
     store := ctx.KVStore(keeper.storeKeys.AppGlobals)
     key := []byte("commissionPool")
     var pool MicrotickCoin = NewMicrotickCoinFromInt(0)

@@ -1,6 +1,7 @@
 package microtick
 
 import (
+	"fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -18,16 +19,30 @@ func (k Keeper) PoolCommission(ctx sdk.Context, amount MicrotickCoin) {
 	}
 	
 	pool = pool.Add(amount)
-	//fmt.Printf("Pool: %s\n", pool.String())
+	fmt.Printf("Pool: %s\n", pool.String())
 	whole, pool := pool.TruncateDecimal()
 	
 	//fmt.Printf("Amount: %s\n", amount.String())
 	if whole.IsPositive() {
-		//fmt.Printf("Adding commission: %s\n", whole.String())
+		fmt.Printf("Adding commission: %s\n", whole.String())
 		k.feeKeeper.AddCollectedFees(ctx, sdk.Coins{whole})
 	}
 	
 	store.Set(key, k.cdc.MustMarshalBinaryBare(pool))
+}
+
+func (k Keeper) FractionalCommission(ctx sdk.Context) MicrotickCoin {
+	store := ctx.KVStore(k.storeKeys.AppGlobals)
+	key := []byte("commissionPool")
+	
+	var pool MicrotickCoin = NewMicrotickCoinFromInt(0)
+	
+	if store.Has(key) {
+		bz := store.Get(key)
+		k.cdc.MustUnmarshalBinaryBare(bz, &pool)
+	}
+	
+	return pool
 }
 
 // Account balances

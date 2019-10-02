@@ -34,6 +34,9 @@ import (
 // DefaultNodeHome sets the folder where the application data and configuration will be stored
 var DefaultNodeHome = os.ExpandEnv("$MTROOT/mtd")
 
+const flagInvCheckPeriod = "inv-check-period"
+var invCheckPeriod uint
+
 func main() {
 	cobra.EnableCommandSorting = false
 
@@ -54,6 +57,8 @@ func main() {
 
 	// prepare and add flags
 	executor := cli.PrepareBaseCmd(rootCmd, "MT", DefaultNodeHome)
+	rootCmd.PersistentFlags().UintVar(&invCheckPeriod, flagInvCheckPeriod,
+		0, "Assert registered invariants every N blocks")
 	err := executor.Execute()
 	if err != nil {
 		// handle with #870
@@ -62,7 +67,7 @@ func main() {
 }
 
 func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
-	return app.NewMTApp(logger, db, traceStore, true)
+	return app.NewMTApp(logger, db, traceStore, true, invCheckPeriod)
 }
 
 func appExporter() server.AppExporter {
@@ -70,14 +75,14 @@ func appExporter() server.AppExporter {
 		jailWhiteList []string) (json.RawMessage, []tmtypes.GenesisValidator, error) {
 			
 		if height != -1 {
-			dapp := app.NewMTApp(logger, db, traceStore, false)
+			dapp := app.NewMTApp(logger, db, traceStore, false, uint(1))
 			err := dapp.LoadHeight(height)
 			if err != nil {
 				return nil, nil, err
 			}
 			return dapp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 		}
-		dapp := app.NewMTApp(logger, db, traceStore, true)
+		dapp := app.NewMTApp(logger, db, traceStore, true, uint(1))
 		return dapp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 	}
 }
