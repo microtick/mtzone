@@ -38,22 +38,22 @@ func SupplyInvariants(k stakingKeeper.Keeper, f staking.FeeCollectionKeeper,
 		    status := mtk.GetAccountStatus(ctx, acc.GetAddress())
 		    balance := account.Add(status.QuoteBacking).
 			   Add(status.TradeBacking).Add(status.SettleBacking)
-			fmt.Printf("Balance: %s\n", balance.String())
-			fmt.Printf("  Initial: %s\n", account.String())
-			fmt.Printf("  Quote Backing: %s\n", status.QuoteBacking.String())
-			fmt.Printf("  Trade Backing: %s\n", status.TradeBacking.String())
-			fmt.Printf("  Settle Backing: %s\n", status.SettleBacking.String())
+			//fmt.Printf("Balance: %s\n", balance.String())
+			//fmt.Printf("  Initial: %s\n", account.String())
+			//fmt.Printf("  Quote Backing: %s\n", status.QuoteBacking.String())
+			//fmt.Printf("  Trade Backing: %s\n", status.TradeBacking.String())
+			//fmt.Printf("  Settle Backing: %s\n", status.SettleBacking.String())
 			loose = loose.Add(balance.Amount)
 			return false
 		})
-		fmt.Printf("Loose tokens - account balance total: %s\n", loose)
+		//fmt.Printf("Loose tokens - account balance total: %s\n", loose)
 		k.IterateUnbondingDelegations(ctx, func(_ int64, ubd staking.UnbondingDelegation) bool {
 			for _, entry := range ubd.Entries {
 				loose = loose.Add(entry.Balance.ToDec())
 			}
 			return false
 		})
-		fmt.Printf("Loose tokens - unbonding delegations: %s\n", loose)
+		//fmt.Printf("Loose tokens - unbonding delegations: %s\n", loose)
 		k.IterateValidators(ctx, func(_ int64, validator sdk.Validator) bool {
 			switch validator.GetStatus() {
 			case sdk.Bonded:
@@ -63,25 +63,25 @@ func SupplyInvariants(k stakingKeeper.Keeper, f staking.FeeCollectionKeeper,
 			}
 			// add yet-to-be-withdrawn
 			amount := d.GetValidatorOutstandingRewardsCoins(ctx, validator.GetOperator()).AmountOf(k.BondDenom(ctx))
-			fmt.Printf("  outstanding reward: %s\n", amount)
+			//fmt.Printf("  outstanding reward: %s\n", amount)
 			loose = loose.Add(amount)
 			return false
 		})
 		
-		fmt.Printf("Loose tokens - outstanding rewards: %s\n", loose)
+		//fmt.Printf("Loose tokens - outstanding rewards: %s\n", loose)
 
 		// add outstanding fees
 		loose = loose.Add(f.GetCollectedFees(ctx).AmountOf(k.BondDenom(ctx)).ToDec())
-		fmt.Printf("Loose tokens - collected fees: %s\n", loose)
+		//fmt.Printf("Loose tokens - collected fees: %s\n", loose)
 
 		// add community pool
 		loose = loose.Add(d.GetFeePoolCommunityCoins(ctx).AmountOf(k.BondDenom(ctx)))
-		fmt.Printf("Loose tokens - community pool: %s\n", loose)
+		//fmt.Printf("Loose tokens - community pool: %s\n", loose)
 		
 		// add fractional community pool
 		frac := mtk.FractionalCommission(ctx)
 		loose = loose.Add(frac.Amount)
-		fmt.Printf("Loose tokens - fractional community pool: %s\n", loose)
+		//fmt.Printf("Loose tokens - fractional community pool: %s\n", loose)
 
 		// Not-bonded tokens should equal coin supply plus unbonding delegations
 		// plus tokens on unbonded validators
