@@ -109,7 +109,7 @@ func NewMTApp(
 
     bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc), baseAppOptions...)
     bApp.SetCommitMultiStoreTracer(traceStore)
-    bApp.SetAppVersion(MTAppVersion)
+    bApp.SetAppVersion(MTAppVersion + "\\n" + MTBuildDate)
     
     keys := sdk.NewKvstoreKeys(
     	bam.MainStoreKey,

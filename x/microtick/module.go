@@ -12,8 +12,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/mint/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/mint/client/rest"
+	
+	"github.com/mjackson001/mtzone/x/microtick/query"
+	"github.com/mjackson001/mtzone/x/microtick/tx"
+	"github.com/mjackson001/mtzone/x/microtick/client"
 )
 
 const (
@@ -24,8 +26,6 @@ var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
-
-var ModuleCdc *codec.Codec
 
 // app module basics object
 type AppModuleBasic struct{}
@@ -39,14 +39,7 @@ func (AppModuleBasic) Name() string {
 
 // register module codec
 func (AppModuleBasic) RegisterCodec(cdc *codec.Codec) {
-    cdc.RegisterConcrete(TxCreateMarket{}, "microtick/CreateMarket", nil)
-    cdc.RegisterConcrete(TxCreateQuote{}, "microtick/CreateQuote", nil)
-    cdc.RegisterConcrete(TxCancelQuote{}, "microtick/CancelQuote", nil)
-    cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/UpdateQuote", nil)
-    cdc.RegisterConcrete(TxDepositQuote{}, "microtick/DepositQuote", nil)
-    cdc.RegisterConcrete(TxMarketTrade{}, "microtick/MarketTrade", nil)
-    cdc.RegisterConcrete(TxLimitTrade{}, "microtick/LimitTrade", nil)
-    cdc.RegisterConcrete(TxSettleTrade{}, "microtick/SettleTrade", nil)
+	RegisterCodec(cdc)
 }
 
 // default genesis state

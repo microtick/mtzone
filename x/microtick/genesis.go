@@ -5,7 +5,6 @@ import (
     "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
     "github.com/cosmos/cosmos-sdk/x/distribution/types"
-    distr "github.com/cosmos/cosmos-sdk/x/distribution"
 )
 
 type GenesisState struct {
@@ -35,8 +34,8 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data GenesisState) {
     fmt.Printf("Prearranged halt time: %s\n", time.Unix(data.Params.HaltTime, 0).String())
 }
 
-func ExportGenesis(ctx sdk.Context, keeper Keeper, distrKeeper distr.Keeper) GenesisState {
-    distrKeeper.IterateValidatorOutstandingRewards(ctx, 
+func ExportGenesis(ctx sdk.Context, keeper Keeper) GenesisState {
+    keeper.distrKeeper.IterateValidatorOutstandingRewards(ctx, 
         func(addr sdk.ValAddress, rewards types.ValidatorOutstandingRewards) (stop bool) {
             fmt.Printf("Reward: %+v\n", rewards)
             return false
@@ -54,4 +53,8 @@ func ExportGenesis(ctx sdk.Context, keeper Keeper, distrKeeper distr.Keeper) Gen
     params := keeper.GetParams(ctx)
     
     return NewGenesisState(params, pool)
+}
+
+func ValidateGenesis(data GenesisState) error {
+    return nil
 }
