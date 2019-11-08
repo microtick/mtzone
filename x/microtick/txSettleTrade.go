@@ -148,9 +148,12 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
         
     }
     
-    tags := sdk.NewTags(
-        fmt.Sprintf("trade.%d", trade.Id), "event.settle",
-        fmt.Sprintf("acct.%s", trade.Long), "settle.long",
+    ctx.EventManager().EmitEvent(
+        sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
+        ),
     )
     
     var found bool = false
@@ -161,7 +164,12 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     for i := 0; i < len(trade.CounterParties); i++ {
         cp := trade.CounterParties[i]
         
-        tags = tags.AppendTag(fmt.Sprintf("acct.%s", cp.Short), "settle.short")
+        ctx.EventManager().EmitEvent(
+            sdk.NewEvent(
+                sdk.EventTypeMessage,
+                sdk.NewAttribute(fmt.Sprintf("acct.%s", cp.Short), "settle.short"),
+            ),
+        )
         if cp.Short.Equals(msg.Requester) {
             found = true
         }
@@ -169,7 +177,12 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     
     if !found {
         // msg.Requester is not a long or short account for this trade
-        tags = tags.AppendTag(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize")
+        ctx.EventManager().EmitEvent(
+            sdk.NewEvent(
+                sdk.EventTypeMessage,
+                sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
+            ),
+        )
     }
     
     data := TradeSettlementData {
@@ -190,6 +203,6 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     
 	return sdk.Result {
 	    Data: bz,
-	    Tags: tags,
+	    Events: ctx.EventManager().Events(),
 	}
 }

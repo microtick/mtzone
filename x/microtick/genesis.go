@@ -27,7 +27,7 @@ func DefaultGenesisState() GenesisState {
 func InitGenesis(ctx sdk.Context, keeper Keeper, data GenesisState) {
     keeper.SetParams(ctx, data.Params)
     
-    store := ctx.KVStore(keeper.storeKeys.AppGlobals)
+    store := ctx.KVStore(keeper.appGlobalsKey)
     key := []byte("commissionPool")
     
     store.Set(key, keeper.cdc.MustMarshalBinaryBare(data.Pool))
@@ -43,7 +43,7 @@ func ExportGenesis(ctx sdk.Context, keeper Keeper, distrKeeper distr.Keeper) Gen
         },
     )
     
-    store := ctx.KVStore(keeper.storeKeys.AppGlobals)
+    store := ctx.KVStore(keeper.appGlobalsKey)
     key := []byte("commissionPool")
     var pool MicrotickCoin = NewMicrotickCoinFromInt(0)
     if store.Has(key) {

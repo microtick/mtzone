@@ -30,18 +30,43 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	cmn "github.com/tendermint/tendermint/libs/common"
-	dbm "github.com/tendermint/tendermint/libs/db"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 const (
     appName = "Microtick"
     BondDenom = "fox"
+    
+    mtGlobalsKey = "MTGlobals"
+    mtAccountStatusKey = "MTAccountStatus"
+    mtActiveQuotesKey = "MTActiveQuotes"
+    mtActiveTradesKey = "MTActiveTrades"
+    mtMarketsKey = "MTMarkets"
 )
 
 var (
 	DefaultCLIHome = os.ExpandEnv("$MTROOT/mtcli")
 	DefaultNodeHome = os.ExpandEnv("$MTROOT/mtd")
+	ModuleBasics = module.NewBasicManager(
+		genutil.AppModuleBasic{},
+		auth.AppModuleBasic{},
+		bank.AppModuleBasic{},
+		staking.AppModuleBasic{},
+		distr.AppModuleBasic{},
+		gov.NewAppModuleBasic(paramsclient.ProposalHandler, distr.ProposalHandler),
+		params.AppModuleBasic{},
+		crisis.AppModuleBasic{},
+		slashing.AppModuleBasic{},
+		supply.AppModuleBasic{},
+	)
+	maccPerms = map[string][]string{
+		auth.FeeCollectorName: nil,
+		distr.ModuleName: nil,
+		mint.ModuleName: nil,
+		staking.BondedPoolName: {supply.Burner, supply.Staking},
+		staking.NotBondedPoolName: {supply.Burner, supply.Staking},
+		gov.ModuleName: {supply.Burner},
+	}
 )
 
 func init() {
@@ -53,21 +78,9 @@ type mtApp struct {
 	cdc *codec.Codec
 	
 	invCheckPeriod uint
-
-	keyMain          *sdk.KVStoreKey
-	keyAccount       *sdk.KVStoreKey
-	keyFeeCollection *sdk.KVStoreKey
 	
-	keyDistr		 *sdk.KVStoreKey
-	tkeyDistr		 *sdk.TransientStoreKey
-	keySlashing		 *sdk.KVStoreKey
-	keyStaking		 *sdk.KVStoreKey
-	tkeyStaking		 *sdk.TransientStoreKey
-	keyGov			 *sdk.KVStoreKey
-	
-	keyParams        *sdk.KVStoreKey
-	tkeyParams       *sdk.TransientStoreKey
-	keyMT            microtick.MicrotickStores
+	keys map[string]*sdk.KVStoreKey
+	tkeys map[string]*sdk.TransientStoreKey
 
 	accountKeeper       auth.AccountKeeper
 	bankKeeper          bank.Keeper
@@ -79,16 +92,45 @@ type mtApp struct {
 	crisisKeeper		crisis.Keeper
 	paramsKeeper        params.Keeper
 	mtKeeper            microtick.Keeper
+	
+	// module manager
+	mm	*module.Manager
+	
+	// simulation manager
+	sm	*module.SimulationManager
 }
 
-func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, 
-	invCheckPeriod uint,
-	baseAppOptions ...func(*bam.BaseApp)) *mtApp {
+func NewMTApp(
+	logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, 
+	invCheckPeriod uint, baseAppOptions ...func(*bam.BaseApp),
+) *mtApp {
 		
     cdc := MakeCodec()
 
     bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc), baseAppOptions...)
     bApp.SetCommitMultiStoreTracer(traceStore)
+    bApp.SetAppVersion(MTAppVersion)
+    
+    keys := sdk.NewKvstoreKeys(
+    	bam.MainStoreKey,
+    	auth.StoreKey,
+    	staking.StoreKey,
+    	supply.StoreKey,
+    	distr.StoreKey,
+    	slashing.StoreKey,
+    	gov.StoreKey,
+    	params.StoreKey,
+    	mtGlobalsKey,
+    	mtAccountStatusKey,
+    	mtActiveQuotesKey,
+    	mtActiveTradesKey,
+    	mtMarketsKey,
+    )
+    
+    tkeys := sdk.NewTransientStoreKeys(
+    	staking.TStoreKey,
+    	params.TStoreKey,
+    )
     
     var app = &mtApp{
         BaseApp: bApp,
@@ -96,104 +138,120 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
         
         invCheckPeriod:   invCheckPeriod,
         
-		keyMain:          sdk.NewKVStoreKey(bam.MainStoreKey),
-		keyAccount:       sdk.NewKVStoreKey(auth.StoreKey),
-		keyFeeCollection: sdk.NewKVStoreKey(auth.FeeStoreKey),
-		
-		keyDistr:         sdk.NewKVStoreKey(distr.StoreKey),
-		tkeyDistr:        sdk.NewTransientStoreKey(distr.TStoreKey),
-		keySlashing:      sdk.NewKVStoreKey(slashing.StoreKey),
-		keyGov:           sdk.NewKVStoreKey(gov.StoreKey),
-		keyStaking:       sdk.NewKVStoreKey(staking.StoreKey),
-		tkeyStaking:      sdk.NewTransientStoreKey(staking.TStoreKey),
-		
-		keyParams:        sdk.NewKVStoreKey(params.StoreKey),
-		tkeyParams:       sdk.NewTransientStoreKey(params.TStoreKey),
-		
-		keyMT:			  microtick.MicrotickStores {
-    						AppGlobals: sdk.NewKVStoreKey("MTGlobals"),
-    						AccountStatus: sdk.NewKVStoreKey("MTAccountStatus"),
-    						ActiveQuotes: sdk.NewKVStoreKey("MTActiveQuotes"),
-    						ActiveTrades: sdk.NewKVStoreKey("MTActiveTrades"),
-    						Markets: sdk.NewKVStoreKey("MTMarkets"),
-    				      },
+        keys: keys,
+        tkeys: tkeys,
     }
 
  	// The ParamsKeeper handles parameter storage for the application
-	app.paramsKeeper = params.NewKeeper(app.cdc, app.keyParams, app.tkeyParams)
-
-	// The AccountKeeper handles address -> account lookups
+	app.paramsKeeper = params.NewKeeper(
+		app.cdc, 
+		keys[params.StoreKey], 
+		tkeys[params.TStoreKey], 
+		params.DefaultCodespace)
+		
+	authSubspace := app.paramsKeeper.Subspace(auth.DefaultParamspace)	
+		
 	app.accountKeeper = auth.NewAccountKeeper(
 		app.cdc,
-		app.keyAccount,
+		keys[auth.StoreKey],
 		app.paramsKeeper.Subspace(auth.DefaultParamspace),
 		auth.ProtoBaseAccount,
 	)
-
-	// The BankKeeper allows you perform sdk.Coins interactions
+	
 	app.bankKeeper = bank.NewBaseKeeper(
 		app.accountKeeper,
 		app.paramsKeeper.Subspace(bank.DefaultParamspace),
 		bank.DefaultCodespace,
-	)
-
-	// The FeeCollectionKeeper collects transaction fees and renders them to the fee distribution module
-	app.feeCollectionKeeper = auth.NewFeeCollectionKeeper(
-		app.cdc, 
-		app.keyFeeCollection,
+		app.ModuleAccountAddrs(),
 	)
 	
+	app.supplyKeeper = supply.NewKeeper(
+		app.cdc,
+		keys[supply.StoreKey],
+		app.accountKeeper,
+		app.bankKeeper,
+		maccPerm,
+	)
+		
 	stakingKeeper := staking.NewKeeper(
 		app.cdc,
-		app.keyStaking, app.tkeyStaking,
-		app.bankKeeper, app.paramsKeeper.Subspace(staking.DefaultParamspace),
-		staking.DefaultCodespace,
-	)
-	app.distrKeeper = distr.NewKeeper(
-		app.cdc,
-		app.keyDistr,
-		app.paramsKeeper.Subspace(distr.DefaultParamspace),
-		app.bankKeeper, &stakingKeeper, app.feeCollectionKeeper,
-		distr.DefaultCodespace,
-	)
-	app.slashingKeeper = slashing.NewKeeper(
-		app.cdc,
-		app.keySlashing,
-		&stakingKeeper, app.paramsKeeper.Subspace(slashing.DefaultParamspace),
+		keys[staking.StoreKey],
+		app.SupplyKeeper,
+		stakingSubspace,
 		slashing.DefaultCodespace,
 	)
-	app.govKeeper = gov.NewKeeper(
+	
+	app.distrKeeper = distr.NewKeeper(
 		app.cdc,
-		app.keyGov,
-		app.paramsKeeper, app.paramsKeeper.Subspace(gov.DefaultParamspace), app.bankKeeper, &stakingKeeper,
-		gov.DefaultCodespace,
+		keys[distr.StoreKey],
+		distrSubspace,
+		&stakingKeeper,
+		app.supplyKeeper,
+		distr.DefaultCodespace,
+		auth.FeeCollectorName,
+		app.ModuleAccountAddrs(),
 	)
 	
-	app.stakingKeeper = *stakingKeeper.SetHooks(
-		NewStakingHooks(app.distrKeeper.Hooks(), app.slashingKeeper.Hooks()),
+	app.slashingKeeper = slashing.NewKeeper(
+		app.cdc, 
+		keys[slashing.StoreKey],
+		&stakingKeeper,
+		slashingSubspace,
+		slashing.DefaultCodespace,
 	)
 	
 	app.crisisKeeper = crisis.NewKeeper(
-		app.paramsKeeper.Subspace(crisis.DefaultParamspace),
-		app.distrKeeper,
-		app.bankKeeper,
-		app.feeCollectionKeeper,
+		crisisSubspace,
+		invCheckPeriod,
+		app.supplyKeeper,
+		auth.FeeCollectorName,
+	)
+	
+	govRouter := gov.NewRouter()
+	govRouter.AddRoute(gov.RouterKey, gov.ProposalHandler).
+		AddRoute(params.RouterKey, params.NewParamChangeProposalHandler(app.paramsKeeper)).
+		AddRoute(distr.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.distrKeeper))
+	app.govKeeper = gov.NewKeeper(
+		app.cdc, keys[gov.StoreKey], govSubspace,
+		app.supplyKeeper, &stakingKeeper, gov.DefaultCodespace, govRouter,
 	)
 	
 	app.mtKeeper = microtick.NewKeeper(
 		app.accountKeeper,
 		app.bankKeeper,
-		app.feeCollectionKeeper,
-		app.keyMT,
+		mtGlobalsKey,
+		mtAccountStatusKey,
+		mtActiveQuotesKey,
+		mtActiveTradesKey,
+		mtMarketsKey,
 		app.cdc,
 		app.paramsKeeper.Subspace(microtick.DefaultParamspace),
 	)
 	
+	app.stakingKeeper = *stakingKeeper.SetHooks(
+		staking.NewMultiStakingHooks(
+			app.distrKeeper.Hooks(),
+			app.slashingKeeper.Hooks(),
+		),
+	)
+	
+	app.mm = module.NewManager(
+		genutil.NewAppModule(app.accountKeeper, app.stakingKeeper, app.BaseApp.DeliverTx),
+		auth.NewAppModule(app.accountKeeper),
+		bank.NewAppModule(app.bankKeeper, app.accountKeeper),
+		crisis.NewAppModule(&app.crisisKeeper),
+		supply.NewAppModule(app.supplyKeeper, app.accountKeeper),
+		distr.NewAppModule(app.distrKeeper, app.supplyKeeper),
+		gov.NewAppModule(app.govKeeper, app.supplyKeeper),
+		slashing.NewAppModule(app.slashingKeeper, app.stakingKeeper),
+		staking.NewAppModule(app.stakingKeeper, app.accountKeeper, app.supplyKeeper),
+		microtick.NewAppModule(app.mtKeeper),
+	)
+	
 	// register the crisis routes
-	bank.RegisterInvariants(&app.crisisKeeper, app.accountKeeper)
-	distr.RegisterInvariants(&app.crisisKeeper, app.distrKeeper, app.stakingKeeper)
+	app.mm.RegisterInvariants(&app.crisisKeeper)
 	//staking.RegisterInvariants(&app.crisisKeeper, app.stakingKeeper, app.feeCollectionKeeper, app.distrKeeper, app.accountKeeper)
-	microtick.RegisterInvariants(&app.crisisKeeper, app.stakingKeeper, app.feeCollectionKeeper, app.distrKeeper, app.accountKeeper, app.mtKeeper)
+	//microtick.RegisterInvariants(&app.crisisKeeper, app.stakingKeeper, app.feeCollectionKeeper, app.distrKeeper, app.accountKeeper, app.mtKeeper)
 
 	// The app.Router is the main transaction router where each module registers its routes
 	// Register the bank and nameservice routes here
@@ -215,24 +273,8 @@ func NewMTApp(logger tlog.Logger, db dbm.DB, traceStore io.Writer, loadLatest bo
 		AddRoute(staking.QuerierRoute, staking.NewQuerier(app.stakingKeeper, app.cdc)).
 		AddRoute("microtick", microtick.NewQuerier(app.mtKeeper))
 
-	app.MountStores(
-		app.keyMain,
-		app.keyAccount,
-		app.keyFeeCollection,
-		app.keyStaking,
-		app.tkeyStaking,
-		app.keyDistr,
-		app.tkeyDistr,
-		app.keySlashing,
-		app.keyGov,
-		app.keyParams,
-		app.tkeyParams,
-		app.keyMT.AppGlobals,
-		app.keyMT.AccountStatus,
-		app.keyMT.ActiveQuotes,
-		app.keyMT.ActiveTrades,
-		app.keyMT.Markets,
-	)
+	app.MountKVStores(keys)
+	app.MountTransientStores(tkeys)
 	
 	app.SetInitChainer(app.initChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
@@ -845,6 +887,11 @@ func (app *mtApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []stri
 // MakeCodec generates the necessary codecs for Amino
 func MakeCodec() *codec.Codec {
 	var cdc = codec.New()
+	
+	ModuleBasics.RegisterCodec(cdc)
+	sdk.RegisterCodec(cdc)
+	codec.RegisterCrypto(cdc)
+	
 	auth.RegisterCodec(cdc)
 	bank.RegisterCodec(cdc)
 	staking.RegisterCodec(cdc)
@@ -853,9 +900,8 @@ func MakeCodec() *codec.Codec {
 	gov.RegisterCodec(cdc)
 	crisis.RegisterCodec(cdc)
 	microtick.RegisterCodec(cdc)
-	sdk.RegisterCodec(cdc)
-	codec.RegisterCrypto(cdc)
-	return cdc
+	
+	return cdc.Seal()
 }
 
 // CollectStdTxs processes and validates application's genesis StdTxs and returns

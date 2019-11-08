@@ -110,11 +110,14 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     
     balance := keeper.GetTotalBalance(ctx, msg.Requester)
    
-    // Tags
-    tags := sdk.NewTags(
-        fmt.Sprintf("quote.%d", quote.Id), "event.update",
-        fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update",
-        "mtm.MarketTick", quote.Market,
+    // Events
+    ctx.EventManager().EmitEvent(
+        sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.update"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update"),
+            sdk.NewAttribute("mtm.MarketTick", quote.Market),
+        ),
     )
     
     // Data
@@ -134,6 +137,6 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     
     return sdk.Result {
         Data: bz,
-        Tags: tags,
+        Events: ctx.EventManager().Events(),
     }
 }

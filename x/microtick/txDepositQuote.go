@@ -110,10 +110,13 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
         }
     }
     
-    tags := sdk.NewTags(
-        fmt.Sprintf("quote.%d", quote.Id), "event.deposit",
-        fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit",
-        "mtm.MarketTick", quote.Market,
+    ctx.EventManager().EmitEvent(
+        sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.deposit"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit"),
+            sdk.NewAttribute("mtm.MarketTick", quote.Market),
+        ),
     )
     
     // Data
@@ -131,6 +134,6 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     
     return sdk.Result {
         Data: bz,
-        Tags: tags,
+        Events: ctx.EventManager().Events(),
     }
 }

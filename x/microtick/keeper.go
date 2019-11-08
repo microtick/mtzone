@@ -8,35 +8,49 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	"github.com/cosmos/cosmos-sdk/x/distribution"
+	"github.com/cosmos/cosmos-sdk/x/staking"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/params"
 )
 
-type MicrotickStores struct {
-	AppGlobals sdk.StoreKey
-	AccountStatus sdk.StoreKey
-	ActiveQuotes sdk.StoreKey
-	ActiveTrades sdk.StoreKey
-	Markets sdk.StoreKey
-}
-
 type Keeper struct {
 	accountKeeper auth.AccountKeeper
 	coinKeeper bank.Keeper
-	feeKeeper auth.FeeCollectionKeeper
-	storeKeys MicrotickStores
+	distrKeeper distribution.Keeper
+	stakingKeeper staking.Keeper
+	appGlobalsKey sdk.StoreKey
+	accountStatusKey sdk.StoreKey
+	activeQuotesKey sdk.StoreKey
+	activeTradesKey sdk.StoreKey
+	marketsKey sdk.StoreKey
 	cdc *codec.Codec 
 	paramSubspace params.Subspace
 }
 
-func NewKeeper(accountKeeper auth.AccountKeeper, coinKeeper bank.Keeper, feeKeeper auth.FeeCollectionKeeper, 
-    storeKeys MicrotickStores, cdc *codec.Codec, paramstore params.Subspace) Keeper {
+func NewKeeper(accountKeeper auth.AccountKeeper, 
+	coinKeeper bank.Keeper,
+	distrKeeper distribution.Keeper,
+	stakingKeeper staking.Keeper,
+	mtAppGlobalsKey sdk.StoreKey,
+	mtAccountStatusKey sdk.StoreKey,
+	mtActiveQuotesKey sdk.StoreKey,
+	mtActiveTradesKey sdk.StoreKey,
+	mtMarketsKey sdk.StoreKey,
+    cdc *codec.Codec, 
+    paramstore params.Subspace,
+) Keeper {
 	return Keeper {
 		accountKeeper: accountKeeper,
 		coinKeeper: coinKeeper,
-		feeKeeper: feeKeeper,
-		storeKeys: storeKeys,
+		distrKeeper: distrKeeper,
+		stakingKeeper: stakingKeeper,
+		appGlobalsKey: mtAppGlobalsKey,
+		accountStatusKey: mtAccountStatusKey,
+		activeQuotesKey: mtActiveQuotesKey,
+		activeTradesKey: mtActiveTradesKey,
+		marketsKey: mtMarketsKey,
 		cdc: cdc,
 		paramSubspace: paramstore.WithKeyTable(ParamKeyTable()),
 	}
@@ -59,7 +73,7 @@ func (keeper Keeper) GetParams(ctx sdk.Context) (params Params) {
 // DataAccountStatus
 
 func (k Keeper) GetAccountStatus(ctx sdk.Context, acct MicrotickAccount) DataAccountStatus {
-	store := ctx.KVStore(k.storeKeys.AccountStatus)
+	store := ctx.KVStore(k.accountStatusKey)
 	key := []byte(acct.String())
 	if !store.Has(key) {
 		return NewDataAccountStatus(acct)
@@ -71,7 +85,7 @@ func (k Keeper) GetAccountStatus(ctx sdk.Context, acct MicrotickAccount) DataAcc
 }
 
 func (k Keeper) SetAccountStatus(ctx sdk.Context, acct MicrotickAccount, status DataAccountStatus) {
-	store := ctx.KVStore(k.storeKeys.AccountStatus)
+	store := ctx.KVStore(k.accountStatusKey)
 	key := []byte(acct.String())
 	status.Account = acct
 	store.Set(key, k.cdc.MustMarshalBinaryBare(status))
@@ -80,13 +94,13 @@ func (k Keeper) SetAccountStatus(ctx sdk.Context, acct MicrotickAccount, status 
 // DataMarket
 
 func (k Keeper) HasDataMarket(ctx sdk.Context, market MicrotickMarket) bool {
-	store := ctx.KVStore(k.storeKeys.Markets)
+	store := ctx.KVStore(k.marketsKey)
 	key := []byte(market)
 	return store.Has(key)
 }
 
 func (k Keeper) GetDataMarket(ctx sdk.Context, market MicrotickMarket) (DataMarket, error) {
-	store := ctx.KVStore(k.storeKeys.Markets)
+	store := ctx.KVStore(k.marketsKey)
 	key := []byte(market)
 	var dataMarket DataMarket
 	if !store.Has(key) {
@@ -98,7 +112,7 @@ func (k Keeper) GetDataMarket(ctx sdk.Context, market MicrotickMarket) (DataMark
 }
 
 func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
-	store := ctx.KVStore(k.storeKeys.Markets)
+	store := ctx.KVStore(k.marketsKey)
 	key := []byte(dataMarket.Market)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(dataMarket))
 }
@@ -106,7 +120,7 @@ func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
 // DataActiveQuote
 
 func (k Keeper) GetNextActiveQuoteId(ctx sdk.Context) MicrotickId {
-	store := ctx.KVStore(k.storeKeys.ActiveQuotes)
+	store := ctx.KVStore(k.activeQuotesKey)
 	key := []byte("nextQuoteId")
 	var id MicrotickId
 	var val []byte
@@ -124,7 +138,7 @@ func (k Keeper) GetNextActiveQuoteId(ctx sdk.Context) MicrotickId {
 }
 
 func (k Keeper) GetActiveQuote(ctx sdk.Context, id MicrotickId) (DataActiveQuote, error) {
-	store := ctx.KVStore(k.storeKeys.ActiveQuotes)
+	store := ctx.KVStore(k.activeQuotesKey)
 	key := make([]byte, 4)
 	var activeQuote DataActiveQuote
 	binary.LittleEndian.PutUint32(key, id)
@@ -137,14 +151,14 @@ func (k Keeper) GetActiveQuote(ctx sdk.Context, id MicrotickId) (DataActiveQuote
 }
 
 func (k Keeper) SetActiveQuote(ctx sdk.Context, active DataActiveQuote) {
-	store := ctx.KVStore(k.storeKeys.ActiveQuotes)
+	store := ctx.KVStore(k.activeQuotesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, active.Id)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(active))
 }
 
 func (k Keeper) DeleteActiveQuote(ctx sdk.Context, id MicrotickId) {
-	store := ctx.KVStore(k.storeKeys.ActiveQuotes)
+	store := ctx.KVStore(k.activeQuotesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, id)
 	store.Delete(key)
@@ -153,7 +167,7 @@ func (k Keeper) DeleteActiveQuote(ctx sdk.Context, id MicrotickId) {
 // DataActiveTrade
 
 func (k Keeper) GetNextActiveTradeId(ctx sdk.Context) MicrotickId {
-	store := ctx.KVStore(k.storeKeys.ActiveQuotes)
+	store := ctx.KVStore(k.activeQuotesKey)
 	key := []byte("nextTradeId")
 	var id MicrotickId
 	var val []byte
@@ -171,7 +185,7 @@ func (k Keeper) GetNextActiveTradeId(ctx sdk.Context) MicrotickId {
 }
 
 func (k Keeper) GetActiveTrade(ctx sdk.Context, id MicrotickId) (DataActiveTrade, error) {
-	store := ctx.KVStore(k.storeKeys.ActiveTrades)
+	store := ctx.KVStore(k.activeTradesKey)
 	key := make([]byte, 4)
 	var activeTrade DataActiveTrade
 	binary.LittleEndian.PutUint32(key, id)
@@ -184,14 +198,14 @@ func (k Keeper) GetActiveTrade(ctx sdk.Context, id MicrotickId) (DataActiveTrade
 }
 
 func (k Keeper) SetActiveTrade(ctx sdk.Context, active DataActiveTrade) {
-	store := ctx.KVStore(k.storeKeys.ActiveTrades)
+	store := ctx.KVStore(k.activeTradesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, active.Id)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(active))
 }
 
 func (k Keeper) DeleteActiveTrade(ctx sdk.Context, id MicrotickId) {
-	store := ctx.KVStore(k.storeKeys.ActiveTrades)
+	store := ctx.KVStore(k.activeTradesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, id)
 	store.Delete(key)

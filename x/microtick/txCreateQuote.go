@@ -132,11 +132,14 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     keeper.PoolCommission(ctx, commission)
     
     // Tags
-    tags := sdk.NewTags(
-        "mtm.NewQuote", fmt.Sprintf("%d", id),
-        fmt.Sprintf("quote.%d", id), "event.create",
-        fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create",
-        "mtm.MarketTick", msg.Market,
+    ctx.EventManager().EmitEvent(
+        sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute("mtm.NewQuote", fmt.Sprintf("%d", id)),
+            sdk.NewAttribute(fmt.Sprintf("quote.%d", id), "event.create"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create"),
+            sdk.NewAttribute("mtm.MarketTick", msg.Market),
+        ),
     )
     
     // Data
@@ -157,6 +160,6 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
     
 	return sdk.Result {
 	    Data: bz,
-	    Tags: tags,
+	    Events: ctx.EventManager().Events(),
 	}
 }

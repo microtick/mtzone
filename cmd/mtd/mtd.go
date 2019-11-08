@@ -26,7 +26,6 @@ import (
 	app "github.com/mjackson001/mtzone"
 	abci "github.com/tendermint/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
-	dbm "github.com/tendermint/tendermint/libs/db"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"github.com/mjackson001/mtzone/x/microtick"
 )

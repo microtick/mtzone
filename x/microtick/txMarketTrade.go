@@ -121,23 +121,41 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
         matcher.Trade.Balance = keeper.GetTotalBalance(ctx, msg.Buyer)
         keeper.SetActiveTrade(ctx, matcher.Trade)
     
-        tags := sdk.NewTags(
-            "mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id),
-            fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create",
-            fmt.Sprintf("acct.%s", msg.Buyer), "trade.long",
-            "mtm.MarketTick", msg.Market,
+        ctx.EventManager().EmitEvent(
+            sdk.NewEvent(
+                sdk.EventTypeMessage,
+                sdk.NewAttribute("mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id)),
+                sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
+                sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Buyer), "trade.long"),
+                sdk.NewAttribute("mtm.MarketTick", msg.Market),
+            ),
         )
         
         for i := 0; i < len(matcher.FillInfo); i++ {
             thisFill := matcher.FillInfo[i]
             
-            tags = tags.AppendTag(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short")
+            ctx.EventManager().EmitEvent(
+                sdk.NewEvent(
+                    sdk.EventTypeMessage,
+                    sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short"),
+                ),
+            )
             
             quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
             if thisFill.FinalFill {
-                tags = tags.AppendTag(quoteKey, "event.final")
+                ctx.EventManager().EmitEvent(
+                    sdk.NewEvent(
+                        sdk.EventTypeMessage,
+                        sdk.NewAttribute(quoteKey, "event.final"),
+                    ),
+                )
             } else {
-                tags = tags.AppendTag(quoteKey, "event.match")
+                ctx.EventManager().EmitEvent(
+                    sdk.NewEvent(
+                        sdk.EventTypeMessage,
+                        sdk.NewAttribute(quoteKey, "event.match"),
+                    ),
+                )
             }
         }
         
@@ -152,7 +170,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
             
         return sdk.Result {
             Data: bz,
-            Tags: tags,
+            Events: ctx.EventManager().Events(),
         }
         
     } else {

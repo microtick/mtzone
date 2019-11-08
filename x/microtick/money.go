@@ -8,7 +8,7 @@ import (
 // Commissions
 
 func (k Keeper) PoolCommission(ctx sdk.Context, amount MicrotickCoin) {
-	store := ctx.KVStore(k.storeKeys.AppGlobals)
+	store := ctx.KVStore(k.appGlobalsKey)
 	key := []byte("commissionPool")
 	
 	var pool MicrotickCoin = NewMicrotickCoinFromInt(0)
@@ -32,7 +32,7 @@ func (k Keeper) PoolCommission(ctx sdk.Context, amount MicrotickCoin) {
 }
 
 func (k Keeper) FractionalCommission(ctx sdk.Context) MicrotickCoin {
-	store := ctx.KVStore(k.storeKeys.AppGlobals)
+	store := ctx.KVStore(k.appGlobalsKey)
 	key := []byte("commissionPool")
 	
 	var pool MicrotickCoin = NewMicrotickCoinFromInt(0)
@@ -69,7 +69,7 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	        accountStatus.Change = NewMicrotickCoinFromInt(0)
 	    }
 	    
-	    _, _, err := k.coinKeeper.SubtractCoins(ctx, account, sdk.Coins{amt})
+	    _, err := k.coinKeeper.SubtractCoins(ctx, account, sdk.Coins{amt})
 	    if err != nil {
 	        panic("Not enough funds")
 	    }
@@ -88,7 +88,7 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	amt, change = totalDecCoin.TruncateDecimal()
 	
 	if amt.IsPositive() {
-		_, _, err := k.coinKeeper.AddCoins(ctx, account, sdk.Coins{amt})
+		_, err := k.coinKeeper.AddCoins(ctx, account, sdk.Coins{amt})
 		if err != nil {
 			panic("Deposit failed")
 		}

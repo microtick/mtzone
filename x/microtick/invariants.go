@@ -1,35 +1,24 @@
 package microtick
 
 import (
-	"fmt"
+	//"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
-	stakingKeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	//"github.com/cosmos/cosmos-sdk/x/auth"
+	//staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
-
-// register all staking invariants
-func RegisterInvariants(c staking.CrisisKeeper, k stakingKeeper.Keeper, f staking.FeeCollectionKeeper,
-	d staking.DistributionKeeper, am auth.AccountKeeper, mtk Keeper) {
-
-	c.RegisterRoute(staking.ModuleName, "supply",
-		SupplyInvariants(k, f, d, am, mtk))
-	c.RegisterRoute(staking.ModuleName, "nonnegative-power",
-		stakingKeeper.NonNegativePowerInvariant(k))
-	c.RegisterRoute(staking.ModuleName, "positive-delegation",
-		stakingKeeper.PositiveDelegationInvariant(k))
-	c.RegisterRoute(staking.ModuleName, "delegator-shares",
-		stakingKeeper.DelegatorSharesInvariant(k))
-}
 
 // SupplyInvariants checks that the total supply reflects all held not-bonded tokens, bonded tokens, and unbonding delegations
 // nolint: unparam
-func SupplyInvariants(k stakingKeeper.Keeper, f staking.FeeCollectionKeeper,
-	d staking.DistributionKeeper, am auth.AccountKeeper, mtk Keeper) sdk.Invariant {
+func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
+	ir.RegisterRoute(ModuleName, "constant-supply", ConstantSupply(k))
+}
 
-	return func(ctx sdk.Context) error {
-		pool := k.GetPool(ctx)
+func ConstantSupply(k Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		/*
+		// This needs to be entirely rewritten
+		pool := k.distrKeeper.GetPool(ctx)
 
 		loose := sdk.ZeroDec()
 		bonded := sdk.ZeroDec()
@@ -98,6 +87,7 @@ func SupplyInvariants(k stakingKeeper.Keeper, f staking.FeeCollectionKeeper,
 				"\tsum of account tokens: %v", pool.BondedTokens, bonded)
 		}
 
-		return nil
+		*/
+		return "", false
 	}
 }

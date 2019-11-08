@@ -88,10 +88,13 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     
     balance := keeper.GetTotalBalance(ctx, quote.Provider)
     
-    tags := sdk.NewTags(
-        fmt.Sprintf("quote.%d", quote.Id), "event.cancel",
-        fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel",
-        "mtm.MarketTick", quote.Market,
+    ctx.EventManager().EmitEvent(
+        sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.cancel"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel"),
+            sdk.NewAttribute("mtm.MarketTick", quote.Market),
+        ),
     )
     
     // Data
@@ -107,6 +110,6 @@ func handleTxCancelQuote(ctx sdk.Context, keeper Keeper, msg TxCancelQuote) sdk.
     
     return sdk.Result {
         Data: bz,
-        Tags: tags,
+        Events: ctx.EventManager().Events(),
     }
 }
