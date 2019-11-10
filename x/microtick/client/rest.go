@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 
 	"github.com/gorilla/mux"
@@ -54,7 +55,7 @@ func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.Handler
 		var msg auth.StdTx
 		cdc.MustUnmarshalJSON([]byte(req.Tx), &msg)
 		
-		encoder := utils.GetTxEncoder(cdc)
+		encoder := sdk.GetConfig().GetTxEncoder()
 		
 		bytes, _ := encoder(msg)
 		
@@ -65,7 +66,7 @@ func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.Handler
 			return
 		}
 		
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -75,13 +76,13 @@ func txCreateMarketHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeNam
 		account := vars["acct"]
 		market := vars["market"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/createmarket/%s/%s", storeName, account, market), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/createmarket/%s/%s", storeName, account, market), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -95,14 +96,14 @@ func txCreateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		spot := vars["spot"]
 		premium := vars["premium"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/createquote/%s/%s/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/createquote/%s/%s/%s/%s/%s/%s", storeName, 
 			account, market, duration, backing, spot, premium), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -112,14 +113,14 @@ func txCancelQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		id := vars["id"]
 		requester := vars["requester"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/cancelquote/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/cancelquote/%s/%s", storeName, 
 			requester, id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -130,14 +131,14 @@ func txDepositQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeNam
 		requester := vars["requester"]
 		amount := vars["amount"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/depositquote/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/depositquote/%s/%s/%s", storeName, 
 			requester, id, amount), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -149,14 +150,14 @@ func txUpdateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		spot := vars["spot"]
 		premium := vars["premium"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/updatequote/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/updatequote/%s/%s/%s/%s", storeName, 
 			requester, id, spot, premium), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -169,14 +170,14 @@ func txMarketTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		tradetype := vars["tradetype"]
 		quantity := vars["quantity"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/markettrade/%s/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/markettrade/%s/%s/%s/%s/%s", storeName, 
 			buyer, market, duration, tradetype, quantity), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -190,14 +191,14 @@ func txLimitTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName 
 		limit := vars["limit"]
 		maxcost := vars["maxcost"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/limittrade/%s/%s/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/limittrade/%s/%s/%s/%s/%s/%s", storeName, 
 			buyer, market, duration, tradetype, limit, maxcost), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -207,14 +208,14 @@ func txSettleTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		id := vars["id"]
 		requester := vars["requester"]
 		
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/settletrade/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/settletrade/%s/%s", storeName, 
 			requester, id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -223,13 +224,13 @@ func queryAccountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, stor
 		vars := mux.Vars(r)
 		account := vars["acct"]
 
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/account/%s", storeName, account), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/account/%s", storeName, account), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -238,13 +239,13 @@ func queryMarketStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, store
 		vars := mux.Vars(r)
 		market := vars["market"]
 
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/market/%s", storeName, market), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/market/%s", storeName, market), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -253,13 +254,13 @@ func queryMarketConsensusHandler(cdc *codec.Codec, cliCtx context.CLIContext, st
 		vars := mux.Vars(r)
 		market := vars["market"]
 
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/consensus/%s", storeName, market), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/consensus/%s", storeName, market), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -269,13 +270,13 @@ func queryMarketOrderbookHandler(cdc *codec.Codec, cliCtx context.CLIContext, st
 		market := vars["market"]
 		duration := vars["duration"]
 
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/orderbook/%s/%s", storeName, market, duration), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/orderbook/%s/%s", storeName, market, duration), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -284,13 +285,13 @@ func queryQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName st
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/quote/%s", storeName, id), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/quote/%s", storeName, id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 
@@ -299,13 +300,13 @@ func queryTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName st
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/trade/%s", storeName, id), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/trade/%s", storeName, id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
 		}
 
-		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }
 

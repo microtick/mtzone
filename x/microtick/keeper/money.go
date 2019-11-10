@@ -27,7 +27,7 @@ func (k MicrotickKeeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin
 	//fmt.Printf("Amount: %s\n", amount.String())
 	if whole.IsPositive() {
 		fmt.Printf("Adding commission: %s\n", whole.String())
-		k.feeKeeper.AddCollectedFees(ctx, sdk.Coins{whole})
+		//k.feeKeeper.AddCollectedFees(ctx, sdk.Coins{whole})
 	}
 	
 	store.Set(key, k.cdc.MustMarshalBinaryBare(pool))
@@ -71,7 +71,7 @@ func (k MicrotickKeeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccA
 	        accountStatus.Change = mt.NewMicrotickCoinFromInt(0)
 	    }
 	    
-	    _, err := k.coinKeeper.SubtractCoins(ctx, account, sdk.Coins{amt})
+	    _, err := k.CoinKeeper.SubtractCoins(ctx, account, sdk.Coins{amt})
 	    if err != nil {
 	        panic("Not enough funds")
 	    }
@@ -90,7 +90,7 @@ func (k MicrotickKeeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAd
 	amt, change = totalDecCoin.TruncateDecimal()
 	
 	if amt.IsPositive() {
-		_, err := k.coinKeeper.AddCoins(ctx, account, sdk.Coins{amt})
+		_, err := k.CoinKeeper.AddCoins(ctx, account, sdk.Coins{amt})
 		if err != nil {
 			panic("Deposit failed")
 		}
@@ -102,7 +102,7 @@ func (k MicrotickKeeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAd
 
 func (k MicrotickKeeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {
 	status := k.GetAccountStatus(ctx, addr)
-	coins := k.coinKeeper.GetCoins(ctx, addr)
+	coins := k.CoinKeeper.GetCoins(ctx, addr)
     balance := status.Change
     for i := 0; i < len(coins); i++ {
         if coins[i].Denom == mt.TokenType {

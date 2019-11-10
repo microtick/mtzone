@@ -1,4 +1,4 @@
-package query 
+package msg 
 
 import (
     "fmt"
@@ -9,26 +9,29 @@ import (
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type ResponseTradeStatus struct {
-    Id MicrotickId `json:"id"`
-    Market MicrotickMarket `json:"market"`
-    Duration MicrotickDurationName `json:"duration"`
-    Type MicrotickTradeTypeName `json:"type"`
-    CounterParties []DataCounterParty `json:"counterParties"`
-    Long MicrotickAccount `json:"long"`
-    Backing MicrotickCoin `json:"backing"`
-    Cost MicrotickCoin `json:"premium"` 
-    FilledQuantity MicrotickQuantity `json:"quantity"`
+    Id mt.MicrotickId `json:"id"`
+    Market mt.MicrotickMarket `json:"market"`
+    Duration mt.MicrotickDurationName `json:"duration"`
+    Type mt.MicrotickTradeTypeName `json:"type"`
+    CounterParties []keeper.DataCounterParty `json:"counterParties"`
+    Long mt.MicrotickAccount `json:"long"`
+    Backing mt.MicrotickCoin `json:"backing"`
+    Cost mt.MicrotickCoin `json:"premium"` 
+    FilledQuantity mt.MicrotickQuantity `json:"quantity"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
-    Strike MicrotickSpot `json:"strike"`
-    CurrentSpot MicrotickSpot `json:"currentSpot"`
-    CurrentValue MicrotickCoin `json:"currentValue"`
-    Commission MicrotickCoin `json:"commission"`
-    SettleIncentive MicrotickCoin `json:"settleIncentive"`
-    Balance MicrotickCoin `json:"balance"`
+    Strike mt.MicrotickSpot `json:"strike"`
+    CurrentSpot mt.MicrotickSpot `json:"currentSpot"`
+    CurrentValue mt.MicrotickCoin `json:"currentValue"`
+    Commission mt.MicrotickCoin `json:"commission"`
+    SettleIncentive mt.MicrotickCoin `json:"settleIncentive"`
+    Balance mt.MicrotickCoin `json:"balance"`
 }
 
 func (rts ResponseTradeStatus) String() string {
@@ -72,7 +75,7 @@ Current Value: %s`,
     rts.CurrentValue.String()))
 }
 
-func formatCounterParty(cpData DataCounterParty) string {
+func formatCounterParty(cpData keeper.DataCounterParty) string {
     return fmt.Sprintf(`
     Short: %s
         Quoted: %s
@@ -89,7 +92,7 @@ func formatCounterParty(cpData DataCounterParty) string {
     )
 }
 
-func formatQuoteParams(params DataQuoteParams) string {
+func formatQuoteParams(params keeper.DataQuoteParams) string {
     return fmt.Sprintf(`
             Id: %d 
             Premium: %s 
@@ -102,13 +105,13 @@ func formatQuoteParams(params DataQuoteParams) string {
     )
 }
 
-func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
+func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
         return nil, sdk.ErrInternal(fmt.Sprintf("Invalid trade ID: %s", err2))
     }
-    data, err2 := keeper.GetActiveTrade(ctx, MicrotickId(id))
+    data, err2 := keeper.GetActiveTrade(ctx, mt.MicrotickId(id))
     if err2 != nil {
         return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch trade data: %s", err2))
     }
@@ -121,7 +124,7 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Id: data.Id,
         Market: data.Market,
         Duration: data.Duration,
-        Type: MicrotickTradeNameFromType(data.Type),
+        Type: mt.MicrotickTradeNameFromType(data.Type),
         CounterParties: data.CounterParties,
         Long: data.Long,
         Backing: data.Backing,
@@ -137,7 +140,7 @@ func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Balance: data.Balance,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
+    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

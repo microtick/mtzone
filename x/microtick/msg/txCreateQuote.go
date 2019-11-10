@@ -1,4 +1,4 @@
-package tx
+package msg
 
 import (
     "fmt"
@@ -6,19 +6,22 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type TxCreateQuote struct {
-    Market MicrotickMarket
-    Duration MicrotickDuration
-    Provider MicrotickAccount
-    Backing MicrotickCoin
-    Spot MicrotickSpot
-    Premium MicrotickPremium
+    Market mt.MicrotickMarket
+    Duration mt.MicrotickDuration
+    Provider mt.MicrotickAccount
+    Backing mt.MicrotickCoin
+    Spot mt.MicrotickSpot
+    Premium mt.MicrotickPremium
 }
 
-func NewTxCreateQuote(market MicrotickMarket, dur MicrotickDuration, provider MicrotickAccount, 
-    backing MicrotickCoin, spot MicrotickSpot, premium MicrotickPremium) TxCreateQuote {
+func NewTxCreateQuote(market mt.MicrotickMarket, dur mt.MicrotickDuration, provider mt.MicrotickAccount, 
+    backing mt.MicrotickCoin, spot mt.MicrotickSpot, premium mt.MicrotickPremium) TxCreateQuote {
     return TxCreateQuote {
         Market: market,
         Duration: dur,
@@ -30,17 +33,17 @@ func NewTxCreateQuote(market MicrotickMarket, dur MicrotickDuration, provider Mi
 }
 
 type CreateQuoteData struct {
-    Id MicrotickId `json:"id"`
+    Id mt.MicrotickId `json:"id"`
     Originator string `json:"originator"`
-    Market MicrotickMarket `json:"market"`
-    Duration MicrotickDurationName `json:"duration"`
-    Spot MicrotickSpot `json:"spot"`
-    Premium MicrotickPremium `json:"premium"`
-    Consensus MicrotickSpot `json:"consensus"`
+    Market mt.MicrotickMarket `json:"market"`
+    Duration mt.MicrotickDurationName `json:"duration"`
+    Spot mt.MicrotickSpot `json:"spot"`
+    Premium mt.MicrotickPremium `json:"premium"`
+    Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
-    Backing MicrotickCoin `json:"backing"`
-    Balance MicrotickCoin `json:"balance"`
-    Commission MicrotickCoin `json:"commission"`
+    Backing mt.MicrotickCoin `json:"backing"`
+    Balance mt.MicrotickCoin `json:"balance"`
+    Commission mt.MicrotickCoin `json:"commission"`
 }
 
 func (msg TxCreateQuote) Route() string { return "microtick" }
@@ -61,7 +64,7 @@ func (msg TxCreateQuote) ValidateBasic() sdk.Error {
 }
 
 func (msg TxCreateQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
@@ -70,66 +73,66 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxCreateQuote(ctx sdk.Context, keeper Keeper, 
+func handleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, 
     msg TxCreateQuote) sdk.Result {
         
-    params := keeper.GetParams(ctx)
+    params := mtKeeper.GetParams(ctx)
         
-    if !keeper.HasDataMarket(ctx, msg.Market) {
-        keeper.SetDataMarket(ctx, NewDataMarket(msg.Market))
+    if !mtKeeper.HasDataMarket(ctx, msg.Market) {
+        mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
     }
     
-    if !ValidMicrotickDuration(msg.Duration) {
+    if !mt.ValidMicrotickDuration(msg.Duration) {
         return sdk.ErrInternal(fmt.Sprintf("Invalid duration: %d", msg.Duration)).Result()
     }
     
-    commission := NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
+    commission := mt.NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
     total := msg.Backing.Add(commission)
         
 	// DataActiveQuote
 	
-    id := keeper.GetNextActiveQuoteId(ctx)
+    id := mtKeeper.GetNextActiveQuoteId(ctx)
      
     now := ctx.BlockHeader().Time
-    dataActiveQuote := NewDataActiveQuote(now, id, msg.Market, msg.Duration, msg.Provider,
+    dataActiveQuote := keeper.NewDataActiveQuote(now, id, msg.Market, msg.Duration, msg.Provider,
         msg.Backing, msg.Spot, msg.Premium)
     dataActiveQuote.ComputeQuantity()
     dataActiveQuote.Freeze(now, params)
-    keeper.SetActiveQuote(ctx, dataActiveQuote)
+    mtKeeper.SetActiveQuote(ctx, dataActiveQuote)
     
     // DataAccountStatus
     
-    accountStatus := keeper.GetAccountStatus(ctx, msg.Provider)
-    accountStatus.ActiveQuotes.Insert(NewListItem(id, sdk.NewDec(int64(id))))
+    accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Provider)
+    accountStatus.ActiveQuotes.Insert(keeper.NewListItem(id, sdk.NewDec(int64(id))))
     accountStatus.NumQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Backing)
     balance := accountStatus.Change
-    coins := keeper.coinKeeper.GetCoins(ctx, msg.Provider)
+    coins := mtKeeper.CoinKeeper.GetCoins(ctx, msg.Provider)
     for i := 0; i < len(coins); i++ {
-        if coins[i].Denom == TokenType {
-            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+        if coins[i].Denom == mt.TokenType {
+            balance = balance.Add(mt.NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
     
     // DataMarket
     
-    dataMarket, err2 := keeper.GetDataMarket(ctx, msg.Market)
+    dataMarket, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
         panic("Invalid market")
     }
     dataMarket.AddQuote(dataActiveQuote)
-    if !dataMarket.factorIn(dataActiveQuote) {
+    if !dataMarket.FactorIn(dataActiveQuote) {
         return sdk.ErrInternal("Quote params out of range").Result()
     }
     
-    keeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
-    keeper.SetDataMarket(ctx, dataMarket)
+    mtKeeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
+    mtKeeper.SetDataMarket(ctx, dataMarket)
     
     // Subtract coins from quote provider
     //fmt.Printf("Total: %s\n", total.String())
-    keeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
+    mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, commission)
+    mtKeeper.PoolCommission(ctx, commission)
     
     // Tags
     ctx.EventManager().EmitEvent(
@@ -147,7 +150,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
       Id: id,
       Originator: "createQuote",
       Market: msg.Market,
-      Duration: MicrotickDurationNameFromDur(msg.Duration),
+      Duration: mt.MicrotickDurationNameFromDur(msg.Duration),
       Spot: msg.Spot,
       Premium: msg.Premium,
       Consensus: dataMarket.Consensus,
@@ -156,7 +159,7 @@ func handleTxCreateQuote(ctx sdk.Context, keeper Keeper,
       Balance: balance,
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
 	return sdk.Result {
 	    Data: bz,

@@ -1,4 +1,4 @@
-package query 
+package msg 
 
 import (
     "fmt"
@@ -9,19 +9,22 @@ import (
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type ResponseQuoteStatus struct {
-    Id MicrotickId `json:"id"`
-    Market MicrotickMarket `json:"market"`
-    Duration MicrotickDurationName `json:"duration"`
-    Provider MicrotickAccount `json:"provider"`
-    Backing MicrotickCoin `json:"backing"`
-    Spot MicrotickSpot `json:"spot"`
-    Premium MicrotickPremium `json:"premium"`
-    Quantity MicrotickQuantity `json:"quantity"`
-    PremiumAsCall MicrotickPremium `json:"premiumAsCall"`
-    PremiumAsPut MicrotickPremium `json:"premiumAsPut"`
+    Id mt.MicrotickId `json:"id"`
+    Market mt.MicrotickMarket `json:"market"`
+    Duration mt.MicrotickDurationName `json:"duration"`
+    Provider mt.MicrotickAccount `json:"provider"`
+    Backing mt.MicrotickCoin `json:"backing"`
+    Spot mt.MicrotickSpot `json:"spot"`
+    Premium mt.MicrotickPremium `json:"premium"`
+    Quantity mt.MicrotickQuantity `json:"quantity"`
+    PremiumAsCall mt.MicrotickPremium `json:"premiumAsCall"`
+    PremiumAsPut mt.MicrotickPremium `json:"premiumAsPut"`
     Modified time.Time `json:"modified"`
     CanModify time.Time `json:"canModify"`
 }
@@ -53,13 +56,13 @@ CanModify: %s`,
     rqs.CanModify.String()))
 }
 
-func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
+func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
         return nil, sdk.ErrInternal(fmt.Sprintf("Invalid quote ID: %s", err2))
     }
-    data, err2 := keeper.GetActiveQuote(ctx, MicrotickId(id))
+    data, err2 := keeper.GetActiveQuote(ctx, mt.MicrotickId(id))
     if err2 != nil {
         return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch quote data: %s", err2))
     }
@@ -71,7 +74,7 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     response := ResponseQuoteStatus {
         Id: data.Id,
         Market: data.Market,
-        Duration: MicrotickDurationNameFromDur(data.Duration),
+        Duration: mt.MicrotickDurationNameFromDur(data.Duration),
         Provider: data.Provider,
         Backing: data.Backing,
         Spot: data.Spot,
@@ -83,7 +86,7 @@ func queryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         CanModify: data.CanModify,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
+    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

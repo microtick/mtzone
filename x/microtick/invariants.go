@@ -1,20 +1,18 @@
 package microtick
 
 import (
-	//"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	//"github.com/cosmos/cosmos-sdk/x/auth"
-	//staking "github.com/cosmos/cosmos-sdk/x/staking/types"
+	
+	"github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 // SupplyInvariants checks that the total supply reflects all held not-bonded tokens, bonded tokens, and unbonding delegations
 // nolint: unparam
-func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
+func RegisterInvariants(ir sdk.InvariantRegistry, k keeper.MicrotickKeeper) {
 	ir.RegisterRoute(ModuleName, "constant-supply", ConstantSupply(k))
 }
 
-func ConstantSupply(k Keeper) sdk.Invariant {
+func ConstantSupply(k keeper.MicrotickKeeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		/*
 		// This needs to be entirely rewritten

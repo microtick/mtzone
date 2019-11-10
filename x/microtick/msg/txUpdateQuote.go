@@ -1,4 +1,4 @@
-package tx
+package msg
 
 import (
     "fmt"
@@ -6,17 +6,20 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type TxUpdateQuote struct {
-    Id MicrotickId
-    Requester MicrotickAccount
-    NewSpot MicrotickSpot
-    NewPremium MicrotickPremium
+    Id mt.MicrotickId
+    Requester mt.MicrotickAccount
+    NewSpot mt.MicrotickSpot
+    NewPremium mt.MicrotickPremium
 }
 
-func NewTxUpdateQuote(id MicrotickId, requester sdk.AccAddress, 
-    newSpot MicrotickSpot, newPremium MicrotickPremium) TxUpdateQuote {
+func NewTxUpdateQuote(id mt.MicrotickId, requester sdk.AccAddress, 
+    newSpot mt.MicrotickSpot, newPremium mt.MicrotickPremium) TxUpdateQuote {
     return TxUpdateQuote {
         Id: id,
         Requester: requester,
@@ -26,16 +29,16 @@ func NewTxUpdateQuote(id MicrotickId, requester sdk.AccAddress,
 }
 
 type UpdateQuoteData struct {
-    Id MicrotickId `json:"id"`
+    Id mt.MicrotickId `json:"id"`
     Originator string `json:"originator"`
-    Market MicrotickMarket `json:"market"`
-    Duration MicrotickDurationName `json:"duration"`
-    Spot MicrotickSpot `json:"spot"`
-    Premium MicrotickPremium `json:"premium"`
-    Consensus MicrotickSpot `json:"consensus"`
+    Market mt.MicrotickMarket `json:"market"`
+    Duration mt.MicrotickDurationName `json:"duration"`
+    Spot mt.MicrotickSpot `json:"spot"`
+    Premium mt.MicrotickPremium `json:"premium"`
+    Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
-    Balance MicrotickCoin `json:"balance"`
-    Commission MicrotickCoin `json:"commission"`
+    Balance mt.MicrotickCoin `json:"balance"`
+    Commission mt.MicrotickCoin `json:"commission"`
 }
 
 func (msg TxUpdateQuote) Route() string { return "microtick" }
@@ -50,7 +53,7 @@ func (msg TxUpdateQuote) ValidateBasic() sdk.Error {
 }
 
 func (msg TxUpdateQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
@@ -59,7 +62,7 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.Result {
+func handleTxUpdateQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxUpdateQuote) sdk.Result {
     params := keeper.GetParams(ctx)
     
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
@@ -75,10 +78,10 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
         return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     }
     
-    commission := NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
+    commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
-    dataMarket.factorOut(quote)
+    dataMarket.FactorOut(quote)
     dataMarket.DeleteQuote(quote)
     
     now := ctx.BlockHeader().Time
@@ -95,7 +98,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
     }
     
     dataMarket.AddQuote(quote)
-    if !dataMarket.factorIn(quote) {
+    if !dataMarket.FactorIn(quote) {
         return sdk.ErrInternal("Quote params out of range").Result()
     }
     
@@ -125,7 +128,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
       Id: quote.Id,
       Originator: "updateQuote",
       Market: quote.Market,
-      Duration: MicrotickDurationNameFromDur(quote.Duration),
+      Duration: mt.MicrotickDurationNameFromDur(quote.Duration),
       Spot: quote.Spot,
       Premium: quote.Premium,
       Consensus: dataMarket.Consensus,
@@ -133,7 +136,7 @@ func handleTxUpdateQuote(ctx sdk.Context, keeper Keeper, msg TxUpdateQuote) sdk.
       Balance: balance,
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
     return sdk.Result {
         Data: bz,

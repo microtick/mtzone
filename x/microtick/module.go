@@ -13,9 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	
-	"github.com/mjackson001/mtzone/x/microtick/query"
-	"github.com/mjackson001/mtzone/x/microtick/tx"
-	"github.com/mjackson001/mtzone/x/microtick/client"
+	mt "github.com/mjackson001/mtzone/x/microtick/types"
+	"github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 const (
@@ -74,7 +73,7 @@ func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
 // app module
 type AppModule struct {
 	AppModuleBasic
-	keeper Keeper
+	keeper keeper.MicrotickKeeper
 }
 
 // NewAppModule creates a new AppModule object

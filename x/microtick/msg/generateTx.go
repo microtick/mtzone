@@ -1,14 +1,17 @@
-package client
+package msg
 
 import (
     sdk "github.com/cosmos/cosmos-sdk/types"
     "github.com/cosmos/cosmos-sdk/codec"
     "github.com/cosmos/cosmos-sdk/x/auth"
     abci "github.com/tendermint/tendermint/abci/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 func generateTx(ctx sdk.Context, txType string, path []string, 
-    req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
         
     defer func() {
         if r := recover(); r != nil {
@@ -25,7 +28,7 @@ func generateTx(ctx sdk.Context, txType string, path []string,
     
     acct := path[0]
     accAddr, _ := sdk.AccAddressFromBech32(acct)
-    account := keeper.accountKeeper.GetAccount(ctx, accAddr)
+    account := keeper.AccountKeeper.GetAccount(ctx, accAddr)
     if account == nil {
         return nil, sdk.ErrInternal("No such address")
     }
@@ -36,49 +39,49 @@ func generateTx(ctx sdk.Context, txType string, path []string,
         msg = NewTxCreateMarket(accAddr, market)
     case "createquote":
         market := path[1]
-        duration := MicrotickDurationFromName(path[2])
-        backing := NewMicrotickCoinFromString(path[3])
-        spot := NewMicrotickSpotFromString(path[4])
-        premium := NewMicrotickPremiumFromString(path[5])
+        duration := mt.MicrotickDurationFromName(path[2])
+        backing := mt.NewMicrotickCoinFromString(path[3])
+        spot := mt.NewMicrotickSpotFromString(path[4])
+        premium := mt.NewMicrotickPremiumFromString(path[5])
         msg = NewTxCreateQuote(market, duration, accAddr, backing, spot, premium)
     case "cancelquote":
-        id := NewMicrotickIdFromString(path[1])
+        id := mt.NewMicrotickIdFromString(path[1])
         msg = NewTxCancelQuote(id, accAddr)
     case "depositquote":
-        id := NewMicrotickIdFromString(path[1])
-        amount := NewMicrotickCoinFromString(path[2])
+        id := mt.NewMicrotickIdFromString(path[1])
+        amount := mt.NewMicrotickCoinFromString(path[2])
         msg = NewTxDepositQuote(id, accAddr, amount)
     case "updatequote":
-        id := NewMicrotickIdFromString(path[1])
-        spot := NewMicrotickSpotFromString(path[2])
-        premium := NewMicrotickPremiumFromString(path[3])
+        id := mt.NewMicrotickIdFromString(path[1])
+        spot := mt.NewMicrotickSpotFromString(path[2])
+        premium := mt.NewMicrotickPremiumFromString(path[3])
         msg = NewTxUpdateQuote(id, accAddr, spot, premium)
     case "markettrade":
         market := path[1]
-        duration := MicrotickDurationFromName(path[2])
-        tradetype := MicrotickTradeTypeFromName(path[3])
-        quantity := NewMicrotickQuantityFromString(path[4])
+        duration := mt.MicrotickDurationFromName(path[2])
+        tradetype := mt.MicrotickTradeTypeFromName(path[3])
+        quantity := mt.NewMicrotickQuantityFromString(path[4])
         msg = NewTxMarketTrade(market, duration, accAddr, tradetype, quantity)
     case "limittrade":
         market := path[1]
-        duration := MicrotickDurationFromName(path[2])
-        tradetype := MicrotickTradeTypeFromName(path[3])
-        limit := NewMicrotickPremiumFromString(path[4])
-        maxcost := NewMicrotickCoinFromString(path[5])
+        duration := mt.MicrotickDurationFromName(path[2])
+        tradetype := mt.MicrotickTradeTypeFromName(path[3])
+        limit := mt.NewMicrotickPremiumFromString(path[4])
+        maxcost := mt.NewMicrotickCoinFromString(path[5])
         msg = NewTxLimitTrade(market, duration, accAddr, tradetype, limit, maxcost)
     case "settletrade":
-        id := NewMicrotickIdFromString(path[1])
+        id := mt.NewMicrotickIdFromString(path[1])
         msg = NewTxSettleTrade(id, accAddr)
     }
         
-    response := GenTx {
+    response := mt.GenTx {
         Tx: auth.NewStdTx([]sdk.Msg{msg}, auth.NewStdFee(2000000, nil), nil, ""),
         AccountNumber: account.GetAccountNumber(),
         ChainID: ctx.ChainID(),
         Sequence: account.GetSequence(),
     }
     
-    bz, _ := codec.MarshalJSONIndent(keeper.cdc, response)
+    bz, _ := codec.MarshalJSONIndent(ModuleCdc, response)
     
     return bz, nil
 }

@@ -1,4 +1,4 @@
-package query
+package msg
 
 import (
     "fmt"
@@ -75,7 +75,7 @@ func queryAccountStatus(ctx sdk.Context, path []string,
         SettleBacking: data.SettleBacking,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
+    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

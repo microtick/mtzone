@@ -69,7 +69,7 @@ func (dm *DataMarket) SetOrderBook(dur mt.MicrotickDuration, ob DataOrderBook) {
     panic("Invalid duration")
 }
 
-func (dm *DataMarket) factorIn(quote DataActiveQuote) bool {
+func (dm *DataMarket) FactorIn(quote DataActiveQuote) bool {
     dm.SumBacking = dm.SumBacking.Add(quote.Backing)
     dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(
         quote.Quantity.Amount))
@@ -109,7 +109,7 @@ func (dm *DataMarket) factorIn(quote DataActiveQuote) bool {
     return true
 }
 
-func (dm *DataMarket) factorOut(quote DataActiveQuote) {
+func (dm *DataMarket) FactorOut(quote DataActiveQuote) {
     dm.SumBacking = dm.SumBacking.Sub(quote.Backing)
     dm.SumSpots = dm.SumSpots.Sub(quote.Spot.Amount.Mul(
         quote.Quantity.Amount))

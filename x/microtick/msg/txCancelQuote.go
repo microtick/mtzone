@@ -1,4 +1,4 @@
-package tx
+package msg
 
 import (
     "fmt"
@@ -44,7 +44,7 @@ func (msg TxCancelQuote) ValidateBasic() sdk.Error {
 }
 
 func (msg TxCancelQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
@@ -53,7 +53,7 @@ func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxCancelQuote(ctx sdk.Context, keeper MicrotickKeeper, msg TxCancelQuote) sdk.Result {
+func handleTxCancelQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxCancelQuote) sdk.Result {
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()
@@ -78,7 +78,7 @@ func handleTxCancelQuote(ctx sdk.Context, keeper MicrotickKeeper, msg TxCancelQu
     keeper.DepositMicrotickCoin(ctx, msg.Requester, quote.Backing)
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
-    dataMarket.factorOut(quote)
+    dataMarket.FactorOut(quote)
     dataMarket.DeleteQuote(quote)
     keeper.SetDataMarket(ctx, dataMarket)
     
@@ -109,7 +109,7 @@ func handleTxCancelQuote(ctx sdk.Context, keeper MicrotickKeeper, msg TxCancelQu
       Refund: quote.Backing,
       Balance: balance,
     }
-    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
     return sdk.Result {
         Data: bz,

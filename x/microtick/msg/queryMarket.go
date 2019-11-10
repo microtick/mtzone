@@ -1,4 +1,4 @@
-package query
+package msg
 
 import (
     "fmt"
@@ -7,27 +7,30 @@ import (
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type ResponseMarketOrderBookStatus struct {
-    SumBacking MicrotickCoin `json:"sumBacking"`
-    SumWeight MicrotickQuantity `json:"sumWeight"`
-    InsideCall MicrotickPremium `json:"insideCall"`
-    InsidePut MicrotickPremium `json:"insidePut"`
+    SumBacking mt.MicrotickCoin `json:"sumBacking"`
+    SumWeight mt.MicrotickQuantity `json:"sumWeight"`
+    InsideCall mt.MicrotickPremium `json:"insideCall"`
+    InsidePut mt.MicrotickPremium `json:"insidePut"`
 }
 
 type ResponseMarketStatus struct {
-    Market MicrotickMarket `json:"market"`
-    Consensus MicrotickSpot `json:"consensus"`
+    Market mt.MicrotickMarket `json:"market"`
+    Consensus mt.MicrotickSpot `json:"consensus"`
     OrderBooks []ResponseMarketOrderBookStatus `json:"orderBooks"`
-    SumBacking MicrotickCoin `json:"sumBacking"`
-    SumWeight MicrotickQuantity `json:"sumWeight"`
+    SumBacking mt.MicrotickCoin `json:"sumBacking"`
+    SumWeight mt.MicrotickQuantity `json:"sumWeight"`
 }
 
 func (rm ResponseMarketStatus) String() string {
-    obStrings := make([]string, len(MicrotickDurations))
-    for i := 0; i < len(MicrotickDurations); i++ {
-        obStrings[i] = formatOrderBook(MicrotickDurations[i], rm.OrderBooks[i])
+    obStrings := make([]string, len(mt.MicrotickDurations))
+    for i := 0; i < len(mt.MicrotickDurations); i++ {
+        obStrings[i] = formatOrderBook(mt.MicrotickDurations[i], rm.OrderBooks[i])
     }
     return strings.TrimSpace(fmt.Sprintf(`Market: %s
 Consensus: %s
@@ -37,27 +40,27 @@ Sum Weight: %s`, rm.Market, rm.Consensus.String(), obStrings, rm.SumBacking.Stri
     rm.SumWeight.String()))
 }
 
-func formatOrderBook(dur MicrotickDuration, rob ResponseMarketOrderBookStatus) string {
+func formatOrderBook(dur mt.MicrotickDuration, rob ResponseMarketOrderBookStatus) string {
     return fmt.Sprintf(`
   %s:
     Sum Backing: %s
     Sum Weight: %s
     Inside Call: %s
     Inside Put: %s`, 
-        MicrotickDurationNameFromDur(dur),
+        mt.MicrotickDurationNameFromDur(dur),
         rob.SumBacking.String(), rob.SumWeight.String(),
         rob.InsideCall.String(), rob.InsidePut.String())
 }
 
-func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
+func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
     market := path[0]
     data, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
         return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market data: %s", err2))
     }
     
-    orderbookStatus := make([]ResponseMarketOrderBookStatus, len(MicrotickDurations))
-    for i := 0; i < len(MicrotickDurations); i++ {
+    orderbookStatus := make([]ResponseMarketOrderBookStatus, len(mt.MicrotickDurations))
+    for i := 0; i < len(mt.MicrotickDurations); i++ {
         orderbookStatus[i].SumBacking = data.OrderBooks[i].SumBacking
         orderbookStatus[i].SumWeight = data.OrderBooks[i].SumWeight
         
@@ -79,7 +82,7 @@ func queryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
         SumWeight: data.SumWeight,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(keeper.cdc, response)
+    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

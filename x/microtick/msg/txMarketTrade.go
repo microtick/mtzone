@@ -1,4 +1,4 @@
-package tx
+package msg
 
 import (
     "fmt"
@@ -6,18 +6,21 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type TxMarketTrade struct {
-    Market MicrotickMarket
-    Duration MicrotickDuration
-    Buyer MicrotickAccount
-    TradeType MicrotickTradeType
-    Quantity MicrotickQuantity
+    Market mt.MicrotickMarket
+    Duration mt.MicrotickDuration
+    Buyer mt.MicrotickAccount
+    TradeType mt.MicrotickTradeType
+    Quantity mt.MicrotickQuantity
 }
 
-func NewTxMarketTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.AccAddress,
-    tradeType MicrotickTradeType, quantity MicrotickQuantity) TxMarketTrade {
+func NewTxMarketTrade(market mt.MicrotickMarket, dur mt.MicrotickDuration, buyer sdk.AccAddress,
+    tradeType mt.MicrotickTradeType, quantity mt.MicrotickQuantity) TxMarketTrade {
         
     return TxMarketTrade {
         Market: market,
@@ -30,8 +33,8 @@ func NewTxMarketTrade(market MicrotickMarket, dur MicrotickDuration, buyer sdk.A
 
 type MarketTradeData struct {
     Originator string `json:"originator"`
-    Trade DataActiveTrade `json:"trade"`
-    Consensus MicrotickSpot `json:"consensus"`
+    Trade keeper.DataActiveTrade `json:"trade"`
+    Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
 }
 
@@ -50,7 +53,7 @@ func (msg TxMarketTrade) ValidateBasic() sdk.Error {
 }
 
 func (msg TxMarketTrade) GetSignBytes() []byte {
-    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
@@ -59,30 +62,30 @@ func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.Result {
-    params := keeper.GetParams(ctx)
+func handleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, msg TxMarketTrade) sdk.Result {
+    params := mtKeeper.GetParams(ctx)
      
-    if !keeper.HasDataMarket(ctx, msg.Market) {
+    if !mtKeeper.HasDataMarket(ctx, msg.Market) {
         return sdk.ErrInternal("No such market: " + msg.Market).Result()
     }
     
-    if !ValidMicrotickDuration(msg.Duration) {
+    if !mt.ValidMicrotickDuration(msg.Duration) {
         return sdk.ErrInternal(fmt.Sprintf("Invalid duration: %d", msg.Duration)).Result()
     }
     
     // Step 1 - Obtain the strike spot price and create trade struct
-    market, err2 := keeper.GetDataMarket(ctx, msg.Market)
+    market, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
         return sdk.ErrInternal("Error fetching market").Result()
     }
-    commission := NewMicrotickCoinFromDec(params.CommissionTradeFixed)
-    settleIncentive := NewMicrotickCoinFromDec(params.SettleIncentive)
+    commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
+    settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
     now := ctx.BlockHeader().Time
-    trade := NewDataActiveTrade(now, msg.Market, msg.Duration, msg.TradeType,
+    trade := keeper.NewDataActiveTrade(now, msg.Market, msg.Duration, msg.TradeType,
         msg.Buyer, market.Consensus, commission, settleIncentive)
         
-    matcher := NewMatcher(trade, func (id MicrotickId) DataActiveQuote {
-        quote, err := keeper.GetActiveQuote(ctx, id)
+    matcher := keeper.NewMatcher(trade, func (id mt.MicrotickId) keeper.DataActiveQuote {
+        quote, err := mtKeeper.GetActiveQuote(ctx, id)
         if err != nil {
             // This function should always be called with an active quote
             panic("Invalid quote ID")
@@ -93,33 +96,33 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
     // Step 2 - Compute premium for quantity requested
     market.MatchByQuantity(&matcher, msg.Quantity)
     
-    if matcher.hasQuantity() {
+    if matcher.HasQuantity() {
         
         // Step 3 - Deduct premium from buyer account and add it to provider account
         // We do this first because if the funds aren't there we abort
-        total := NewMicrotickCoinFromDec(matcher.TotalCost.Add(trade.Commission.Amount).Add(settleIncentive.Amount))
-        keeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        total := mt.NewMicrotickCoinFromDec(matcher.TotalCost.Add(trade.Commission.Amount).Add(settleIncentive.Amount))
+        mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
-        keeper.PoolCommission(ctx, trade.Commission)
+        mtKeeper.PoolCommission(ctx, trade.Commission)
     
         // Step 4 - Finalize trade 
-        matcher.Trade.Id = keeper.GetNextActiveTradeId(ctx)
+        matcher.Trade.Id = mtKeeper.GetNextActiveTradeId(ctx)
         
-        matcher.AssignCounterparties(ctx, keeper, &market)
+        matcher.AssignCounterparties(ctx, mtKeeper, &market)
         
         // Update the account status for the buyer
-        accountStatus := keeper.GetAccountStatus(ctx, msg.Buyer)
-        accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
+        accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Buyer)
+        accountStatus.ActiveTrades.Insert(keeper.NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
         accountStatus.SettleBacking = accountStatus.SettleBacking.Add(settleIncentive)
         accountStatus.NumTrades++
         
         // Commit changes
-        keeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
-        keeper.SetDataMarket(ctx, market)
+        mtKeeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
+        mtKeeper.SetDataMarket(ctx, market)
         
-        matcher.Trade.Balance = keeper.GetTotalBalance(ctx, msg.Buyer)
-        keeper.SetActiveTrade(ctx, matcher.Trade)
+        matcher.Trade.Balance = mtKeeper.GetTotalBalance(ctx, msg.Buyer)
+        mtKeeper.SetActiveTrade(ctx, matcher.Trade)
     
         ctx.EventManager().EmitEvent(
             sdk.NewEvent(
@@ -166,7 +169,7 @@ func handleTxMarketTrade(ctx sdk.Context, keeper Keeper, msg TxMarketTrade) sdk.
             Time: now,
             Trade: matcher.Trade,
         }
-        bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+        bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
             
         return sdk.Result {
             Data: bz,

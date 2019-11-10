@@ -1,4 +1,4 @@
-package tx
+package msg
 
 import (
     "fmt"
@@ -6,6 +6,9 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 // The rules for settling a trade are as follows:
@@ -19,11 +22,11 @@ import (
 //         Anyone can call settle trade
 
 type TxSettleTrade struct {
-    Id MicrotickId
+    Id mt.MicrotickId
     Requester sdk.AccAddress
 }
 
-func NewTxSettleTrade(id MicrotickId, requester sdk.AccAddress) TxSettleTrade {
+func NewTxSettleTrade(id mt.MicrotickId, requester sdk.AccAddress) TxSettleTrade {
     return TxSettleTrade {
         Id: id,
         Requester: requester,
@@ -31,25 +34,25 @@ func NewTxSettleTrade(id MicrotickId, requester sdk.AccAddress) TxSettleTrade {
 }
 
 type SettlementData struct {
-    Short MicrotickAccount `json:"short"`
-    Settle MicrotickCoin `json:"settle"`
-    Refund MicrotickCoin `json:"refund"`
-    Balance MicrotickCoin `json:"balance"`
+    Short mt.MicrotickAccount `json:"short"`
+    Settle mt.MicrotickCoin `json:"settle"`
+    Refund mt.MicrotickCoin `json:"refund"`
+    Balance mt.MicrotickCoin `json:"balance"`
 }
 
 type TradeSettlementData struct {
     Originator string `json:"originator"`
-    Id MicrotickId `json:"id"`
+    Id mt.MicrotickId `json:"id"`
     Time time.Time `json:"time"`
-    Final MicrotickSpot `json:"final"`
-    Long MicrotickAccount `json:"long"`
-    Settle MicrotickCoin `json:"settle"`
+    Final mt.MicrotickSpot `json:"final"`
+    Long mt.MicrotickAccount `json:"long"`
+    Settle mt.MicrotickCoin `json:"settle"`
     CounterParties []SettlementData `json:"counterparties"`
-    Incentive MicrotickCoin `json:"incentive"`
-    Commission MicrotickCoin `json:"commission"`
-    Balance MicrotickCoin `json:"balance"`
-    Settler MicrotickAccount `json:"settler"`
-    SettlerBalance MicrotickCoin `json:"settlerBalance"`
+    Incentive mt.MicrotickCoin `json:"incentive"`
+    Commission mt.MicrotickCoin `json:"commission"`
+    Balance mt.MicrotickCoin `json:"balance"`
+    Settler mt.MicrotickAccount `json:"settler"`
+    SettlerBalance mt.MicrotickCoin `json:"settlerBalance"`
 }
 
 func (msg TxSettleTrade) Route() string { return "microtick" }
@@ -64,7 +67,7 @@ func (msg TxSettleTrade) ValidateBasic() sdk.Error {
 }
 
 func (msg TxSettleTrade) GetSignBytes() []byte {
-    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxSettleTrade) GetSigners() []sdk.AccAddress {
@@ -73,7 +76,7 @@ func (msg TxSettleTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.Result {
+func handleTxSettleTrade(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxSettleTrade) sdk.Result {
     params := keeper.GetParams(ctx)
     
     trade, err := keeper.GetActiveTrade(ctx, msg.Id)
@@ -103,7 +106,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
     //fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
     
     // Commission
-    commission := NewMicrotickCoinFromDec(params.CommissionSettleFixed)
+    commission := mt.NewMicrotickCoinFromDec(params.CommissionSettleFixed)
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     //fmt.Printf("Settle Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, commission)
@@ -191,7 +194,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
         Time: now,
         Final: dataMarket.Consensus,
         Long: trade.Long,
-        Settle: NewMicrotickCoinFromDec(totalPaid),
+        Settle: mt.NewMicrotickCoinFromDec(totalPaid),
         CounterParties: settleData,
         Incentive: trade.SettleIncentive,
         Commission: commission,
@@ -199,7 +202,7 @@ func handleTxSettleTrade(ctx sdk.Context, keeper Keeper, msg TxSettleTrade) sdk.
         Settler: msg.Requester,
         SettlerBalance: keeper.GetTotalBalance(ctx, msg.Requester),
     }
-    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
 	return sdk.Result {
 	    Data: bz,

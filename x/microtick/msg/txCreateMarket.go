@@ -1,15 +1,18 @@
-package tx
+package msg
 
 import (
     sdk "github.com/cosmos/cosmos-sdk/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type TxCreateMarket struct {
-    Account MicrotickAccount
-    Market MicrotickMarket
+    Account mt.MicrotickAccount
+    Market mt.MicrotickMarket
 }
 
-func NewTxCreateMarket(account MicrotickAccount, market MicrotickMarket) TxCreateMarket {
+func NewTxCreateMarket(account mt.MicrotickAccount, market mt.MicrotickMarket) TxCreateMarket {
     return TxCreateMarket {
         Account: account,
         Market: market,
@@ -31,7 +34,7 @@ func (msg TxCreateMarket) ValidateBasic() sdk.Error {
 }
 
 func (msg TxCreateMarket) GetSignBytes() []byte {
-    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxCreateMarket) GetSigners() []sdk.AccAddress {
@@ -40,9 +43,9 @@ func (msg TxCreateMarket) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxCreateMarket(ctx sdk.Context, keeper Keeper, msg TxCreateMarket) sdk.Result {
-    if !keeper.HasDataMarket(ctx, msg.Market) {
-        keeper.SetDataMarket(ctx, NewDataMarket(msg.Market))
+func handleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, msg TxCreateMarket) sdk.Result {
+    if !mtKeeper.HasDataMarket(ctx, msg.Market) {
+        mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
     }
     return sdk.Result{}
 }

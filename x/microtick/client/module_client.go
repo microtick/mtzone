@@ -24,12 +24,12 @@ func (mc ModuleClient) GetQueryCmd() *cobra.Command {
 	}
 
 	mtQueryCmd.AddCommand(client.GetCommands(
-		cli.GetCmdAccountStatus(mc.storeKey, mc.cdc),
-		cli.GetCmdMarketStatus(mc.storeKey, mc.cdc),
-		cli.GetCmdMarketConsensus(mc.storeKey, mc.cdc),
-		cli.GetCmdOrderBook(mc.storeKey, mc.cdc),
-		cli.GetCmdActiveQuote(mc.storeKey, mc.cdc),
-		cli.GetCmdActiveTrade(mc.storeKey, mc.cdc),
+		GetCmdAccountStatus(mc.storeKey, mc.cdc),
+		GetCmdMarketStatus(mc.storeKey, mc.cdc),
+		GetCmdMarketConsensus(mc.storeKey, mc.cdc),
+		GetCmdOrderBook(mc.storeKey, mc.cdc),
+		GetCmdActiveQuote(mc.storeKey, mc.cdc),
+		GetCmdActiveTrade(mc.storeKey, mc.cdc),
 	)...)
 
 	return mtQueryCmd
@@ -42,14 +42,14 @@ func (mc ModuleClient) GetTxCmd() *cobra.Command {
 	}
 
 	mtTxCmd.AddCommand(client.PostCommands(
-		cli.GetCmdCreateMarket(mc.cdc),
-		cli.GetCmdCreateQuote(mc.cdc),
-		cli.GetCmdCancelQuote(mc.cdc),
-		cli.GetCmdUpdateQuote(mc.cdc),
-		cli.GetCmdDepositQuote(mc.cdc),
-		cli.GetCmdMarketTrade(mc.cdc),
-		cli.GetCmdLimitTrade(mc.cdc),
-		cli.GetCmdSettleTrade(mc.cdc),
+		GetCmdCreateMarket(mc.cdc),
+		GetCmdCreateQuote(mc.cdc),
+		GetCmdCancelQuote(mc.cdc),
+		GetCmdUpdateQuote(mc.cdc),
+		GetCmdDepositQuote(mc.cdc),
+		GetCmdMarketTrade(mc.cdc),
+		GetCmdLimitTrade(mc.cdc),
+		GetCmdSettleTrade(mc.cdc),
 	)...)
 
 	return mtTxCmd

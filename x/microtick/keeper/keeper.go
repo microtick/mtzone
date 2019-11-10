@@ -18,8 +18,8 @@ import (
 )
 
 type MicrotickKeeper struct {
-	accountKeeper auth.AccountKeeper
-	coinKeeper bank.Keeper
+	AccountKeeper auth.AccountKeeper
+	CoinKeeper bank.Keeper
 	distrKeeper distribution.Keeper
 	stakingKeeper staking.Keeper
 	appGlobalsKey sdk.StoreKey
@@ -27,8 +27,8 @@ type MicrotickKeeper struct {
 	activeQuotesKey sdk.StoreKey
 	activeTradesKey sdk.StoreKey
 	marketsKey sdk.StoreKey
-	cdc *codec.Codec 
 	paramSubspace params.Subspace
+	cdc *codec.Codec
 }
 
 func NewKeeper(accountKeeper auth.AccountKeeper, 
@@ -40,12 +40,12 @@ func NewKeeper(accountKeeper auth.AccountKeeper,
 	mtActiveQuotesKey sdk.StoreKey,
 	mtActiveTradesKey sdk.StoreKey,
 	mtMarketsKey sdk.StoreKey,
-    cdc *codec.Codec, 
     paramstore params.Subspace,
+    cdc *codec.Codec,
 ) MicrotickKeeper {
 	return MicrotickKeeper {
-		accountKeeper: accountKeeper,
-		coinKeeper: coinKeeper,
+		AccountKeeper: accountKeeper,
+		CoinKeeper: coinKeeper,
 		distrKeeper: distrKeeper,
 		stakingKeeper: stakingKeeper,
 		appGlobalsKey: mtAppGlobalsKey,
@@ -53,8 +53,8 @@ func NewKeeper(accountKeeper auth.AccountKeeper,
 		activeQuotesKey: mtActiveQuotesKey,
 		activeTradesKey: mtActiveTradesKey,
 		marketsKey: mtMarketsKey,
-		cdc: cdc,
 		paramSubspace: paramstore.WithKeyTable(mt.ParamKeyTable()),
+		cdc: cdc,
 	}
 }
 

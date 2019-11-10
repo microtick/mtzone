@@ -1,4 +1,4 @@
-package tx
+package msg
 
 import (
     "fmt"
@@ -6,16 +6,19 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
 type TxDepositQuote struct {
-    Id MicrotickId
-    Requester MicrotickAccount
-    Deposit MicrotickCoin
+    Id mt.MicrotickId
+    Requester mt.MicrotickAccount
+    Deposit mt.MicrotickCoin
 }
 
-func NewTxDepositQuote(id MicrotickId, requester sdk.AccAddress, 
-    deposit MicrotickCoin) TxDepositQuote {
+func NewTxDepositQuote(id mt.MicrotickId, requester sdk.AccAddress, 
+    deposit mt.MicrotickCoin) TxDepositQuote {
     return TxDepositQuote {
         Id: id,
         Requester: requester,
@@ -24,14 +27,14 @@ func NewTxDepositQuote(id MicrotickId, requester sdk.AccAddress,
 }
 
 type DepositQuoteData struct {
-    Id MicrotickId `json:"id"`
+    Id mt.MicrotickId `json:"id"`
     Originator string `json:"originator"`
-    Consensus MicrotickSpot `json:"consensus"`
+    Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
-    Backing MicrotickCoin `json:"backing"`
-    QuoteBacking MicrotickCoin `json:"quoteBacking"`
-    Balance MicrotickCoin `json:"balance"`
-    Commission MicrotickCoin `json:"commission"`
+    Backing mt.MicrotickCoin `json:"backing"`
+    QuoteBacking mt.MicrotickCoin `json:"quoteBacking"`
+    Balance mt.MicrotickCoin `json:"balance"`
+    Commission mt.MicrotickCoin `json:"commission"`
 }
 
 func (msg TxDepositQuote) Route() string { return "microtick" }
@@ -46,7 +49,7 @@ func (msg TxDepositQuote) ValidateBasic() sdk.Error {
 }
 
 func (msg TxDepositQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(msgCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
@@ -55,7 +58,7 @@ func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sdk.Result {
+func handleTxDepositQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxDepositQuote) sdk.Result {
     params := keeper.GetParams(ctx)
     
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
@@ -72,7 +75,7 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
         //return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     //}
     
-    commission := NewMicrotickCoinFromDec(msg.Deposit.Amount.Mul(params.CommissionQuotePercent))
+    commission := mt.NewMicrotickCoinFromDec(msg.Deposit.Amount.Mul(params.CommissionQuotePercent))
     
     total := msg.Deposit.Add(commission)
     
@@ -83,16 +86,16 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     keeper.PoolCommission(ctx, commission)
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
-    dataMarket.factorOut(quote)
+    dataMarket.FactorOut(quote)
     
-    quote.Backing = NewMicrotickCoinFromDec(quote.Backing.Amount.Add(msg.Deposit.Amount))
+    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Add(msg.Deposit.Amount))
     quote.ComputeQuantity()
     
     // But we do freeze the new backing from any other updates
     now := ctx.BlockHeader().Time
     quote.Freeze(now, params)
     
-    dataMarket.factorIn(quote)
+    dataMarket.FactorIn(quote)
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
     
@@ -103,10 +106,10 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
     balance := accountStatus.Change
-    coins := keeper.coinKeeper.GetCoins(ctx, msg.Requester)
+    coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
     for i := 0; i < len(coins); i++ {
-        if coins[i].Denom == TokenType {
-            balance = balance.Add(NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
+        if coins[i].Denom == mt.TokenType {
+            balance = balance.Add(mt.NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
         }
     }
     
@@ -130,7 +133,7 @@ func handleTxDepositQuote(ctx sdk.Context, keeper Keeper, msg TxDepositQuote) sd
       Balance: balance,
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(keeper.cdc, data)
+    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
     return sdk.Result {
         Data: bz,

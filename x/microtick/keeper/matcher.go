@@ -52,7 +52,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper MicrotickKe
         accountStatus := keeper.GetAccountStatus(ctx, thisQuote.Provider)
         
         // Adjust quote
-        market.factorOut(thisQuote)
+        market.FactorOut(thisQuote)
         
         var transferredBacking mt.MicrotickCoin
         if thisFill.BoughtQuantity.GTE(thisQuote.Quantity.Amount) {
@@ -75,7 +75,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper MicrotickKe
             accountStatus.ActiveQuotes.Delete(thisQuote.Id)
         } else {
             // else, factor quote back into market consensus
-            market.factorIn(thisQuote)
+            market.FactorIn(thisQuote)
             keeper.SetActiveQuote(ctx, thisQuote)
         }
         
@@ -104,6 +104,6 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper MicrotickKe
     }
 }
 
-func (matcher Matcher) hasQuantity() bool {
+func (matcher Matcher) HasQuantity() bool {
     return matcher.TotalQuantity.GT(sdk.ZeroDec())
 }

@@ -1,4 +1,4 @@
-package microtick
+package msg
 
 import (
   "github.com/cosmos/cosmos-sdk/codec"

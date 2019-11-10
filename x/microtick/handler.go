@@ -5,9 +5,11 @@ import (
     "os"
     "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-func EndBlocker(ctx sdk.Context, keeper Keeper) {
+func EndBlocker(ctx sdk.Context, keeper keeper.MicrotickKeeper) {
     // Monitor for end of chain
     params := keeper.GetParams(ctx)
     now := ctx.BlockHeader().Time
