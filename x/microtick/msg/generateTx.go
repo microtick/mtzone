@@ -10,7 +10,7 @@ import (
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-func generateTx(ctx sdk.Context, txType string, path []string, 
+func GenerateTx(ctx sdk.Context, txType string, path []string, 
     req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
         
     defer func() {
@@ -24,7 +24,7 @@ func generateTx(ctx sdk.Context, txType string, path []string,
         }
     }()
         
-    var msg sdk.Msg
+    var txmsg sdk.Msg
     
     acct := path[0]
     accAddr, _ := sdk.AccAddressFromBech32(acct)
@@ -36,46 +36,46 @@ func generateTx(ctx sdk.Context, txType string, path []string,
     switch txType {
     case "createmarket":
         market := path[1]
-        msg = NewTxCreateMarket(accAddr, market)
+        txmsg = NewTxCreateMarket(accAddr, market)
     case "createquote":
         market := path[1]
         duration := mt.MicrotickDurationFromName(path[2])
         backing := mt.NewMicrotickCoinFromString(path[3])
         spot := mt.NewMicrotickSpotFromString(path[4])
         premium := mt.NewMicrotickPremiumFromString(path[5])
-        msg = NewTxCreateQuote(market, duration, accAddr, backing, spot, premium)
+        txmsg = NewTxCreateQuote(market, duration, accAddr, backing, spot, premium)
     case "cancelquote":
         id := mt.NewMicrotickIdFromString(path[1])
-        msg = NewTxCancelQuote(id, accAddr)
+        txmsg = NewTxCancelQuote(id, accAddr)
     case "depositquote":
         id := mt.NewMicrotickIdFromString(path[1])
         amount := mt.NewMicrotickCoinFromString(path[2])
-        msg = NewTxDepositQuote(id, accAddr, amount)
+        txmsg = NewTxDepositQuote(id, accAddr, amount)
     case "updatequote":
         id := mt.NewMicrotickIdFromString(path[1])
         spot := mt.NewMicrotickSpotFromString(path[2])
         premium := mt.NewMicrotickPremiumFromString(path[3])
-        msg = NewTxUpdateQuote(id, accAddr, spot, premium)
+        txmsg = NewTxUpdateQuote(id, accAddr, spot, premium)
     case "markettrade":
         market := path[1]
         duration := mt.MicrotickDurationFromName(path[2])
         tradetype := mt.MicrotickTradeTypeFromName(path[3])
         quantity := mt.NewMicrotickQuantityFromString(path[4])
-        msg = NewTxMarketTrade(market, duration, accAddr, tradetype, quantity)
+        txmsg = NewTxMarketTrade(market, duration, accAddr, tradetype, quantity)
     case "limittrade":
         market := path[1]
         duration := mt.MicrotickDurationFromName(path[2])
         tradetype := mt.MicrotickTradeTypeFromName(path[3])
         limit := mt.NewMicrotickPremiumFromString(path[4])
         maxcost := mt.NewMicrotickCoinFromString(path[5])
-        msg = NewTxLimitTrade(market, duration, accAddr, tradetype, limit, maxcost)
+        txmsg = NewTxLimitTrade(market, duration, accAddr, tradetype, limit, maxcost)
     case "settletrade":
         id := mt.NewMicrotickIdFromString(path[1])
-        msg = NewTxSettleTrade(id, accAddr)
+        txmsg = NewTxSettleTrade(id, accAddr)
     }
         
     response := mt.GenTx {
-        Tx: auth.NewStdTx([]sdk.Msg{msg}, auth.NewStdFee(2000000, nil), nil, ""),
+        Tx: auth.NewStdTx([]sdk.Msg{txmsg}, auth.NewStdFee(2000000, nil), nil, ""),
         AccountNumber: account.GetAccountNumber(),
         ChainID: ctx.ChainID(),
         Sequence: account.GetSequence(),

@@ -53,7 +53,7 @@ func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxCancelQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxCancelQuote) sdk.Result {
+func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxCancelQuote) sdk.Result {
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()

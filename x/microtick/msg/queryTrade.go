@@ -105,7 +105,7 @@ func formatQuoteParams(params keeper.DataQuoteParams) string {
     )
 }
 
-func queryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
+func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {

@@ -20,9 +20,9 @@ import (
 type MicrotickKeeper struct {
 	AccountKeeper auth.AccountKeeper
 	CoinKeeper bank.Keeper
-	distrKeeper distribution.Keeper
+	DistrKeeper distribution.Keeper
 	stakingKeeper staking.Keeper
-	appGlobalsKey sdk.StoreKey
+	AppGlobalsKey sdk.StoreKey
 	accountStatusKey sdk.StoreKey
 	activeQuotesKey sdk.StoreKey
 	activeTradesKey sdk.StoreKey
@@ -31,7 +31,8 @@ type MicrotickKeeper struct {
 	cdc *codec.Codec
 }
 
-func NewKeeper(accountKeeper auth.AccountKeeper, 
+func NewKeeper(
+	accountKeeper auth.AccountKeeper, 
 	coinKeeper bank.Keeper,
 	distrKeeper distribution.Keeper,
 	stakingKeeper staking.Keeper,
@@ -46,9 +47,9 @@ func NewKeeper(accountKeeper auth.AccountKeeper,
 	return MicrotickKeeper {
 		AccountKeeper: accountKeeper,
 		CoinKeeper: coinKeeper,
-		distrKeeper: distrKeeper,
+		DistrKeeper: distrKeeper,
 		stakingKeeper: stakingKeeper,
-		appGlobalsKey: mtAppGlobalsKey,
+		AppGlobalsKey: mtAppGlobalsKey,
 		accountStatusKey: mtAccountStatusKey,
 		activeQuotesKey: mtActiveQuotesKey,
 		activeTradesKey: mtActiveTradesKey,
@@ -60,6 +61,10 @@ func NewKeeper(accountKeeper auth.AccountKeeper,
 
 // Keeper as used here contains access methods for data structures only - business logic
 // is maintained in the tx handlers
+
+func (keeper MicrotickKeeper) GetCodec() *codec.Codec {
+	return keeper.cdc
+}
 
 // SetParams sets the module's parameters.
 func (keeper MicrotickKeeper) SetParams(ctx sdk.Context, params mt.Params) {

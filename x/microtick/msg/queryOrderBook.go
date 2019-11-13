@@ -26,7 +26,7 @@ Calls: %v
 Puts: %v`, rma.SumBacking, rma.SumWeight, rma.Calls, rma.Puts))
 }
 
-func queryOrderBook(ctx sdk.Context, path []string, 
+func QueryOrderBook(ctx sdk.Context, path []string, 
     req abci.RequestQuery, keeper keeper.MicrotickKeeper)(res []byte, err sdk.Error) {
         
     market := path[0]

@@ -62,7 +62,7 @@ func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, msg TxMarketTrade) sdk.Result {
+func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, msg TxMarketTrade) sdk.Result {
     params := mtKeeper.GetParams(ctx)
      
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {

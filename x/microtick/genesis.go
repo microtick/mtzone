@@ -29,28 +29,28 @@ func DefaultGenesisState() GenesisState {
 func InitGenesis(ctx sdk.Context, keeper keeper.MicrotickKeeper, data GenesisState) {
     keeper.SetParams(ctx, data.Params)
     
-    store := ctx.KVStore(keeper.appGlobalsKey)
+    store := ctx.KVStore(keeper.AppGlobalsKey)
     key := []byte("commissionPool")
     
-    store.Set(key, keeper.cdc.MustMarshalBinaryBare(data.Pool))
+    store.Set(key, keeper.GetCodec().MustMarshalBinaryBare(data.Pool))
     
     fmt.Printf("Prearranged halt time: %s\n", time.Unix(data.Params.HaltTime, 0).String())
 }
 
 func ExportGenesis(ctx sdk.Context, keeper keeper.MicrotickKeeper) GenesisState {
-    keeper.distrKeeper.IterateValidatorOutstandingRewards(ctx, 
+    keeper.DistrKeeper.IterateValidatorOutstandingRewards(ctx, 
         func(addr sdk.ValAddress, rewards types.ValidatorOutstandingRewards) (stop bool) {
             fmt.Printf("Reward: %+v\n", rewards)
             return false
         },
     )
     
-    store := ctx.KVStore(keeper.appGlobalsKey)
+    store := ctx.KVStore(keeper.AppGlobalsKey)
     key := []byte("commissionPool")
-    var pool MicrotickCoin = NewMicrotickCoinFromInt(0)
+    var pool mt.MicrotickCoin = mt.NewMicrotickCoinFromInt(0)
     if store.Has(key) {
         bz := store.Get(key)
-        keeper.cdc.MustUnmarshalBinaryBare(bz, &pool)
+        keeper.GetCodec().MustUnmarshalBinaryBare(bz, &pool)
     }
     
     params := keeper.GetParams(ctx)

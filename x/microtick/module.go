@@ -1,6 +1,7 @@
 package microtick
 
 import (
+	"fmt"
 	"encoding/json"
 
 	"github.com/gorilla/mux"
@@ -13,12 +14,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	
-	mt "github.com/mjackson001/mtzone/x/microtick/types"
+	_ "github.com/mjackson001/mtzone/x/microtick/types"
+	"github.com/mjackson001/mtzone/x/microtick/msg"
 	"github.com/mjackson001/mtzone/x/microtick/keeper"
+	"github.com/mjackson001/mtzone/x/microtick/client"
 )
 
 const (
     ModuleName = "microtick"
+    DefaultParamspace = "microtick"
 )
 
 var (
@@ -38,18 +42,18 @@ func (AppModuleBasic) Name() string {
 
 // register module codec
 func (AppModuleBasic) RegisterCodec(cdc *codec.Codec) {
-	RegisterCodec(cdc)
+	msg.RegisterCodec(cdc)
 }
 
 // default genesis state
 func (AppModuleBasic) DefaultGenesis() json.RawMessage {
-	return ModuleCdc.MustMarshalJSON(DefaultGenesisState())
+	return msg.ModuleCdc.MustMarshalJSON(DefaultGenesisState())
 }
 
 // module validate genesis
 func (AppModuleBasic) ValidateGenesis(bz json.RawMessage) error {
 	var data GenesisState
-	err := ModuleCdc.UnmarshalJSON(bz, &data)
+	err := msg.ModuleCdc.UnmarshalJSON(bz, &data)
 	if err != nil {
 		return err
 	}
@@ -58,15 +62,17 @@ func (AppModuleBasic) ValidateGenesis(bz json.RawMessage) error {
 
 // register rest routes
 func (AppModuleBasic) RegisterRESTRoutes(ctx context.CLIContext, rtr *mux.Router) {
-	rest.RegisterRoutes(ctx, rtr)
+	client.RegisterRoutes(ctx, rtr)
 }
 
 // get the root tx command of this module
-func (AppModuleBasic) GetTxCmd(_ *codec.Codec) *cobra.Command { return nil }
+func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command { 
+	return client.GetTxCmd(cdc)
+}
 
 // get the root query command of this module
 func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetQueryCmd(cdc)
+	return client.GetQueryCmd(ModuleName, cdc)
 }
 
 //___________________________
@@ -77,7 +83,7 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(keeper Keeper) AppModule {
+func NewAppModule(keeper keeper.MicrotickKeeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         keeper,
@@ -90,17 +96,21 @@ func (AppModule) Name() string {
 }
 
 // register invariants
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
+func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {
+	fmt.Println("Invariants - TBD")
+}
 
 // module message route name
-func (AppModule) Route() string { return "" }
+func (AppModule) Route() string { 
+	return ModuleName
+}
 
 // module handler
 func (am AppModule) NewHandler() sdk.Handler { return nil }
 
 // module querier route name
 func (AppModule) QuerierRoute() string {
-	return QuerierRoute
+	return ModuleName
 }
 
 // module querier
@@ -111,7 +121,7 @@ func (am AppModule) NewQuerierHandler() sdk.Querier {
 // module init-genesis
 func (am AppModule) InitGenesis(ctx sdk.Context, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState GenesisState
-	ModuleCdc.MustUnmarshalJSON(data, &genesisState)
+	msg.ModuleCdc.MustUnmarshalJSON(data, &genesisState)
 	InitGenesis(ctx, am.keeper, genesisState)
 	return []abci.ValidatorUpdate{}
 }
@@ -119,22 +129,14 @@ func (am AppModule) InitGenesis(ctx sdk.Context, data json.RawMessage) []abci.Va
 // module export genesis
 func (am AppModule) ExportGenesis(ctx sdk.Context) json.RawMessage {
 	gs := ExportGenesis(ctx, am.keeper)
-	return ModuleCdc.MustMarshalJSON(gs)
+	return msg.ModuleCdc.MustMarshalJSON(gs)
 }
 
 // module begin-block
-func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	BeginBlocker(ctx, am.keeper)
-}
+func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 
 // module end-block
-func (AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+	EndBlocker(ctx, am.keeper)
 	return []abci.ValidatorUpdate{}
-}
-
-func init() {
-    ModuleCdc = codec.New()
-    RegisterCodec(ModuleCdc)
-    codec.RegisterCrypto(ModuleCdc)
-    ModuleCdc.Seal()
 }

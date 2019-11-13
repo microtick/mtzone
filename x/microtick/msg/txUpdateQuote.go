@@ -62,7 +62,7 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxUpdateQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxUpdateQuote) sdk.Result {
+func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxUpdateQuote) sdk.Result {
     params := keeper.GetParams(ctx)
     
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)

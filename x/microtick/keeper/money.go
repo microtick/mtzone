@@ -10,7 +10,7 @@ import (
 // Commissions
 
 func (k MicrotickKeeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin) {
-	store := ctx.KVStore(k.appGlobalsKey)
+	store := ctx.KVStore(k.AppGlobalsKey)
 	key := []byte("commissionPool")
 	
 	var pool mt.MicrotickCoin = mt.NewMicrotickCoinFromInt(0)
@@ -34,7 +34,7 @@ func (k MicrotickKeeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin
 }
 
 func (k MicrotickKeeper) FractionalCommission(ctx sdk.Context) mt.MicrotickCoin {
-	store := ctx.KVStore(k.appGlobalsKey)
+	store := ctx.KVStore(k.AppGlobalsKey)
 	key := []byte("commissionPool")
 	
 	var pool mt.MicrotickCoin = mt.NewMicrotickCoinFromInt(0)

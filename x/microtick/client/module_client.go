@@ -2,54 +2,44 @@ package client
 
 import (
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/spf13/cobra"
-	amino "github.com/tendermint/go-amino"
 )
 
-// ModuleClient exports all client functionality from this module
-type ModuleClient struct {
-	storeKey string
-	cdc      *amino.Codec
-}
-
-func NewModuleClient(storeKey string, cdc *amino.Codec) ModuleClient {
-	return ModuleClient{storeKey, cdc}
-}
-
 // GetQueryCmd returns the cli query commands for this module
-func (mc ModuleClient) GetQueryCmd() *cobra.Command {
+func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {
 	mtQueryCmd := &cobra.Command{
 		Use:   "microtick",
 		Short: "Querying commands for the microtick module",
 	}
 
 	mtQueryCmd.AddCommand(client.GetCommands(
-		GetCmdAccountStatus(mc.storeKey, mc.cdc),
-		GetCmdMarketStatus(mc.storeKey, mc.cdc),
-		GetCmdMarketConsensus(mc.storeKey, mc.cdc),
-		GetCmdOrderBook(mc.storeKey, mc.cdc),
-		GetCmdActiveQuote(mc.storeKey, mc.cdc),
-		GetCmdActiveTrade(mc.storeKey, mc.cdc),
+		GetCmdAccountStatus(moduleName, cdc),
+		GetCmdMarketStatus(moduleName, cdc),
+		GetCmdMarketConsensus(moduleName, cdc),
+		GetCmdOrderBook(moduleName, cdc),
+		GetCmdActiveQuote(moduleName, cdc),
+		GetCmdActiveTrade(moduleName, cdc),
 	)...)
 
 	return mtQueryCmd
 }
 
-func (mc ModuleClient) GetTxCmd() *cobra.Command {
+func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 	mtTxCmd := &cobra.Command{
 		Use:   "microtick",
 		Short: "Microtick transactions subcommands",
 	}
 
 	mtTxCmd.AddCommand(client.PostCommands(
-		GetCmdCreateMarket(mc.cdc),
-		GetCmdCreateQuote(mc.cdc),
-		GetCmdCancelQuote(mc.cdc),
-		GetCmdUpdateQuote(mc.cdc),
-		GetCmdDepositQuote(mc.cdc),
-		GetCmdMarketTrade(mc.cdc),
-		GetCmdLimitTrade(mc.cdc),
-		GetCmdSettleTrade(mc.cdc),
+		GetCmdCreateMarket(cdc),
+		GetCmdCreateQuote(cdc),
+		GetCmdCancelQuote(cdc),
+		GetCmdUpdateQuote(cdc),
+		GetCmdDepositQuote(cdc),
+		GetCmdMarketTrade(cdc),
+		GetCmdLimitTrade(cdc),
+		GetCmdSettleTrade(cdc),
 	)...)
 
 	return mtTxCmd

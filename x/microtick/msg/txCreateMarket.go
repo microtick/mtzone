@@ -43,7 +43,7 @@ func (msg TxCreateMarket) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, msg TxCreateMarket) sdk.Result {
+func HandleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, msg TxCreateMarket) sdk.Result {
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
         mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
     }

@@ -7,45 +7,44 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/client/context"
-	"github.com/cosmos/cosmos-sdk/codec"
+	_ "github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 
 	"github.com/gorilla/mux"
 )
 
-
 // RegisterRoutes - Central function to define routes that get registered by the main application
-func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, storeName string) {
-	r.HandleFunc(fmt.Sprintf("/%s/account/{acct}", storeName), queryAccountStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/market/{market}", storeName), queryMarketStatusHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/consensus/{market}", storeName), queryMarketConsensusHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/orderbook/{market}/{duration}", storeName), queryMarketOrderbookHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/quote/{id}", storeName), queryQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/trade/{id}", storeName), queryTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
+func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router) {
+	r.HandleFunc("/microtick/account/{acct}", queryAccountStatusHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/market/{market}", queryMarketStatusHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/consensus/{market}", queryMarketConsensusHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/orderbook/{market}/{duration}", queryMarketOrderbookHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/quote/{id}", queryQuoteHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/trade/{id}", queryTradeHandler(cliCtx)).Methods("GET")
 	
 	// These tx functions just generate the signing bytes with correct chain ID, account and sequence numbers
-	r.HandleFunc(fmt.Sprintf("/%s/createmarket/{acct}/{market}", storeName), txCreateMarketHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/createquote/{acct}/{market}/{duration}/{backing}/{spot}/{premium}", storeName), txCreateQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/cancelquote/{requester}/{id}", storeName), txCancelQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/depositquote/{requester}/{id}/{amount}", storeName), txDepositQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/updatequote/{requester}/{id}/{spot}/{premium}", storeName), txUpdateQuoteHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/markettrade/{buyer}/{market}/{duration}/{tradetype}/{quantity}", storeName), txMarketTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/limittrade/{buyer}/{market}/{duration}/{tradetype}/{limit}/{maxcost}", storeName), txLimitTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
-	r.HandleFunc(fmt.Sprintf("/%s/settletrade/{requester}/{id}", storeName), txSettleTradeHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc("/microtick/createmarket/{acct}/{market}", txCreateMarketHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/createquote/{acct}/{market}/{duration}/{backing}/{spot}/{premium}", txCreateQuoteHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/cancelquote/{requester}/{id}", txCancelQuoteHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/depositquote/{requester}/{id}/{amount}", txDepositQuoteHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/updatequote/{requester}/{id}/{spot}/{premium}", txUpdateQuoteHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/markettrade/{buyer}/{market}/{duration}/{tradetype}/{quantity}", txMarketTradeHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/limittrade/{buyer}/{market}/{duration}/{tradetype}/{limit}/{maxcost}", txLimitTradeHandler(cliCtx)).Methods("GET")
+	r.HandleFunc("/microtick/settletrade/{requester}/{id}", txSettleTradeHandler(cliCtx)).Methods("GET")
 	
 	// Broadcast signed tx
-	r.HandleFunc(fmt.Sprintf("/%s/broadcast", storeName), broadcastSignedTx(cdc, cliCtx)).Methods("POST")
+	r.HandleFunc("/microtick/broadcast", broadcastSignedTx(cliCtx)).Methods("POST")
 }
 
 type signedReq struct {
 	Tx string `json:"tx"`
 }
 
-func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.HandlerFunc {
+func broadcastSignedTx(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req signedReq
 		
-		if !rest.ReadRESTReq(w, r, cdc, &req) {
+		if !rest.ReadRESTReq(w, r, cliCtx.Codec, &req) {
 			rest.WriteErrorResponse(w, http.StatusBadRequest, "failed to parse request")
 			return	
 		}
@@ -53,7 +52,7 @@ func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.Handler
 		//fmt.Printf("%s\n", req.Tx)
 		
 		var msg auth.StdTx
-		cdc.MustUnmarshalJSON([]byte(req.Tx), &msg)
+		cliCtx.Codec.MustUnmarshalJSON([]byte(req.Tx), &msg)
 		
 		encoder := sdk.GetConfig().GetTxEncoder()
 		
@@ -70,13 +69,13 @@ func broadcastSignedTx(cdc *codec.Codec, cliCtx context.CLIContext) http.Handler
 	}
 }
 
-func txCreateMarketHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txCreateMarketHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		account := vars["acct"]
 		market := vars["market"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/createmarket/%s/%s", storeName, account, market), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/createmarket/%s/%s", account, market), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -86,7 +85,7 @@ func txCreateMarketHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeNam
 	}
 }
 
-func txCreateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txCreateQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		account := vars["acct"]
@@ -96,7 +95,7 @@ func txCreateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		spot := vars["spot"]
 		premium := vars["premium"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/createquote/%s/%s/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/createquote/%s/%s/%s/%s/%s/%s", 
 			account, market, duration, backing, spot, premium), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -107,13 +106,13 @@ func txCreateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 	}
 }
 
-func txCancelQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txCancelQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		requester := vars["requester"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/cancelquote/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/cancelquote/%s/%s",
 			requester, id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -124,14 +123,14 @@ func txCancelQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 	}
 }
 
-func txDepositQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txDepositQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		requester := vars["requester"]
 		amount := vars["amount"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/depositquote/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/depositquote/%s/%s/%s", 
 			requester, id, amount), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -142,7 +141,7 @@ func txDepositQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeNam
 	}
 }
 
-func txUpdateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txUpdateQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -150,7 +149,7 @@ func txUpdateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		spot := vars["spot"]
 		premium := vars["premium"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/updatequote/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/updatequote/%s/%s/%s/%s", 
 			requester, id, spot, premium), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -161,7 +160,7 @@ func txUpdateQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 	}
 }
 
-func txMarketTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txMarketTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -170,7 +169,7 @@ func txMarketTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 		tradetype := vars["tradetype"]
 		quantity := vars["quantity"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/markettrade/%s/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/markettrade/%s/%s/%s/%s/%s", 
 			buyer, market, duration, tradetype, quantity), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -181,7 +180,7 @@ func txMarketTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 	}
 }
 
-func txLimitTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txLimitTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -191,7 +190,7 @@ func txLimitTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName 
 		limit := vars["limit"]
 		maxcost := vars["maxcost"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/limittrade/%s/%s/%s/%s/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/limittrade/%s/%s/%s/%s/%s/%s", 
 			buyer, market, duration, tradetype, limit, maxcost), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -202,13 +201,13 @@ func txLimitTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName 
 	}
 }
 
-func txSettleTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func txSettleTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		requester := vars["requester"]
 		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/generate/settletrade/%s/%s", storeName, 
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/micrtick/generate/settletrade/%s/%s", 
 			requester, id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
@@ -219,12 +218,12 @@ func txSettleTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName
 	}
 }
 
-func queryAccountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryAccountStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		account := vars["acct"]
 
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/account/%s", storeName, account), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/account/%s", account), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -234,12 +233,12 @@ func queryAccountStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, stor
 	}
 }
 
-func queryMarketStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryMarketStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
 
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/market/%s", storeName, market), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/market/%s", market), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -249,12 +248,12 @@ func queryMarketStatusHandler(cdc *codec.Codec, cliCtx context.CLIContext, store
 	}
 }
 
-func queryMarketConsensusHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryMarketConsensusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
 
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/consensus/%s", storeName, market), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/consensus/%s", market), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -264,13 +263,13 @@ func queryMarketConsensusHandler(cdc *codec.Codec, cliCtx context.CLIContext, st
 	}
 }
 
-func queryMarketOrderbookHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryMarketOrderbookHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
 		duration := vars["duration"]
 
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/orderbook/%s/%s", storeName, market, duration), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/orderbook/%s/%s", market, duration), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -280,12 +279,12 @@ func queryMarketOrderbookHandler(cdc *codec.Codec, cliCtx context.CLIContext, st
 	}
 }
 
-func queryQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/quote/%s", storeName, id), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/quote/%s", id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -295,12 +294,12 @@ func queryQuoteHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName st
 	}
 }
 
-func queryTradeHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func queryTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/trade/%s", storeName, id), nil)
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/trade/%s", id), nil)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return

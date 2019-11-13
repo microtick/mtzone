@@ -76,7 +76,7 @@ func (msg TxSettleTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func handleTxSettleTrade(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxSettleTrade) sdk.Result {
+func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxSettleTrade) sdk.Result {
     params := keeper.GetParams(ctx)
     
     trade, err := keeper.GetActiveTrade(ctx, msg.Id)

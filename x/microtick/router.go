@@ -5,53 +5,55 @@ import (
     
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
-    "github.com/cosmos/cosmos-sdk/codec"
+    
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
+    "github.com/mjackson001/mtzone/x/microtick/msg"
 )
 
-func NewQuerier(keeper Keeper) sdk.Querier {
+func NewQuerier(keeper keeper.MicrotickKeeper) sdk.Querier {
     return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err sdk.Error) {
         switch path[0] {
         case "account":
-            return queryAccountStatus(ctx, path[1:], req, keeper)
+            return msg.QueryAccountStatus(ctx, path[1:], req, keeper)
         case "market":
-            return queryMarketStatus(ctx, path[1:], req, keeper)
+            return msg.QueryMarketStatus(ctx, path[1:], req, keeper)
         case "consensus":
-            return queryMarketConsensus(ctx, path[1:], req, keeper)
+            return msg.QueryMarketConsensus(ctx, path[1:], req, keeper)
         case "orderbook":
-            return queryOrderBook(ctx, path[1:], req, keeper)
+            return msg.QueryOrderBook(ctx, path[1:], req, keeper)
         case "quote":
-            return queryQuoteStatus(ctx, path[1:], req, keeper)
+            return msg.QueryQuoteStatus(ctx, path[1:], req, keeper)
         case "trade":
-            return queryTradeStatus(ctx, path[1:], req, keeper)
+            return msg.QueryTradeStatus(ctx, path[1:], req, keeper)
         case "generate":
-            return generateTx(ctx, path[1], path[2:], req, keeper)
+            return msg.GenerateTx(ctx, path[1], path[2:], req, keeper)
         default:
             return nil, sdk.ErrUnknownRequest("unknown microtick query endpoint")
         }
     }
 }
 
-func NewHandler(keeper Keeper) sdk.Handler {
-	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
-		switch msg := msg.(type) {
-		case TxCreateMarket:
-		    return handleTxCreateMarket(ctx, keeper, msg)
-		case TxCreateQuote:
-			return handleTxCreateQuote(ctx, keeper, msg)
-		case TxCancelQuote:
-			return handleTxCancelQuote(ctx, keeper, msg)
-		case TxUpdateQuote:
-			return handleTxUpdateQuote(ctx, keeper, msg)
-		case TxDepositQuote:
-			return handleTxDepositQuote(ctx, keeper, msg)
-		case TxMarketTrade:
-			return handleTxMarketTrade(ctx, keeper, msg)
-		case TxLimitTrade:
-			return handleTxLimitTrade(ctx, keeper, msg)
-		case TxSettleTrade:
-			return handleTxSettleTrade(ctx, keeper, msg)
+func NewHandler(keeper keeper.MicrotickKeeper) sdk.Handler {
+	return func(ctx sdk.Context, txmsg sdk.Msg) sdk.Result {
+		switch tmp := txmsg.(type) {
+		case msg.TxCreateMarket:
+		    return msg.HandleTxCreateMarket(ctx, keeper, tmp)
+		case msg.TxCreateQuote:
+			return msg.HandleTxCreateQuote(ctx, keeper, tmp)
+		case msg.TxCancelQuote:
+			return msg.HandleTxCancelQuote(ctx, keeper, tmp)
+		case msg.TxUpdateQuote:
+			return msg.HandleTxUpdateQuote(ctx, keeper, tmp)
+		case msg.TxDepositQuote:
+			return msg.HandleTxDepositQuote(ctx, keeper, tmp)
+		case msg.TxMarketTrade:
+			return msg.HandleTxMarketTrade(ctx, keeper, tmp)
+		case msg.TxLimitTrade:
+			return msg.HandleTxLimitTrade(ctx, keeper, tmp)
+		case msg.TxSettleTrade:
+			return msg.HandleTxSettleTrade(ctx, keeper, tmp)
 		default:
-			errMsg := fmt.Sprintf("Unrecognized microtick tx type: %v", msg.Type())
+			errMsg := fmt.Sprintf("Unrecognized microtick tx type: %v", txmsg.Type())
 			return sdk.ErrUnknownRequest(errMsg).Result()
 		}
 	}
