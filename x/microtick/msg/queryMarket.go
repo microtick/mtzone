@@ -52,7 +52,7 @@ func formatOrderBook(dur mt.MicrotickDuration, rob ResponseMarketOrderBookStatus
         rob.InsideCall.String(), rob.InsidePut.String())
 }
 
-func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
+func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
     market := path[0]
     data, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {

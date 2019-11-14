@@ -56,7 +56,7 @@ CanModify: %s`,
     rqs.CanModify.String()))
 }
 
-func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
+func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {

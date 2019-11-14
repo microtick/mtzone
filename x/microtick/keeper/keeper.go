@@ -17,7 +17,7 @@ import (
 	mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
-type MicrotickKeeper struct {
+type Keeper struct {
 	AccountKeeper auth.AccountKeeper
 	CoinKeeper bank.Keeper
 	DistrKeeper distribution.Keeper
@@ -43,8 +43,8 @@ func NewKeeper(
 	mtMarketsKey sdk.StoreKey,
     paramstore params.Subspace,
     cdc *codec.Codec,
-) MicrotickKeeper {
-	return MicrotickKeeper {
+) Keeper {
+	return Keeper {
 		AccountKeeper: accountKeeper,
 		CoinKeeper: coinKeeper,
 		DistrKeeper: distrKeeper,
@@ -62,24 +62,24 @@ func NewKeeper(
 // Keeper as used here contains access methods for data structures only - business logic
 // is maintained in the tx handlers
 
-func (keeper MicrotickKeeper) GetCodec() *codec.Codec {
+func (keeper Keeper) GetCodec() *codec.Codec {
 	return keeper.cdc
 }
 
 // SetParams sets the module's parameters.
-func (keeper MicrotickKeeper) SetParams(ctx sdk.Context, params mt.Params) {
+func (keeper Keeper) SetParams(ctx sdk.Context, params mt.Params) {
 	keeper.paramSubspace.SetParamSet(ctx, &params)
 }
 
 // GetParams gets the auth module's parameters.
-func (keeper MicrotickKeeper) GetParams(ctx sdk.Context) (params mt.Params) {
+func (keeper Keeper) GetParams(ctx sdk.Context) (params mt.Params) {
 	keeper.paramSubspace.GetParamSet(ctx, &params)
 	return
 }
 
 // DataAccountStatus
 
-func (k MicrotickKeeper) GetAccountStatus(ctx sdk.Context, acct mt.MicrotickAccount) DataAccountStatus {
+func (k Keeper) GetAccountStatus(ctx sdk.Context, acct mt.MicrotickAccount) DataAccountStatus {
 	store := ctx.KVStore(k.accountStatusKey)
 	key := []byte(acct.String())
 	if !store.Has(key) {
@@ -91,7 +91,7 @@ func (k MicrotickKeeper) GetAccountStatus(ctx sdk.Context, acct mt.MicrotickAcco
 	return acctStatus
 }
 
-func (k MicrotickKeeper) SetAccountStatus(ctx sdk.Context, acct mt.MicrotickAccount, status DataAccountStatus) {
+func (k Keeper) SetAccountStatus(ctx sdk.Context, acct mt.MicrotickAccount, status DataAccountStatus) {
 	store := ctx.KVStore(k.accountStatusKey)
 	key := []byte(acct.String())
 	status.Account = acct
@@ -100,13 +100,13 @@ func (k MicrotickKeeper) SetAccountStatus(ctx sdk.Context, acct mt.MicrotickAcco
 
 // DataMarket
 
-func (k MicrotickKeeper) HasDataMarket(ctx sdk.Context, market mt.MicrotickMarket) bool {
+func (k Keeper) HasDataMarket(ctx sdk.Context, market mt.MicrotickMarket) bool {
 	store := ctx.KVStore(k.marketsKey)
 	key := []byte(market)
 	return store.Has(key)
 }
 
-func (k MicrotickKeeper) GetDataMarket(ctx sdk.Context, market mt.MicrotickMarket) (DataMarket, error) {
+func (k Keeper) GetDataMarket(ctx sdk.Context, market mt.MicrotickMarket) (DataMarket, error) {
 	store := ctx.KVStore(k.marketsKey)
 	key := []byte(market)
 	var dataMarket DataMarket
@@ -118,7 +118,7 @@ func (k MicrotickKeeper) GetDataMarket(ctx sdk.Context, market mt.MicrotickMarke
 	return dataMarket, nil
 }
 
-func (k MicrotickKeeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
+func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
 	store := ctx.KVStore(k.marketsKey)
 	key := []byte(dataMarket.Market)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(dataMarket))
@@ -126,7 +126,7 @@ func (k MicrotickKeeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
 
 // DataActiveQuote
 
-func (k MicrotickKeeper) GetNextActiveQuoteId(ctx sdk.Context) mt.MicrotickId {
+func (k Keeper) GetNextActiveQuoteId(ctx sdk.Context) mt.MicrotickId {
 	store := ctx.KVStore(k.activeQuotesKey)
 	key := []byte("nextQuoteId")
 	var id mt.MicrotickId
@@ -144,7 +144,7 @@ func (k MicrotickKeeper) GetNextActiveQuoteId(ctx sdk.Context) mt.MicrotickId {
 	return id
 }
 
-func (k MicrotickKeeper) GetActiveQuote(ctx sdk.Context, id mt.MicrotickId) (DataActiveQuote, error) {
+func (k Keeper) GetActiveQuote(ctx sdk.Context, id mt.MicrotickId) (DataActiveQuote, error) {
 	store := ctx.KVStore(k.activeQuotesKey)
 	key := make([]byte, 4)
 	var activeQuote DataActiveQuote
@@ -157,14 +157,14 @@ func (k MicrotickKeeper) GetActiveQuote(ctx sdk.Context, id mt.MicrotickId) (Dat
 	return activeQuote, nil
 }
 
-func (k MicrotickKeeper) SetActiveQuote(ctx sdk.Context, active DataActiveQuote) {
+func (k Keeper) SetActiveQuote(ctx sdk.Context, active DataActiveQuote) {
 	store := ctx.KVStore(k.activeQuotesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, active.Id)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(active))
 }
 
-func (k MicrotickKeeper) DeleteActiveQuote(ctx sdk.Context, id mt.MicrotickId) {
+func (k Keeper) DeleteActiveQuote(ctx sdk.Context, id mt.MicrotickId) {
 	store := ctx.KVStore(k.activeQuotesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, id)
@@ -173,7 +173,7 @@ func (k MicrotickKeeper) DeleteActiveQuote(ctx sdk.Context, id mt.MicrotickId) {
 
 // DataActiveTrade
 
-func (k MicrotickKeeper) GetNextActiveTradeId(ctx sdk.Context) mt.MicrotickId {
+func (k Keeper) GetNextActiveTradeId(ctx sdk.Context) mt.MicrotickId {
 	store := ctx.KVStore(k.activeQuotesKey)
 	key := []byte("nextTradeId")
 	var id mt.MicrotickId
@@ -191,7 +191,7 @@ func (k MicrotickKeeper) GetNextActiveTradeId(ctx sdk.Context) mt.MicrotickId {
 	return id
 }
 
-func (k MicrotickKeeper) GetActiveTrade(ctx sdk.Context, id mt.MicrotickId) (DataActiveTrade, error) {
+func (k Keeper) GetActiveTrade(ctx sdk.Context, id mt.MicrotickId) (DataActiveTrade, error) {
 	store := ctx.KVStore(k.activeTradesKey)
 	key := make([]byte, 4)
 	var activeTrade DataActiveTrade
@@ -204,14 +204,14 @@ func (k MicrotickKeeper) GetActiveTrade(ctx sdk.Context, id mt.MicrotickId) (Dat
 	return activeTrade, nil
 }
 
-func (k MicrotickKeeper) SetActiveTrade(ctx sdk.Context, active DataActiveTrade) {
+func (k Keeper) SetActiveTrade(ctx sdk.Context, active DataActiveTrade) {
 	store := ctx.KVStore(k.activeTradesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, active.Id)
 	store.Set(key, k.cdc.MustMarshalBinaryBare(active))
 }
 
-func (k MicrotickKeeper) DeleteActiveTrade(ctx sdk.Context, id mt.MicrotickId) {
+func (k Keeper) DeleteActiveTrade(ctx sdk.Context, id mt.MicrotickId) {
 	store := ctx.KVStore(k.activeTradesKey)
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, id)

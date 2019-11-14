@@ -9,7 +9,7 @@ import (
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-func EndBlocker(ctx sdk.Context, keeper keeper.MicrotickKeeper) {
+func EndBlocker(ctx sdk.Context, keeper keeper.Keeper) {
     // Monitor for end of chain
     params := keeper.GetParams(ctx)
     now := ctx.BlockHeader().Time

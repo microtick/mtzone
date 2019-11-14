@@ -11,7 +11,7 @@ import (
 )
 
 func GenerateTx(ctx sdk.Context, txType string, path []string, 
-    req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
         
     defer func() {
         if r := recover(); r != nil {

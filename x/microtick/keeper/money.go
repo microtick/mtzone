@@ -9,7 +9,7 @@ import (
 
 // Commissions
 
-func (k MicrotickKeeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin) {
+func (k Keeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin) {
 	store := ctx.KVStore(k.AppGlobalsKey)
 	key := []byte("commissionPool")
 	
@@ -33,7 +33,7 @@ func (k MicrotickKeeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin
 	store.Set(key, k.cdc.MustMarshalBinaryBare(pool))
 }
 
-func (k MicrotickKeeper) FractionalCommission(ctx sdk.Context) mt.MicrotickCoin {
+func (k Keeper) FractionalCommission(ctx sdk.Context) mt.MicrotickCoin {
 	store := ctx.KVStore(k.AppGlobalsKey)
 	key := []byte("commissionPool")
 	
@@ -49,7 +49,7 @@ func (k MicrotickKeeper) FractionalCommission(ctx sdk.Context) mt.MicrotickCoin 
 
 // Account balances
 
-func (k MicrotickKeeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress, 
+func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress, 
     withdrawAmount mt.MicrotickCoin) {
 	accountStatus := k.GetAccountStatus(ctx, account)
 	
@@ -79,7 +79,7 @@ func (k MicrotickKeeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccA
 	k.SetAccountStatus(ctx, account, accountStatus)
 }
 
-func (k MicrotickKeeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
+func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	depositAmount mt.MicrotickCoin) {
 	accountStatus := k.GetAccountStatus(ctx, account)
 	
@@ -100,7 +100,7 @@ func (k MicrotickKeeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAd
 	k.SetAccountStatus(ctx, account, accountStatus)
 }
 
-func (k MicrotickKeeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {
+func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {
 	status := k.GetAccountStatus(ctx, addr)
 	coins := k.CoinKeeper.GetCoins(ctx, addr)
     balance := status.Change

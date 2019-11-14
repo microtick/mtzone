@@ -32,7 +32,7 @@ func NewMatcher(trade DataActiveTrade, fetchQuoteFunc FetchQuoteFunc) Matcher {
     }
 }
 
-func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper MicrotickKeeper, market *DataMarket) {
+func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, market *DataMarket) {
     for i := 0; i < len(matcher.FillInfo); i++ {
         thisFill := matcher.FillInfo[i]
         thisQuote := thisFill.Quote

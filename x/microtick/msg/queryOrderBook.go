@@ -27,7 +27,7 @@ Puts: %v`, rma.SumBacking, rma.SumWeight, rma.Calls, rma.Puts))
 }
 
 func QueryOrderBook(ctx sdk.Context, path []string, 
-    req abci.RequestQuery, keeper keeper.MicrotickKeeper)(res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.Keeper)(res []byte, err sdk.Error) {
         
     market := path[0]
     dur := mt.MicrotickDurationFromName(path[1])

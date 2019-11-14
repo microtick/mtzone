@@ -58,7 +58,7 @@ func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.MicrotickKeeper, msg TxDepositQuote) sdk.Result {
+func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQuote) sdk.Result {
     params := keeper.GetParams(ctx)
     
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)

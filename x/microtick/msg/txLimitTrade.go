@@ -65,7 +65,7 @@ func (msg TxLimitTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, msg TxLimitTrade) sdk.Result {
+func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrade) sdk.Result {
     params := mtKeeper.GetParams(ctx)
      
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {

@@ -73,7 +73,7 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.MicrotickKeeper, 
+func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, 
     msg TxCreateQuote) sdk.Result {
         
     params := mtKeeper.GetParams(ctx)

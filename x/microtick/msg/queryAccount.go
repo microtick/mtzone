@@ -46,7 +46,7 @@ Settle Backing: %s`, ras.Account,
 }
 
 func QueryAccountStatus(ctx sdk.Context, path []string, 
-    req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
     acct := path[0]
     address, err2 := sdk.AccAddressFromBech32(acct)
     balance := keeper.GetTotalBalance(ctx, address)

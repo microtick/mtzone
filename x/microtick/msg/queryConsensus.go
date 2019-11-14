@@ -27,7 +27,7 @@ Sum Weight: %s`, rm.Market, rm.Consensus.String(), rm.SumBacking.String(),
     rm.SumWeight.String()))
 }
 
-func QueryMarketConsensus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.MicrotickKeeper) (res []byte, err sdk.Error) {
+func QueryMarketConsensus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
     market := path[0]
     data, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {

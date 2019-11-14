@@ -8,11 +8,11 @@ import (
 
 // SupplyInvariants checks that the total supply reflects all held not-bonded tokens, bonded tokens, and unbonding delegations
 // nolint: unparam
-func RegisterInvariants(ir sdk.InvariantRegistry, k keeper.MicrotickKeeper) {
+func RegisterInvariants(ir sdk.InvariantRegistry, k keeper.Keeper) {
 	ir.RegisterRoute(ModuleName, "constant-supply", ConstantSupply(k))
 }
 
-func ConstantSupply(k keeper.MicrotickKeeper) sdk.Invariant {
+func ConstantSupply(k keeper.Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		/*
 		// This needs to be entirely rewritten

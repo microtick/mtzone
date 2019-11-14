@@ -16,6 +16,7 @@ type GenesisState struct {
 }
 
 func NewGenesisState(params mt.Params, pool mt.MicrotickCoin) GenesisState {
+    fmt.Println("New Genesis State called")
     return GenesisState {
         Params: params,
         Pool: pool,
@@ -23,10 +24,12 @@ func NewGenesisState(params mt.Params, pool mt.MicrotickCoin) GenesisState {
 }
 
 func DefaultGenesisState() GenesisState {
+    fmt.Println("Default Genesis State called")
     return NewGenesisState(mt.DefaultParams(), mt.NewMicrotickCoinFromInt(0))
 }
 
-func InitGenesis(ctx sdk.Context, keeper keeper.MicrotickKeeper, data GenesisState) {
+func InitGenesis(ctx sdk.Context, keeper keeper.Keeper, data GenesisState) {
+    fmt.Println("Init genesis")
     keeper.SetParams(ctx, data.Params)
     
     store := ctx.KVStore(keeper.AppGlobalsKey)
@@ -37,7 +40,8 @@ func InitGenesis(ctx sdk.Context, keeper keeper.MicrotickKeeper, data GenesisSta
     fmt.Printf("Prearranged halt time: %s\n", time.Unix(data.Params.HaltTime, 0).String())
 }
 
-func ExportGenesis(ctx sdk.Context, keeper keeper.MicrotickKeeper) GenesisState {
+func ExportGenesis(ctx sdk.Context, keeper keeper.Keeper) GenesisState {
+    fmt.Println("Export Genesis")
     keeper.DistrKeeper.IterateValidatorOutstandingRewards(ctx, 
         func(addr sdk.ValAddress, rewards types.ValidatorOutstandingRewards) (stop bool) {
             fmt.Printf("Reward: %+v\n", rewards)

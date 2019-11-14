@@ -10,7 +10,7 @@ import (
     "github.com/mjackson001/mtzone/x/microtick/msg"
 )
 
-func NewQuerier(keeper keeper.MicrotickKeeper) sdk.Querier {
+func NewQuerier(keeper keeper.Keeper) sdk.Querier {
     return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err sdk.Error) {
         switch path[0] {
         case "account":
@@ -33,7 +33,7 @@ func NewQuerier(keeper keeper.MicrotickKeeper) sdk.Querier {
     }
 }
 
-func NewHandler(keeper keeper.MicrotickKeeper) sdk.Handler {
+func NewHandler(keeper keeper.Keeper) sdk.Handler {
 	return func(ctx sdk.Context, txmsg sdk.Msg) sdk.Result {
 		switch tmp := txmsg.(type) {
 		case msg.TxCreateMarket:
