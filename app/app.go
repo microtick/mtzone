@@ -120,6 +120,41 @@ func SetAppVersion() {
 		os.Exit(-1)
 	}
 	
+	// Check MTROOT version.lock file for correct version, if not, print a warning
+	if _, err := os.Stat(mtroot); os.IsNotExist(err) {
+		os.Mkdir(mtroot, os.ModeDir)
+	}
+	filename := fmt.Sprintf("%s/version.lock", mtroot)
+	versionRead, err := os.Open(filename)
+	if err != nil {
+		versionWrite, err := os.Create(filename)
+		if err != nil {
+			panic(err)
+		}
+		defer func() {
+			if err := versionWrite.Close(); err != nil {
+				panic(err)
+			}
+		}()
+		fmt.Fprint(versionWrite, MTAppVersion)
+	} else {
+		// Check version matches
+		defer func() {
+			if err := versionRead.Close(); err != nil {
+				panic(err)
+			}
+		}()
+		var ver string
+		fmt.Fscan(versionRead, &ver)
+		if ver != MTAppVersion {
+			fmt.Fprintf(os.Stderr, "Version mismatch using MTROOT=%s\n\n", mtroot)
+			fmt.Fprintf(os.Stderr, "Executable version: %s\n", MTAppVersion)
+			fmt.Fprintf(os.Stderr, "MTROOT version.lock: %s\n\n", ver)
+			fmt.Fprintf(os.Stderr, "(remove this warning by deleting $MTROOT/version.lock or using a different MTROOT directory)\n")
+			os.Exit(1)
+		}
+	}
+	
 	version.Name = "Microtick"
 	version.ServerName = "mtd"
 	version.ClientName = "mtcli"
@@ -133,7 +168,7 @@ func SetAppVersion() {
 // NewMTApp returns a reference to an initialized MTApp.
 func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool,
 	invCheckPeriod uint, baseAppOptions ...func(*bam.BaseApp)) *MTApp {
-
+		
 	cdc := MakeCodec()
 
 	bApp := bam.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc), baseAppOptions...)

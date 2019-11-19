@@ -106,7 +106,9 @@ func (AppModule) Route() string {
 }
 
 // module handler
-func (am AppModule) NewHandler() sdk.Handler { return nil }
+func (am AppModule) NewHandler() sdk.Handler { 
+	return NewHandler(am.keeper)
+}
 
 // module querier route name
 func (AppModule) QuerierRoute() string {

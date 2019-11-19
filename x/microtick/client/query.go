@@ -27,8 +27,13 @@ func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			var out msg.ResponseAccountStatus
 			cdc.MustUnmarshalJSON(res, &out)
-			//fmt.Println(out.String())
-			return cliCtx.PrintOutput(out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
 		},
 	}
 }
@@ -50,8 +55,13 @@ func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			var out msg.ResponseMarketStatus
 			cdc.MustUnmarshalJSON(res, &out)
-			//fmt.Println(out.String())
-			return cliCtx.PrintOutput(out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
 		},
 	}
 }
@@ -73,8 +83,13 @@ func GetCmdMarketConsensus(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			var out msg.ResponseMarketConsensus
 			cdc.MustUnmarshalJSON(res, &out)
-			//fmt.Println(out.String())
-			return cliCtx.PrintOutput(out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
 		},
 	}
 }
@@ -97,8 +112,13 @@ func GetCmdOrderBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			var out msg.ResponseOrderBook
 			cdc.MustUnmarshalJSON(res, &out)
-			//fmt.Println(out.String())
-			return cliCtx.PrintOutput(out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
 		},
 	}
 }
@@ -120,8 +140,13 @@ func GetCmdActiveQuote(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			var out msg.ResponseQuoteStatus
 			cdc.MustUnmarshalJSON(res, &out)
-			//fmt.Println(out.String())
-			return cliCtx.PrintOutput(out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
 		},
 	}
 }
@@ -143,8 +168,13 @@ func GetCmdActiveTrade(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			var out msg.ResponseTradeStatus
 			cdc.MustUnmarshalJSON(res, &out)
-			//fmt.Println(out.String())
-			return cliCtx.PrintOutput(out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
 		},
 	}
 }
