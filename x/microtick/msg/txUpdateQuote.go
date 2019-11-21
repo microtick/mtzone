@@ -109,7 +109,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, commission)
+    keeper.PoolCommission(ctx, msg.Requester, commission)
     
     balance := keeper.GetTotalBalance(ctx, msg.Requester)
    

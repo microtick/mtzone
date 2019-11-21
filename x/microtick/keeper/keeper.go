@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	"github.com/cosmos/cosmos-sdk/x/supply"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/params"
@@ -22,6 +23,7 @@ type Keeper struct {
 	CoinKeeper bank.Keeper
 	DistrKeeper distribution.Keeper
 	stakingKeeper staking.Keeper
+	supplyKeeper supply.Keeper
 	AppGlobalsKey sdk.StoreKey
 	accountStatusKey sdk.StoreKey
 	activeQuotesKey sdk.StoreKey
@@ -36,6 +38,7 @@ func NewKeeper(
 	coinKeeper bank.Keeper,
 	distrKeeper distribution.Keeper,
 	stakingKeeper staking.Keeper,
+	supplyKeeper supply.Keeper,
 	mtAppGlobalsKey sdk.StoreKey,
 	mtAccountStatusKey sdk.StoreKey,
 	mtActiveQuotesKey sdk.StoreKey,
@@ -49,6 +52,7 @@ func NewKeeper(
 		CoinKeeper: coinKeeper,
 		DistrKeeper: distrKeeper,
 		stakingKeeper: stakingKeeper,
+		supplyKeeper: supplyKeeper,
 		AppGlobalsKey: mtAppGlobalsKey,
 		accountStatusKey: mtAccountStatusKey,
 		activeQuotesKey: mtActiveQuotesKey,

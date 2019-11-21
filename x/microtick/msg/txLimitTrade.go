@@ -107,7 +107,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
-        mtKeeper.PoolCommission(ctx, trade.Commission)
+        mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
     
         // Step 4 - Finalize trade 
         matcher.Trade.Id = mtKeeper.GetNextActiveTradeId(ctx)

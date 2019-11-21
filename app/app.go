@@ -238,6 +238,7 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 	
 	app.mtKeeper = microtick.NewKeeper(
 		app.accountKeeper, app.bankKeeper, app.distrKeeper, app.stakingKeeper,
+		app.supplyKeeper,
 		keys[microtick.GlobalsKey],
 		keys[microtick.AccountStatusKey],
 		keys[microtick.ActiveQuotesKey],

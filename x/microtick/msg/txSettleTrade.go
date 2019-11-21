@@ -109,7 +109,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     commission := mt.NewMicrotickCoinFromDec(params.CommissionSettleFixed)
     keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     //fmt.Printf("Settle Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, commission)
+    keeper.PoolCommission(ctx, msg.Requester, commission)
     
     if params.EuropeanOptions {
         

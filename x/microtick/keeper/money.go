@@ -3,13 +3,14 @@ package keeper
 import (
 	"fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    "github.com/cosmos/cosmos-sdk/x/auth/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
 // Commissions
 
-func (k Keeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin) {
+func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
 	store := ctx.KVStore(k.AppGlobalsKey)
 	key := []byte("commissionPool")
 	
@@ -27,6 +28,8 @@ func (k Keeper) PoolCommission(ctx sdk.Context, amount mt.MicrotickCoin) {
 	//fmt.Printf("Amount: %s\n", amount.String())
 	if whole.IsPositive() {
 		fmt.Printf("Adding commission: %s\n", whole.String())
+		k.supplyKeeper.SendCoinsFromAccountToModule(ctx, addr, 
+			types.FeeCollectorName, sdk.Coins{whole})
 		//k.feeKeeper.AddCollectedFees(ctx, sdk.Coins{whole})
 	}
 	

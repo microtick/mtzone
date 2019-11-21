@@ -132,7 +132,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     //fmt.Printf("Total: %s\n", total.String())
     mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    mtKeeper.PoolCommission(ctx, commission)
+    mtKeeper.PoolCommission(ctx, msg.Provider, commission)
     
     // Tags
     ctx.EventManager().EmitEvent(
