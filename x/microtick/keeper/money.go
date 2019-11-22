@@ -8,6 +8,8 @@ import (
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
+var MTModuleAccount = "microtick"
+
 // Commissions
 
 func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
@@ -74,10 +76,12 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	        accountStatus.Change = mt.NewMicrotickCoinFromInt(0)
 	    }
 	    
-	    _, err := k.CoinKeeper.SubtractCoins(ctx, account, sdk.Coins{amt})
+	    err := k.supplyKeeper.SendCoinsFromAccountToModule(ctx,
+	        account, MTModuleAccount, sdk.Coins{amt})
 	    if err != nil {
-	        panic("Not enough funds")
+	        panic(err)
 	    }
+	    
     }
 	k.SetAccountStatus(ctx, account, accountStatus)
 }
@@ -93,7 +97,8 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	amt, change = totalDecCoin.TruncateDecimal()
 	
 	if amt.IsPositive() {
-		_, err := k.CoinKeeper.AddCoins(ctx, account, sdk.Coins{amt})
+		err := k.supplyKeeper.SendCoinsFromModuleToAccount(ctx,
+		    MTModuleAccount, account, sdk.Coins{amt})
 		if err != nil {
 			panic("Deposit failed")
 		}
@@ -113,4 +118,14 @@ func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.Microti
         }
     }
     return balance
+}
+
+func (k Keeper) RefundBacking(ctx sdk.Context) {
+    k.IterateAccountStatus(ctx, 
+        func(acct DataAccountStatus) (stop bool) {
+        	k.DepositMicrotickCoin(ctx, acct.Account, acct.QuoteBacking)
+        	k.DepositMicrotickCoin(ctx, acct.Account, acct.TradeBacking)
+            return false
+        },
+    )
 }

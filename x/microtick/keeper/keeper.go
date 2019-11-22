@@ -102,6 +102,24 @@ func (k Keeper) SetAccountStatus(ctx sdk.Context, acct mt.MicrotickAccount, stat
 	store.Set(key, k.cdc.MustMarshalBinaryBare(status))
 }
 
+func (k Keeper) IterateAccountStatus(ctx sdk.Context, process func(DataAccountStatus) (stop bool)) {
+	store := ctx.KVStore(k.accountStatusKey)
+	iter := sdk.KVStorePrefixIterator(store, nil) 
+	defer iter.Close()
+	for {
+		if !iter.Valid() {
+			return
+		}
+		bz := iter.Value()
+		var acctStatus DataAccountStatus
+		k.cdc.MustUnmarshalBinaryBare(bz, &acctStatus)
+		if process(acctStatus) {
+			return
+		}
+		iter.Next()
+	}
+}
+
 // DataMarket
 
 func (k Keeper) HasDataMarket(ctx sdk.Context, market mt.MicrotickMarket) bool {

@@ -66,6 +66,7 @@ var (
 		staking.BondedPoolName:    {supply.Burner, supply.Staking},
 		staking.NotBondedPoolName: {supply.Burner, supply.Staking},
 		gov.ModuleName:            {supply.Burner},
+		microtick.ModuleName:	   {supply.Minter, supply.Burner},
 	}
 )
 
@@ -122,7 +123,7 @@ func SetAppVersion() {
 	
 	// Check MTROOT version.lock file for correct version, if not, print a warning
 	if _, err := os.Stat(mtroot); os.IsNotExist(err) {
-		os.Mkdir(mtroot, os.ModeDir)
+		os.Mkdir(mtroot, os.ModePerm)
 	}
 	filename := fmt.Sprintf("%s/version.lock", mtroot)
 	versionRead, err := os.Open(filename)
@@ -250,6 +251,7 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.mm = module.NewManager(
+		microtick.NewAppModule(app.mtKeeper),
 		genaccounts.NewAppModule(app.accountKeeper),
 		genutil.NewAppModule(app.accountKeeper, app.stakingKeeper, app.BaseApp.DeliverTx),
 		auth.NewAppModule(app.accountKeeper),
@@ -260,7 +262,6 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 		gov.NewAppModule(app.govKeeper, app.supplyKeeper),
 		slashing.NewAppModule(app.slashingKeeper, app.stakingKeeper),
 		staking.NewAppModule(app.stakingKeeper, app.distrKeeper, app.accountKeeper, app.supplyKeeper),
-		microtick.NewAppModule(app.mtKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that

@@ -18,6 +18,8 @@ func (app *MTApp) ExportAppStateAndValidators(forZeroHeight bool, jailWhiteList 
 ) (appState json.RawMessage, validators []tmtypes.GenesisValidator, err error) {
 	// as if they could withdraw from the start of the next block
 	ctx := app.NewContext(true, abci.Header{Height: app.LastBlockHeight()})
+	
+	app.mtKeeper.RefundBacking(ctx)
 
 	if forZeroHeight {
 		app.prepForZeroHeightGenesis(ctx, jailWhiteList)
