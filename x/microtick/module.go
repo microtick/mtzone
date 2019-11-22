@@ -1,7 +1,6 @@
 package microtick
 
 import (
-	"fmt"
 	"encoding/json"
 
 	"github.com/gorilla/mux"
@@ -96,8 +95,8 @@ func (AppModule) Name() string {
 }
 
 // register invariants
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {
-	fmt.Println("Invariants - TBD")
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+	ir.RegisterRoute(ModuleName, "commission-pool", MicrotickPoolInvariant(am.keeper))
 }
 
 // module message route name
