@@ -235,7 +235,6 @@ func InitTestnet(cmd *cobra.Command, config *tmconfig.Config, cdc *codec.Codec,
 			return err
 		}
 
-		// TODO: Rename config file to server.toml as it's not particular to gaia
 		// (REF: https://github.com/cosmos/cosmos-sdk/issues/4125).
 		MTConfigFilePath := filepath.Join(nodeDir, "config/microtick.toml")
 		srvconfig.WriteConfigFile(MTConfigFilePath, MTConfig)

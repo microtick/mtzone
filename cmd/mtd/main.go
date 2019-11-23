@@ -26,7 +26,6 @@ import (
 	"github.com/mjackson001/mtzone/app"
 )
 
-// gaiad custom flags
 const flagInvCheckPeriod = "inv-check-period"
 
 var invCheckPeriod uint

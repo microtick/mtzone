@@ -4,7 +4,6 @@ go 1.12
 
 require (
 	github.com/cosmos/cosmos-sdk v0.37.4
-	github.com/cosmos/gaia v1.0.0
 	github.com/gorilla/mux v1.7.3
 	github.com/otiai10/copy v1.0.2
 	github.com/pkg/errors v0.8.1

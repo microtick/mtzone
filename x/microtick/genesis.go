@@ -1,8 +1,6 @@
 package microtick
 
 import (
-    "fmt"
-    "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
     "github.com/cosmos/cosmos-sdk/x/distribution/types"
     
@@ -61,7 +59,7 @@ func InitGenesis(ctx sdk.Context, keeper keeper.Keeper, data GenesisState) {
         keeper.SetAccountStatus(ctx, acct.Account, status)
     }
     
-    fmt.Printf("Prearranged halt time: %s\n", time.Unix(data.Params.HaltTime, 0).String())
+    //fmt.Printf("Prearranged halt time: %s\n", data.Params.HaltTime)
 }
 
 func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {

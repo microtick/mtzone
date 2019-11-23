@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"time"
 	
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -73,12 +74,26 @@ func (keeper Keeper) GetCodec() *codec.Codec {
 // SetParams sets the module's parameters.
 func (keeper Keeper) SetParams(ctx sdk.Context, params mt.Params) {
 	keeper.paramSubspace.SetParamSet(ctx, &params)
+	haltTime, _ := time.Parse(mt.TimeFormat, params.HaltTime)
+	haltTimeUnix := haltTime.Unix()
+	store := ctx.KVStore(keeper.AppGlobalsKey)
+	key := []byte("haltTime")
+	store.Set(key, keeper.cdc.MustMarshalBinaryBare(haltTimeUnix))
 }
 
 // GetParams gets the auth module's parameters.
 func (keeper Keeper) GetParams(ctx sdk.Context) (params mt.Params) {
 	keeper.paramSubspace.GetParamSet(ctx, &params)
 	return
+}
+
+func (keeper Keeper) GetHaltTime(ctx sdk.Context) int64 {
+	store := ctx.KVStore(keeper.AppGlobalsKey)
+	key := []byte("haltTime")
+	bz := store.Get(key)
+	var haltTime int64
+	keeper.cdc.MustUnmarshalBinaryBare(bz, &haltTime)
+	return haltTime
 }
 
 // DataAccountStatus
