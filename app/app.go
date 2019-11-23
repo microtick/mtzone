@@ -274,10 +274,10 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
 	app.mm.SetOrderInitGenesis(
+		microtick.ModuleName,
 		genaccounts.ModuleName, distr.ModuleName, staking.ModuleName,
 		auth.ModuleName, bank.ModuleName, slashing.ModuleName, gov.ModuleName,
 		supply.ModuleName, crisis.ModuleName, genutil.ModuleName,
-		microtick.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)

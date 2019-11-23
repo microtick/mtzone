@@ -34,7 +34,6 @@ type GenesisState struct {
 
 func NewGenesisState(params mt.Params, pool mt.MicrotickCoin, 
     accounts []GenesisAccount) GenesisState {
-        
     return GenesisState {
         Params: params,
         Pool: pool,
@@ -68,7 +67,6 @@ func InitGenesis(ctx sdk.Context, keeper keeper.Keeper, data GenesisState) {
 func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {
     mtKeeper.DistrKeeper.IterateValidatorOutstandingRewards(ctx, 
         func(addr sdk.ValAddress, rewards types.ValidatorOutstandingRewards) (stop bool) {
-            fmt.Printf("Reward: %+v\n", rewards)
             return false
         },
     )

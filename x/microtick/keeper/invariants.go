@@ -9,8 +9,8 @@ import (
 func MicrotickPoolInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		// Module account balance (Int)
-		mtAcct := k.supplyKeeper.GetModuleAddress(MTModuleAccount)
-		coins := k.CoinKeeper.GetCoins(ctx, mtAcct).AmountOf(mt.TokenType)
+		mtAcct := k.supplyKeeper.GetModuleAccount(ctx, MTModuleAccount)
+		coins := mtAcct.GetCoins().AmountOf(mt.TokenType)
 		
 		// Commission pool (sdk.DecCoin)
 		store := ctx.KVStore(k.AppGlobalsKey)
@@ -28,6 +28,7 @@ func MicrotickPoolInvariant(k Keeper) sdk.Invariant {
 				sum = sum.Add(acct.Change)
 				sum = sum.Add(acct.QuoteBacking)
 				sum = sum.Add(acct.TradeBacking)
+				sum = sum.Add(acct.SettleBacking)
 				return false
 			},
 		)
@@ -35,7 +36,7 @@ func MicrotickPoolInvariant(k Keeper) sdk.Invariant {
 		sum = sum.Add(pool)
 		
 		if !sum.IsEqual(sdk.NewDecCoin(mt.TokenType, coins)) {
-			return fmt.Sprintf("microtick pool invariance:\n\tmodule coins: %v\n\tsum of balances: %v\n", sum, coins), true
+			return fmt.Sprintf("microtick commission pool invariance:\n\tmodule coins: %v\n\tsum of balances: %v\n", coins, sum), true
 		}
 
 		return "", false

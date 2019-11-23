@@ -125,6 +125,7 @@ func (k Keeper) RefundBacking(ctx sdk.Context) {
         func(acct DataAccountStatus) (stop bool) {
         	k.DepositMicrotickCoin(ctx, acct.Account, acct.QuoteBacking)
         	k.DepositMicrotickCoin(ctx, acct.Account, acct.TradeBacking)
+        	k.DepositMicrotickCoin(ctx, acct.Account, acct.SettleBacking)
             return false
         },
     )
