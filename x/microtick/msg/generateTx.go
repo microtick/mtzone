@@ -73,7 +73,7 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
         id := mt.NewMicrotickIdFromString(path[1])
         txmsg = NewTxSettleTrade(id, accAddr)
     }
-        
+    
     response := mt.GenTx {
         Tx: auth.NewStdTx([]sdk.Msg{txmsg}, auth.NewStdFee(2000000, nil), nil, ""),
         AccountNumber: account.GetAccountNumber(),
@@ -81,7 +81,7 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
         Sequence: account.GetSequence(),
     }
     
-    bz, _ := codec.MarshalJSONIndent(ModuleCdc, response)
+    bz, _ := codec.MarshalJSONIndent(keeper.Cdc, response)
     
     return bz, nil
 }

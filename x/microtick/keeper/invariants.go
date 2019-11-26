@@ -18,7 +18,7 @@ func MicrotickPoolInvariant(k Keeper) sdk.Invariant {
 		var pool mt.MicrotickCoin = mt.NewMicrotickCoinFromInt(0)
 		if store.Has(key) {
 			bz := store.Get(key)
-			k.cdc.MustUnmarshalBinaryBare(bz, &pool)
+			k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 		}
 		
 		// Account change balance (sdk.DecCoin)

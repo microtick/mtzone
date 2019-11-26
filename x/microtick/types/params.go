@@ -81,7 +81,7 @@ func (p Params) Equal(p2 Params) bool {
 
 // DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
-    interval, _ := time.ParseDuration("5m")
+    interval, _ := time.ParseDuration("8h")
     defaultHaltTime := time.Now().UTC().Add(interval)
 	return Params{
 	    EuropeanOptions: DefaultEuropeanOptions,

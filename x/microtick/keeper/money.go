@@ -20,7 +20,7 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	
 	if store.Has(key) {
 		bz := store.Get(key)
-		k.cdc.MustUnmarshalBinaryBare(bz, &pool)
+		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
 	
 	pool = pool.Add(amount)
@@ -30,12 +30,12 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	//fmt.Printf("Amount: %s\n", amount.String())
 	if whole.IsPositive() {
 		fmt.Printf("Adding commission: %s\n", whole.String())
-		k.supplyKeeper.SendCoinsFromAccountToModule(ctx, addr, 
+		k.supplyKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
 			types.FeeCollectorName, sdk.Coins{whole})
 		//k.feeKeeper.AddCollectedFees(ctx, sdk.Coins{whole})
 	}
 	
-	store.Set(key, k.cdc.MustMarshalBinaryBare(pool))
+	store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
 }
 
 func (k Keeper) FractionalCommission(ctx sdk.Context) mt.MicrotickCoin {
@@ -46,7 +46,7 @@ func (k Keeper) FractionalCommission(ctx sdk.Context) mt.MicrotickCoin {
 	
 	if store.Has(key) {
 		bz := store.Get(key)
-		k.cdc.MustUnmarshalBinaryBare(bz, &pool)
+		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
 	
 	return pool
