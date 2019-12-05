@@ -1,10 +1,8 @@
 package keeper
 
 import (
-	"fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
-    _ "github.com/cosmos/cosmos-sdk/x/auth/types"
-    
+    auth "github.com/cosmos/cosmos-sdk/x/auth/types"
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
@@ -16,7 +14,7 @@ const MTPoolName = "commissionPool"
 func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
     extCoins, _ := mt.MicrotickCoinToExtTokenType(amount)
     
-    fmt.Printf("Add Pool Commission: requested %s actual %s\n", amount.String(), extCoins.String())
+    //fmt.Printf("Add Pool Commission: requested %s actual %s\n", amount.String(), extCoins.String())
     
 	store := ctx.KVStore(k.AppGlobalsKey)
 	
@@ -27,8 +25,6 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 		bz := store.Get(key)
 		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
-	fmt.Printf("Pool: %s\n", pool.Denom)
-	fmt.Printf("Ext: %s\n", extCoins.Denom)
 	pool = pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
 	
 	store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
@@ -45,9 +41,15 @@ func (k Keeper) Sweep(ctx sdk.Context) sdk.Coin {
 		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
 	
-	fmt.Printf("Sweep: %s\n", pool.String())
-	
 	coin, _ := pool.TruncateDecimal()
+	
+    //fmt.Printf("Sweep: %s\n", coin.String())
+    k.supplyKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
+    	auth.FeeCollectorName, sdk.Coins{coin})
+    	
+    pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
+    store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
+    
 	return coin
 }
 
@@ -58,7 +60,7 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
     	
     extCoins, remainder := mt.MicrotickCoinToExtTokenType(withdrawAmount)
     
-    fmt.Printf("Withdraw account %s: %s (%s)\n", account.String(), extCoins.String(), remainder.String())
+    //fmt.Printf("Withdraw account %s: %s (%s)\n", account.String(), extCoins.String(), remainder.String())
     
     if remainder.Amount.IsPositive() {
     	extCoins = extCoins.Add(sdk.NewInt64Coin(mt.ExtTokenType, 1))
@@ -92,7 +94,7 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 		
 	extCoins, remainder := mt.MicrotickCoinToExtTokenType(depositAmount)	
 	
-    fmt.Printf("Deposit account %s: %s (%s)\n", account.String(), extCoins.String(), remainder.String())
+    //fmt.Printf("Deposit account %s: %s (%s)\n", account.String(), extCoins.String(), remainder.String())
 	
 	if remainder.Amount.IsPositive() {
 		store := ctx.KVStore(k.AppGlobalsKey)

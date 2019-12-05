@@ -95,9 +95,7 @@ func (AppModule) Name() string {
 }
 
 // register invariants
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	ir.RegisterRoute(ModuleName, "commission-pool", MicrotickPoolInvariant(am.keeper))
-}
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
 
 // module message route name
 func (AppModule) Route() string { 

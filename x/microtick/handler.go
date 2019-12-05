@@ -11,9 +11,8 @@ import (
 )
 
 func EndBlocker(ctx sdk.Context, mtKeeper keeper.Keeper) {
-    // Reward dust
-    dust := mtKeeper.Sweep(ctx)
-    fmt.Printf("Pool: %s\n", dust.String())
+    // Add commissions
+    mtKeeper.Sweep(ctx)
     
     // Monitor for end of chain
     haltTime := mtKeeper.GetHaltTime(ctx)

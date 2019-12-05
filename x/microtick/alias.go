@@ -19,5 +19,4 @@ const (
 
 var (
     NewKeeper = keeper.NewKeeper
-    MicrotickPoolInvariant = keeper.MicrotickPoolInvariant
 )

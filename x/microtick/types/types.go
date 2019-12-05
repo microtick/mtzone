@@ -169,11 +169,6 @@ func MicrotickCoinToExtTokenType(mc MicrotickCoin) (sdk.Coin, sdk.DecCoin) {
     return extCoin, remainder
 }
 
-func NewExtTokenTypeFromInt(b int64) sdk.DecCoin {
-    result := sdk.NewInt64DecCoin(ExtTokenType, b)
-    return result
-}
-
 func ExtTokenTypeToMicrotickCoin(ext sdk.Coins) MicrotickCoin {
     var amt = sdk.NewDec(ext.AmountOf(ExtTokenType).Int64())
     var mc MicrotickCoin = NewMicrotickCoinFromDec(amt.QuoInt64(ExtPerInt))
