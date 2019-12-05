@@ -40,8 +40,8 @@ var (
 // NOTE: to not use this function with non-test code
 func NewMTAppUNSAFE(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool,
 	invCheckPeriod uint, baseAppOptions ...func(*baseapp.BaseApp),
-) (gapp *MTApp, keyMain, keyStaking *sdk.KVStoreKey, stakingKeeper staking.Keeper) {
+) (mtapp *MTApp, keyMain, keyStaking *sdk.KVStoreKey, stakingKeeper staking.Keeper) {
 
-	gapp = NewMTApp(logger, db, traceStore, loadLatest, invCheckPeriod, baseAppOptions...)
-	return gapp, gapp.keys[baseapp.MainStoreKey], gapp.keys[staking.StoreKey], gapp.stakingKeeper
+	mtapp = NewMTApp(logger, db, traceStore, loadLatest, invCheckPeriod, baseAppOptions...)
+	return mtapp, mtapp.keys[baseapp.MainStoreKey], mtapp.keys[staking.StoreKey], mtapp.stakingKeeper
 }

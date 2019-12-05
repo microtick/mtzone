@@ -280,6 +280,8 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 		auth.ModuleName, bank.ModuleName, slashing.ModuleName, gov.ModuleName,
 		supply.ModuleName, crisis.ModuleName, genutil.ModuleName,
 	)
+	
+	//app.distrKeeper.SetBaseProposerReward(ctx, sdk.ZeroDec())
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter())

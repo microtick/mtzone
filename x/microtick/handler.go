@@ -10,9 +10,13 @@ import (
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-func EndBlocker(ctx sdk.Context, keeper keeper.Keeper) {
+func EndBlocker(ctx sdk.Context, mtKeeper keeper.Keeper) {
+    // Reward dust
+    dust := mtKeeper.Sweep(ctx)
+    fmt.Printf("Pool: %s\n", dust.String())
+    
     // Monitor for end of chain
-    haltTime := keeper.GetHaltTime(ctx)
+    haltTime := mtKeeper.GetHaltTime(ctx)
     now := ctx.BlockHeader().Time.UTC().Unix()
     
     //fmt.Printf("Halt Time: %d\n", haltTime)

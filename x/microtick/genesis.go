@@ -12,7 +12,6 @@ type GenesisAccount struct {
     Account mt.MicrotickAccount `json:"account"`
     NumQuotes uint32 `json:"numQuotes"`
     NumTrades uint32 `json:"numTrades"`
-    Change mt.MicrotickCoin `json:"change"`
 }
 
 func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) GenesisAccount {
@@ -20,7 +19,6 @@ func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) GenesisAc
     ga.Account = das.Account
     ga.NumQuotes = das.NumQuotes
     ga.NumTrades = das.NumTrades
-    ga.Change = das.Change
     return ga
 }
 
@@ -40,23 +38,22 @@ func NewGenesisState(params mt.Params, pool mt.MicrotickCoin,
 }
 
 func DefaultGenesisState() GenesisState {
-    return NewGenesisState(mt.DefaultParams(), mt.NewMicrotickCoinFromInt(0), nil)
+    return NewGenesisState(mt.DefaultParams(), mt.NewExtTokenTypeFromInt(0), nil)
 }
 
-func InitGenesis(ctx sdk.Context, keeper keeper.Keeper, data GenesisState) {
-    keeper.SetParams(ctx, data.Params)
+func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data GenesisState) {
+    mtKeeper.SetParams(ctx, data.Params)
     
-    store := ctx.KVStore(keeper.AppGlobalsKey)
-    key := []byte("commissionPool")
+    store := ctx.KVStore(mtKeeper.AppGlobalsKey)
+    key := []byte(keeper.MTPoolName)
     
-    store.Set(key, keeper.GetCodec().MustMarshalBinaryBare(data.Pool))
+    store.Set(key, mtKeeper.GetCodec().MustMarshalBinaryBare(data.Pool))
     
     for _, acct := range data.Accounts {
-        status := keeper.GetAccountStatus(ctx, acct.Account)
+        status := mtKeeper.GetAccountStatus(ctx, acct.Account)
         status.NumQuotes = acct.NumQuotes
         status.NumTrades = acct.NumTrades
-        status.Change = acct.Change
-        keeper.SetAccountStatus(ctx, acct.Account, status)
+        mtKeeper.SetAccountStatus(ctx, acct.Account, status)
     }
     
     //fmt.Printf("Prearranged halt time: %s\n", data.Params.HaltTime)
@@ -70,7 +67,7 @@ func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {
     )
     
     store := ctx.KVStore(mtKeeper.AppGlobalsKey)
-    key := []byte("commissionPool")
+    key := []byte(keeper.MTPoolName)
     var pool mt.MicrotickCoin = mt.NewMicrotickCoinFromInt(0)
     if store.Has(key) {
         bz := store.Get(key)

@@ -105,13 +105,8 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Deposit)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
-    balance := accountStatus.Change
     coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
-    for i := 0; i < len(coins); i++ {
-        if coins[i].Denom == mt.TokenType {
-            balance = balance.Add(mt.NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
-        }
-    }
+    balance := mt.NewMicrotickCoinFromInt(coins.AmountOf(mt.IntTokenType).Int64())
     
     ctx.EventManager().EmitEvent(
         sdk.NewEvent(

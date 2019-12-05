@@ -10,7 +10,10 @@ import (
     "github.com/cosmos/cosmos-sdk/x/auth"
 )
 
-const TokenType = "fox"
+const ExtTokenType = "kits"
+const IntTokenType = "fox"
+const ExtPerInt = 1000000
+
 const Leverage = 10
 
 // Account
@@ -128,20 +131,53 @@ func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
 	return sdk.NewDecCoinFromDec(denomStr, amount), nil
 }
 
+// Input is in ExtTokenType i.e. 1234000 -> 1.234 IntTokenType
 func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
-    return sdk.NewInt64DecCoin(TokenType, b)
+    result := sdk.NewInt64DecCoin(IntTokenType, b)
+    result.Amount = result.Amount.QuoInt64(ExtPerInt)
+    return result
 }
 
-func NewMicrotickCoinFromString(b string) MicrotickCoin {
-    result, err2 := parseDecCoin(b)
-    if err2 != nil || result.Denom != TokenType {
-        panic(fmt.Sprintf("Invalid coin amount or token type: %s", b))
+// Input string can be IntTokenType or ExtTokenType
+// "1.234IntTokenType" -> 1.234 IntTokenType
+// "1234000ExtTokenType" -> 1.234 ExtTokenType
+func NewMicrotickCoinFromString(str string) MicrotickCoin {
+    result, err2 := parseDecCoin(str)
+    if err2 != nil || (result.Denom != IntTokenType && result.Denom != ExtTokenType) {
+        panic(fmt.Sprintf("Invalid coin amount or token type: %s", str))
     }
+    if result.Denom == ExtTokenType {
+        result.Amount = result.Amount.TruncateDec().QuoInt64(ExtPerInt)
+        result.Denom = IntTokenType
+    }
+    fmt.Printf("Parsed: %s\n", result.String())
     return result
 }
 
 func NewMicrotickCoinFromDec(d sdk.Dec) MicrotickCoin {
-    return sdk.NewDecCoinFromDec(TokenType, d)
+    return sdk.NewDecCoinFromDec(IntTokenType, d)
+}
+
+func MicrotickCoinToExtTokenType(mc MicrotickCoin) (sdk.Coin, sdk.DecCoin) {
+    if mc.Denom != IntTokenType {
+        panic(fmt.Sprintf("Not internal token type: %s", mc.Denom))
+    }
+    mc.Amount = mc.Amount.MulInt64(ExtPerInt)
+    extCoin, remainder := mc.TruncateDecimal()
+    extCoin.Denom = ExtTokenType
+    remainder.Denom  = ExtTokenType
+    return extCoin, remainder
+}
+
+func NewExtTokenTypeFromInt(b int64) sdk.DecCoin {
+    result := sdk.NewInt64DecCoin(ExtTokenType, b)
+    return result
+}
+
+func ExtTokenTypeToMicrotickCoin(ext sdk.Coins) MicrotickCoin {
+    var amt = sdk.NewDec(ext.AmountOf(ExtTokenType).Int64())
+    var mc MicrotickCoin = NewMicrotickCoinFromDec(amt.QuoInt64(ExtPerInt))
+    return mc
 }
 
 // Quantity

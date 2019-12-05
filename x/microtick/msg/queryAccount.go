@@ -65,7 +65,6 @@ func QueryAccountStatus(ctx sdk.Context, path []string,
     response := ResponseAccountStatus {
         Account: acct,
         Balance: balance,
-        Change: data.Change,
         NumQuotes: data.NumQuotes,
         NumTrades: data.NumTrades,
         ActiveQuotes: activeQuotes,

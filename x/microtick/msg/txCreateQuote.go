@@ -106,13 +106,8 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     accountStatus.ActiveQuotes.Insert(keeper.NewListItem(id, sdk.NewDec(int64(id))))
     accountStatus.NumQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Backing)
-    balance := accountStatus.Change
     coins := mtKeeper.CoinKeeper.GetCoins(ctx, msg.Provider)
-    for i := 0; i < len(coins); i++ {
-        if coins[i].Denom == mt.TokenType {
-            balance = balance.Add(mt.NewMicrotickCoinFromInt(coins[i].Amount.Int64()))
-        }
-    }
+    balance := mt.NewMicrotickCoinFromInt(coins.AmountOf(mt.IntTokenType).Int64())
     
     // DataMarket
     
