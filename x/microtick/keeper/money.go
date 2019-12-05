@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
     auth "github.com/cosmos/cosmos-sdk/x/auth/types"
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -30,7 +31,7 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
 }
 
-func (k Keeper) Sweep(ctx sdk.Context) sdk.Coin {
+func (k Keeper) Sweep(ctx sdk.Context) {
 	store := ctx.KVStore(k.AppGlobalsKey)
 	
 	// Get current pool amount
@@ -50,7 +51,12 @@ func (k Keeper) Sweep(ctx sdk.Context) sdk.Coin {
     pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
     store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
     
-	return coin
+    ctx.EventManager().EmitEvent(
+        sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute("mtm.Commissions", fmt.Sprintf("%s", coin)),
+        ),
+    )
 }
 
 // Account balances
