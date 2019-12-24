@@ -36,10 +36,10 @@ const appName = "MicrotickApp"
 
 var (
 	// default home directories for mtcli
-	DefaultCLIHome = os.ExpandEnv("$MTROOT/mtcli")
+	DefaultCLIHome = ""
 
 	// default home directories for mtd
-	DefaultNodeHome = os.ExpandEnv("$MTROOT/mtd")
+	DefaultNodeHome = ""
 
 	// The module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
@@ -113,13 +113,11 @@ func SetAppVersion() {
 	// Check for MTROOT environment set
 	mtroot := os.Getenv("MTROOT")
 	if mtroot == "" {
-		fmt.Println("Please set the MTROOT environment variable to point to a working directory.")
-		fmt.Println("(this directory will be created if it doesn't already exist)")
-		fmt.Println()
-		fmt.Println("Linux example:")
-		fmt.Println("    export MTROOT=$HOME/.microtick")
-		os.Exit(-1)
+		mtroot = fmt.Sprintf("%s/.microtick", os.Getenv("HOME"))
 	}
+	fmt.Fprintf(os.Stderr, "Using MTROOT=%s\n", mtroot)
+	DefaultNodeHome = fmt.Sprintf("%s/mtd", mtroot)
+	DefaultCLIHome = fmt.Sprintf("%s/mtcli", mtroot)
 	
 	// Check MTROOT version.lock file for correct version, if not, print a warning
 	if _, err := os.Stat(mtroot); os.IsNotExist(err) {
@@ -148,10 +146,12 @@ func SetAppVersion() {
 		var ver string
 		fmt.Fscan(versionRead, &ver)
 		if ver != MTAppVersion {
-			fmt.Fprintf(os.Stderr, "Version mismatch using MTROOT=%s\n\n", mtroot)
+			fmt.Fprintf(os.Stderr, "\nVersion mismatch\n")
 			fmt.Fprintf(os.Stderr, "Executable version: %s\n", MTAppVersion)
-			fmt.Fprintf(os.Stderr, "MTROOT version.lock: %s\n\n", ver)
-			fmt.Fprintf(os.Stderr, "(remove this warning by deleting $MTROOT/version.lock or using a different MTROOT directory)\n")
+			fmt.Fprintf(os.Stderr, "Version lock: %s\n\n", ver)
+			fmt.Fprintf(os.Stderr, "This warning exists to make sure the Microtick executables are using data and config files\n")
+			fmt.Fprintf(os.Stderr, "generated with correct settings for the correct software version.\n\n")
+			fmt.Fprintf(os.Stderr, "(remove this warning by deleting %s/version.lock or using a different root directory by setting the MTROOT environment variable.)\n", mtroot)
 			os.Exit(1)
 		}
 	}
