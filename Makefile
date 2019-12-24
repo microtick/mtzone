@@ -13,4 +13,4 @@ install:
 	@echo "const MTHostBuild = \"$(HOST)\"" >> $(VERSIONFILE)
 	@echo "const MTCommit = \"$(COMMIT)\"" >> $(VERSIONFILE)
 	GO111MODULE=on go install ./cmd/mtd 
-	GO111MODULE=on go install ./cmd/mtcli
+	GO111MODULE=on go install -tags="ledger" ./cmd/mtcli
