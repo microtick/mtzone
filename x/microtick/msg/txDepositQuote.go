@@ -71,9 +71,9 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     }
     
     // No freeze for deposits
-    //if quote.Frozen(ctx.BlockHeader().Time) {
-        //return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
-    //}
+    if quote.Frozen(ctx.BlockHeader().Time) {
+        return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
+    }
     
     commission := mt.NewMicrotickCoinFromDec(msg.Deposit.Amount.Mul(params.CommissionQuotePercent))
     

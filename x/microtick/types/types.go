@@ -150,7 +150,7 @@ func NewMicrotickCoinFromString(str string) MicrotickCoin {
         result.Amount = result.Amount.TruncateDec().QuoInt64(ExtPerInt)
         result.Denom = IntTokenType
     }
-    fmt.Printf("Parsed: %s\n", result.String())
+    //fmt.Printf("Parsed: %s\n", result.String())
     return result
 }
 

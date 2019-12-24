@@ -115,7 +115,7 @@ func SetAppVersion() {
 	if mtroot == "" {
 		mtroot = fmt.Sprintf("%s/.microtick", os.Getenv("HOME"))
 	}
-	fmt.Fprintf(os.Stderr, "Using MTROOT=%s\n", mtroot)
+	//fmt.Fprintf(os.Stderr, "Using MTROOT=%s\n", mtroot)
 	DefaultNodeHome = fmt.Sprintf("%s/mtd", mtroot)
 	DefaultCLIHome = fmt.Sprintf("%s/mtcli", mtroot)
 	
