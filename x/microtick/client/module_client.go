@@ -37,6 +37,7 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 		GetCmdCancelQuote(cdc),
 		GetCmdUpdateQuote(cdc),
 		GetCmdDepositQuote(cdc),
+		GetCmdWithdrawQuote(cdc),
 		GetCmdMarketTrade(cdc),
 		GetCmdLimitTrade(cdc),
 		GetCmdSettleTrade(cdc),

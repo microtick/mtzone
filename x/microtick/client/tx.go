@@ -131,6 +131,29 @@ func GetCmdDepositQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
+func GetCmdWithdrawQuote(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "withdraw-quote [id] [amount]",
+		Short: "Withdraw backing from a quote",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+
+			id := mt.NewMicrotickIdFromString(args[0])
+			withdraw := mt.NewMicrotickCoinFromString(args[1])
+
+			txmsg := msg.NewTxWithdrawQuote(id, cliCtx.GetFromAddress(), withdraw)
+			err := txmsg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+		},
+	}
+}
+
 func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "trade-market [market] [duration] [call/put] [quantity]",

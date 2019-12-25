@@ -51,6 +51,10 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
         id := mt.NewMicrotickIdFromString(path[1])
         amount := mt.NewMicrotickCoinFromString(path[2])
         txmsg = NewTxDepositQuote(id, accAddr, amount)
+    case "withdrawquote":
+        id := mt.NewMicrotickIdFromString(path[1])
+        amount := mt.NewMicrotickCoinFromString(path[2])
+        txmsg = NewTxWithdrawQuote(id, accAddr, amount)
     case "updatequote":
         id := mt.NewMicrotickIdFromString(path[1])
         spot := mt.NewMicrotickSpotFromString(path[2])

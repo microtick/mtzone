@@ -39,7 +39,7 @@ func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMar
         
         Modified: now,
         CanModify: now,
-        Commission: mt.NewMicrotickCoinFromInt(0),
+        Commission: mt.NewMicrotickCoinFromExtCoinInt(0),
     }
 }
 

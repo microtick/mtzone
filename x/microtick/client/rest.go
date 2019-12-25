@@ -141,6 +141,24 @@ func txDepositQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
+func txWithdrawQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id := vars["id"]
+		requester := vars["requester"]
+		amount := vars["amount"]
+		
+		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/withdrawquote/%s/%s/%s", 
+			requester, id, amount), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cliCtx, res)
+	}
+}
+
 func txUpdateQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)

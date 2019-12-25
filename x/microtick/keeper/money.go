@@ -13,7 +13,7 @@ const MTPoolName = "commissionPool"
 // Commissions
 
 func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
-    extCoins, _ := mt.MicrotickCoinToExtTokenType(amount)
+    extCoins := mt.MicrotickCoinToExtCoin(amount)
     
     //fmt.Printf("Add Pool Commission: requested %s actual %s\n", amount.String(), extCoins.String())
     
@@ -41,6 +41,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 		bz := store.Get(key)
 		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
+	//fmt.Printf("Sweep amount: %s\n", pool.String())
 	
 	coin, _ := pool.TruncateDecimal()
 	
@@ -64,29 +65,10 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress, 
     withdrawAmount mt.MicrotickCoin) {
     	
-    extCoins, remainder := mt.MicrotickCoinToExtTokenType(withdrawAmount)
+    extCoins := mt.MicrotickCoinToExtCoin(withdrawAmount)
     
     //fmt.Printf("Withdraw account %s: %s (%s)\n", account.String(), extCoins.String(), remainder.String())
     
-    if remainder.Amount.IsPositive() {
-    	extCoins = extCoins.Add(sdk.NewInt64Coin(mt.ExtTokenType, 1))
-    	remainder = sdk.NewInt64DecCoin(mt.ExtTokenType, 1).Sub(remainder)
-    	
-		store := ctx.KVStore(k.AppGlobalsKey)
-		
-		// Get current pool amount
-		key := []byte(MTPoolName)
-		var pool sdk.DecCoin = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
-		if store.Has(key) {
-			bz := store.Get(key)
-			k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
-		}
-		
-		pool = pool.Add(remainder)
-		
-		store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
-    }
-	
 	if extCoins.Amount.IsPositive() {
 		err := k.supplyKeeper.SendCoinsFromAccountToModule(ctx, account, MTModuleAccount, sdk.Coins{extCoins})
 		if err != nil {
@@ -98,25 +80,10 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	depositAmount mt.MicrotickCoin) {
 		
-	extCoins, remainder := mt.MicrotickCoinToExtTokenType(depositAmount)	
+	extCoins := mt.MicrotickCoinToExtCoin(depositAmount)	
 	
-    //fmt.Printf("Deposit account %s: %s (%s)\n", account.String(), extCoins.String(), remainder.String())
-	
-	if remainder.Amount.IsPositive() {
-		store := ctx.KVStore(k.AppGlobalsKey)
-		
-		// Get current pool amount
-		key := []byte(MTPoolName)
-		var pool sdk.DecCoin = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
-		if store.Has(key) {
-			bz := store.Get(key)
-			k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
-		}
-		
-		pool = pool.Add(remainder)
-		
-		store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
-	}
+	//fmt.Printf("Requested: %s\n", depositAmount.String())
+    //fmt.Printf("Deposit account %s: %s\n", account.String(), extCoins.String())
 	
 	if extCoins.Amount.IsPositive() {
 		err := k.supplyKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, account, sdk.Coins{extCoins})
@@ -128,7 +95,7 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 
 func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {
 	coins := k.CoinKeeper.GetCoins(ctx, addr)
-    balance := mt.ExtTokenTypeToMicrotickCoin(coins)
+    balance := mt.ExtCoinToMicrotickCoin(coins)
     return balance
 }
 

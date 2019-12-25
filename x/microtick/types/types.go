@@ -110,6 +110,7 @@ func MicrotickTradeNameFromType(mtt MicrotickTradeType) MicrotickTradeTypeName {
 // Backing
 
 type MicrotickCoin = sdk.DecCoin
+type ExtCoin = sdk.Coin
 
 var reDecCoin = regexp.MustCompile(fmt.Sprintf(`^(%s)%s(%s)$`, `(?:[[:digit:]]*[.])?[[:digit:]]+`, `[[:space:]]*`, `[a-z][a-z0-9]{2,15}`))
 
@@ -131,8 +132,8 @@ func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
 	return sdk.NewDecCoinFromDec(denomStr, amount), nil
 }
 
-// Input is in ExtTokenType i.e. 1234000 -> 1.234 IntTokenType
-func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
+// Input is in ExtToken units i.e. 1234000 -> 1.234 IntTokenType
+func NewMicrotickCoinFromExtCoinInt(b int64) MicrotickCoin {
     result := sdk.NewInt64DecCoin(IntTokenType, b)
     result.Amount = result.Amount.QuoInt64(ExtPerInt)
     return result
@@ -149,29 +150,32 @@ func NewMicrotickCoinFromString(str string) MicrotickCoin {
     if result.Denom == ExtTokenType {
         result.Amount = result.Amount.TruncateDec().QuoInt64(ExtPerInt)
         result.Denom = IntTokenType
+    } else {
+        result.Amount = result.Amount.MulInt64(ExtPerInt).TruncateDec().QuoInt64(ExtPerInt)
     }
     //fmt.Printf("Parsed: %s\n", result.String())
     return result
 }
 
 func NewMicrotickCoinFromDec(d sdk.Dec) MicrotickCoin {
-    return sdk.NewDecCoinFromDec(IntTokenType, d)
+    result := sdk.NewDecCoinFromDec(IntTokenType, d)
+    result.Amount = result.Amount.MulInt64(ExtPerInt).TruncateDec().QuoInt64(ExtPerInt)
+    return result
 }
 
-func MicrotickCoinToExtTokenType(mc MicrotickCoin) (sdk.Coin, sdk.DecCoin) {
+func MicrotickCoinToExtCoin(mc MicrotickCoin) ExtCoin {
     if mc.Denom != IntTokenType {
         panic(fmt.Sprintf("Not internal token type: %s", mc.Denom))
     }
     mc.Amount = mc.Amount.MulInt64(ExtPerInt)
-    extCoin, remainder := mc.TruncateDecimal()
+    extCoin, _ := mc.TruncateDecimal()
     extCoin.Denom = ExtTokenType
-    remainder.Denom  = ExtTokenType
-    return extCoin, remainder
+    return extCoin
 }
 
-func ExtTokenTypeToMicrotickCoin(ext sdk.Coins) MicrotickCoin {
-    var amt = sdk.NewDec(ext.AmountOf(ExtTokenType).Int64())
-    var mc MicrotickCoin = NewMicrotickCoinFromDec(amt.QuoInt64(ExtPerInt))
+func ExtCoinToMicrotickCoin(ext sdk.Coins) MicrotickCoin {
+    var amt = ext.AmountOf(ExtTokenType).Int64()
+    var mc MicrotickCoin = NewMicrotickCoinFromExtCoinInt(amt)
     return mc
 }
 

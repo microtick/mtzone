@@ -24,9 +24,9 @@ func NewDataAccountStatus(account mt.MicrotickAccount) DataAccountStatus {
         ActiveTrades: NewOrderedList(),
         NumQuotes: 0,
         NumTrades: 0,
-        QuoteBacking: mt.NewMicrotickCoinFromInt(0),
-        TradeBacking: mt.NewMicrotickCoinFromInt(0),
-        SettleBacking: mt.NewMicrotickCoinFromInt(0),
+        QuoteBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
+        TradeBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
+        SettleBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
     }
 }
 

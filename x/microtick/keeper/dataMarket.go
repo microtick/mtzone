@@ -27,7 +27,7 @@ func NewDataMarket(market mt.MicrotickMarket) DataMarket {
         Market: market,
         Consensus: mt.NewMicrotickSpotFromInt(0),
         OrderBooks: newOrderBooks(),
-        SumBacking: mt.NewMicrotickCoinFromInt(0),
+        SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
         SumSpots: sdk.ZeroDec(),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }
@@ -45,7 +45,7 @@ func newOrderBook() DataOrderBook {
     return DataOrderBook {
         Calls: NewOrderedList(),
         Puts: NewOrderedList(),
-        SumBacking: mt.NewMicrotickCoinFromInt(0),
+        SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }
 }

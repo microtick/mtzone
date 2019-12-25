@@ -41,8 +41,8 @@ func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, dur mt.Microti
         Duration: mt.MicrotickDurationNameFromDur(dur),
         Type: ttype,
         Long: long,
-        Backing: mt.NewMicrotickCoinFromInt(0),
-        Cost: mt.NewMicrotickCoinFromInt(0),
+        Backing: mt.NewMicrotickCoinFromExtCoinInt(0),
+        Cost: mt.NewMicrotickCoinFromExtCoinInt(0),
         FilledQuantity: mt.NewMicrotickQuantityFromInt(0), // computed later
         Start: now,
         Expiration: now.Add(expire),
@@ -89,7 +89,7 @@ func (dat DataActiveTrade) CurrentValue(current mt.MicrotickSpot) mt.MicrotickCo
         delta = current.Amount.Sub(strike)
     }
     if delta.IsNegative() {
-        return mt.NewMicrotickCoinFromInt(0)
+        return mt.NewMicrotickCoinFromExtCoinInt(0)
     }
     value := delta.Mul(dat.FilledQuantity.Amount)
     if value.GT(dat.Backing.Amount) {
@@ -121,13 +121,13 @@ func (dat DataActiveTrade) CounterPartySettlements(current mt.MicrotickSpot) []C
     var result []CounterPartySettlement
     for i := 0; i < len(dat.CounterParties); i++ {
         cp := dat.CounterParties[i]
-        settle := delta.Mul(cp.FilledQuantity.Amount)
-        if settle.GT(cp.Backing.Amount) {
-            settle = cp.Backing.Amount
+        settle := mt.NewMicrotickCoinFromDec(delta.Mul(cp.FilledQuantity.Amount))
+        if settle.Amount.GT(cp.Backing.Amount) {
+            settle.Amount = cp.Backing.Amount
         }
-        refund := cp.Backing.Amount.Sub(settle)
+        refund := cp.Backing.Amount.Sub(settle.Amount)
         result = append(result, CounterPartySettlement {
-            Settle: mt.NewMicrotickCoinFromDec(settle),
+            Settle: settle,
             Refund: mt.NewMicrotickCoinFromDec(refund),
             RefundAddress: cp.Short,
             Backing: cp.Backing,

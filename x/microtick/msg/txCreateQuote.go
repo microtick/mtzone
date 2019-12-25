@@ -107,7 +107,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     accountStatus.NumQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Backing)
     coins := mtKeeper.CoinKeeper.GetCoins(ctx, msg.Provider)
-    balance := mt.NewMicrotickCoinFromInt(coins.AmountOf(mt.IntTokenType).Int64())
+    balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
     
     // DataMarket
     
