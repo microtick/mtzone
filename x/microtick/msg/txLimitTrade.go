@@ -36,6 +36,8 @@ func NewTxLimitTrade(market mt.MicrotickMarket, dur mt.MicrotickDuration, buyer 
 
 type LimitTradeData struct {
     Originator string `json:"originator"`
+    Market mt.MicrotickMarket `json:"market"`
+    Duration mt.MicrotickDurationName `json:"duration"`
     Trade keeper.DataActiveTrade `json:"trade"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
@@ -127,48 +129,43 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         matcher.Trade.Balance = mtKeeper.GetTotalBalance(ctx, msg.Buyer)
         mtKeeper.SetActiveTrade(ctx, matcher.Trade)
     
-        ctx.EventManager().EmitEvent(
-            sdk.NewEvent(
-                sdk.EventTypeMessage,
-                sdk.NewAttribute("mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id)),
-                sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Buyer), "trade.long"),
-                sdk.NewAttribute("mtm.MarketTick", msg.Market),
-            ),
-        )
+        var events []sdk.Event
+        events = append(events, sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute("mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id)),
+            sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Buyer), "trade.long"),
+            sdk.NewAttribute("mtm.MarketTick", msg.Market),
+        ))
         
         for i := 0; i < len(matcher.FillInfo); i++ {
             thisFill := matcher.FillInfo[i]
             
-            ctx.EventManager().EmitEvent(
-                sdk.NewEvent(
-                    sdk.EventTypeMessage,
-                    sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short"),
-                ),
-            )
+            events = append(events, sdk.NewEvent(
+                sdk.EventTypeMessage,
+                sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short"),
+            ))
             
             quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
             if thisFill.FinalFill {
-                ctx.EventManager().EmitEvent(
-                    sdk.NewEvent(
-                        sdk.EventTypeMessage,
-                        sdk.NewAttribute(quoteKey, "event.final"),
-                    ),
-                )
+                events = append(events, sdk.NewEvent(
+                    sdk.EventTypeMessage,
+                    sdk.NewAttribute(quoteKey, "event.final"),
+                ))
             } else {
                 // should never get here, but in case logic changes for filling limit order
-                ctx.EventManager().EmitEvent(
-                    sdk.NewEvent(
-                        sdk.EventTypeMessage,
-                        sdk.NewAttribute(quoteKey, "event.match"),
-                    ),
-                )
+                events = append(events, sdk.NewEvent(
+                    sdk.EventTypeMessage,
+                    sdk.NewAttribute(quoteKey, "event.match"),
+                ))
             }
         }
         
         // Data
         data := LimitTradeData {
             Originator: "limitTrade",
+            Market: msg.Market,
+            Duration: mt.MicrotickDurationNameFromDur(msg.Duration),
             Consensus: market.Consensus,
             Time: now,
             Trade: matcher.Trade,
@@ -177,7 +174,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
             
         return sdk.Result {
             Data: bz,
-            Events: ctx.EventManager().Events(),
+            Events: events,
         }
         
     } else {

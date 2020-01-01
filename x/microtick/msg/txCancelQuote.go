@@ -26,6 +26,8 @@ func NewTxCancelQuote(id mt.MicrotickId, requester sdk.AccAddress) TxCancelQuote
 type CancelQuoteData struct {
     Id mt.MicrotickId `json:"id"`
     Originator string `json:"originator"`
+    Market mt.MicrotickMarket `json:"market"`
+    Duration mt.MicrotickDurationName `json:"duration"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Refund mt.MicrotickCoin `json:"refund"`
@@ -91,19 +93,19 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
     
     balance := keeper.GetTotalBalance(ctx, quote.Provider)
     
-    ctx.EventManager().EmitEvent(
-        sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.cancel"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel"),
-            sdk.NewAttribute("mtm.MarketTick", quote.Market),
-        ),
+    event := sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.cancel"),
+        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel"),
+        sdk.NewAttribute("mtm.MarketTick", quote.Market),
     )
     
     // Data
     data := CancelQuoteData {
       Id: quote.Id,
       Originator: "cancelQuote",
+      Market: quote.Market,
+      Duration: mt.MicrotickDurationNameFromDur(quote.Duration),
       Consensus: dataMarket.Consensus,
       Time: ctx.BlockHeader().Time,
       Refund: quote.Backing,
@@ -113,6 +115,6 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
     
     return sdk.Result {
         Data: bz,
-        Events: ctx.EventManager().Events(),
+        Events: []sdk.Event{ event },
     }
 }

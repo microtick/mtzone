@@ -108,13 +108,11 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
     balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
     
-    ctx.EventManager().EmitEvent(
-        sdk.NewEvent(
+    event := sdk.NewEvent(
             sdk.EventTypeMessage,
             sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.deposit"),
             sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit"),
             sdk.NewAttribute("mtm.MarketTick", quote.Market),
-        ),
     )
     
     // Data
@@ -132,6 +130,6 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     
     return sdk.Result {
         Data: bz,
-        Events: ctx.EventManager().Events(),
+        Events: []sdk.Event{ event },
     }
 }

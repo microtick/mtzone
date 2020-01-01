@@ -12,6 +12,7 @@ import (
 // DefaultParamspace defines the default microtick module parameter subspace
 const DefaultParamspace = "mtmparams"
 const TimeFormat = "2006-01-02T15:04:05Z"
+const HaltTimeString = "168h"
 
 // Default parameter values
 var (
@@ -81,7 +82,7 @@ func (p Params) Equal(p2 Params) bool {
 
 // DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
-    interval, _ := time.ParseDuration("8h")
+    interval, _ := time.ParseDuration(HaltTimeString)
     defaultHaltTime := time.Now().UTC().Add(interval)
 	return Params{
 	    EuropeanOptions: DefaultEuropeanOptions,

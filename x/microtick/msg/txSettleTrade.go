@@ -151,13 +151,12 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
         
     }
     
-    ctx.EventManager().EmitEvent(
-        sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
-        ),
-    )
+    var events []sdk.Event
+    events = append(events, sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
+        sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
+    ))
     
     var found bool = false
     if trade.Long.Equals(msg.Requester) {
@@ -167,12 +166,10 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     for i := 0; i < len(trade.CounterParties); i++ {
         cp := trade.CounterParties[i]
         
-        ctx.EventManager().EmitEvent(
-            sdk.NewEvent(
-                sdk.EventTypeMessage,
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", cp.Short), "settle.short"),
-            ),
-        )
+        events = append(events, sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", cp.Short), "settle.short"),
+        ))
         if cp.Short.Equals(msg.Requester) {
             found = true
         }
@@ -180,12 +177,10 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     
     if !found {
         // msg.Requester is not a long or short account for this trade
-        ctx.EventManager().EmitEvent(
-            sdk.NewEvent(
-                sdk.EventTypeMessage,
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
-            ),
-        )
+        events = append(events, sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
+        ))
     }
     
     data := TradeSettlementData {
@@ -206,6 +201,6 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     
 	return sdk.Result {
 	    Data: bz,
-	    Events: ctx.EventManager().Events(),
+	    Events: events,
 	}
 }

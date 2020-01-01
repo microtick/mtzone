@@ -113,13 +113,11 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
     coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
     balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
     
-    ctx.EventManager().EmitEvent(
-        sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.withdraw"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.withdraw"),
-            sdk.NewAttribute("mtm.MarketTick", quote.Market),
-        ),
+    event := sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.withdraw"),
+        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.withdraw"),
+        sdk.NewAttribute("mtm.MarketTick", quote.Market),
     )
     
     // Data
@@ -137,6 +135,6 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
     
     return sdk.Result {
         Data: bz,
-        Events: ctx.EventManager().Events(),
+        Events: []sdk.Event{ event },
     }
 }
