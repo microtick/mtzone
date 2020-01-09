@@ -151,7 +151,8 @@ func SetAppVersion() {
 			fmt.Fprintf(os.Stderr, "Version lock: %s\n\n", ver)
 			fmt.Fprintf(os.Stderr, "This warning exists to make sure the Microtick executables are using data and config files " +
 			    "generated with correct settings for the correct software version.\n\n")
-			fmt.Fprintf(os.Stderr, "(remove this warning by deleting %s/version.lock or using a different root directory by setting the MTROOT environment variable.)\n", mtroot)
+			fmt.Fprintf(os.Stderr, "(remove this warning by deleting %s/version.lock or using a different root directory by " +
+			    "setting the MTROOT environment variable. MTROOT is currently set to %s)\n\n", mtroot, mtroot)
 			os.Exit(1)
 		}
 	}

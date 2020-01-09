@@ -27,8 +27,9 @@ func NewTxDepositQuote(id mt.MicrotickId, requester sdk.AccAddress,
 }
 
 type DepositQuoteData struct {
+    Account string `json:"account"`
     Id mt.MicrotickId `json:"id"`
-    Originator string `json:"originator"`
+    Market mt.MicrotickMarket `json:"market"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Backing mt.MicrotickCoin `json:"backing"`
@@ -108,17 +109,11 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
     balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
     
-    event := sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.deposit"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit"),
-            sdk.NewAttribute("mtm.MarketTick", quote.Market),
-    )
-    
     // Data
     data := DepositQuoteData {
+      Account: msg.Requester.String(),
       Id: quote.Id,
-      Originator: "depositQuote",
+      Market: dataMarket.Market,
       Consensus: dataMarket.Consensus,
       Time: now,
       Backing: msg.Deposit,
@@ -128,8 +123,14 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
+    var events []sdk.Event
+    events = append(events, sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+    ))
+    
     return sdk.Result {
         Data: bz,
-        Events: []sdk.Event{ event },
+        Events: events,
     }
 }

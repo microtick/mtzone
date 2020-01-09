@@ -19,7 +19,7 @@ type ResponseTradeStatus struct {
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
     Type mt.MicrotickTradeTypeName `json:"type"`
-    CounterParties []keeper.DataCounterParty `json:"counterParties"`
+    CounterParties []keeper.DataCounterParty `json:"counterparties"`
     Long mt.MicrotickAccount `json:"long"`
     Backing mt.MicrotickCoin `json:"backing"`
     Cost mt.MicrotickCoin `json:"premium"` 

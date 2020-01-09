@@ -32,7 +32,6 @@ func NewTxMarketTrade(market mt.MicrotickMarket, dur mt.MicrotickDuration, buyer
 }
 
 type MarketTradeData struct {
-    Originator string `json:"originator"`
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
     Trade keeper.DataActiveTrade `json:"trade"`
@@ -125,41 +124,9 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
         
         matcher.Trade.Balance = mtKeeper.GetTotalBalance(ctx, msg.Buyer)
         mtKeeper.SetActiveTrade(ctx, matcher.Trade)
-    
-        var events []sdk.Event
-        events = append(events, sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute("mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id)),
-            sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Buyer), "trade.long"),
-            sdk.NewAttribute("mtm.MarketTick", msg.Market),
-        ))
-        
-        for i := 0; i < len(matcher.FillInfo); i++ {
-            thisFill := matcher.FillInfo[i]
-            
-            events = append(events, sdk.NewEvent(
-                sdk.EventTypeMessage,
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short"),
-            ))
-            
-            quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
-            if thisFill.FinalFill {
-                events = append(events, sdk.NewEvent(
-                    sdk.EventTypeMessage,
-                    sdk.NewAttribute(quoteKey, "event.final"),
-                ))
-            } else {
-                events = append(events, sdk.NewEvent(
-                    sdk.EventTypeMessage,
-                    sdk.NewAttribute(quoteKey, "event.match"),
-                ))
-            }
-        }
         
         // Data
         data := MarketTradeData {
-            Originator: "marketTrade",
             Market: msg.Market,
             Duration: mt.MicrotickDurationNameFromDur(msg.Duration),
             Consensus: market.Consensus,
@@ -167,6 +134,12 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
             Trade: matcher.Trade,
         }
         bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+        
+        var events []sdk.Event
+        events = append(events, sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+        ))
             
         return sdk.Result {
             Data: bz,

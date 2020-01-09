@@ -14,7 +14,7 @@ type DataActiveTrade struct {
     // Duration is only a tag at this point, not functional
     Duration mt.MicrotickDurationName `json:"duration"`
     Type mt.MicrotickTradeType `json:"type"`
-    CounterParties []DataCounterParty `json:"counterParties"`
+    CounterParties []DataCounterParty `json:"counterparties"`
     Long mt.MicrotickAccount `json:"long"`
     Backing mt.MicrotickCoin `json:"backing"`
     Cost mt.MicrotickCoin `json:"cost"`
@@ -53,7 +53,7 @@ func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, dur mt.Microti
 }
 
 type DataQuoteParams struct {
-    Id mt.MicrotickId `json:"quoteId"`
+    Id mt.MicrotickId `json:"id"`
     Premium mt.MicrotickPremium `json:"premium"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
     Spot mt.MicrotickSpot `json:"spot"`
@@ -73,6 +73,7 @@ type DataCounterParty struct {
     Backing mt.MicrotickCoin `json:"backing"`
     Cost mt.MicrotickCoin `json:"premium"`
     FilledQuantity mt.MicrotickQuantity `json:"quantity"`
+    FinalFill bool `json:"final"`
     Short mt.MicrotickAccount `json:"short"`
     Quoted DataQuoteParams `json:"quoted"`
     Balance mt.MicrotickCoin `json:"balance"`

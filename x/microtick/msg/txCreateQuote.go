@@ -33,8 +33,8 @@ func NewTxCreateQuote(market mt.MicrotickMarket, dur mt.MicrotickDuration, provi
 }
 
 type CreateQuoteData struct {
+    Account string `json:"account"`
     Id mt.MicrotickId `json:"id"`
-    Originator string `json:"originator"`
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
     Spot mt.MicrotickSpot `json:"spot"`
@@ -129,19 +129,10 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     //fmt.Printf("Create Commission: %s\n", commission.String())
     mtKeeper.PoolCommission(ctx, msg.Provider, commission)
     
-    // Tags
-    event := sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute("mtm.NewQuote", fmt.Sprintf("%d", id)),
-        sdk.NewAttribute(fmt.Sprintf("quote.%d", id), "event.create"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create"),
-        sdk.NewAttribute("mtm.MarketTick", msg.Market),
-    )
-    
     // Data
     data := CreateQuoteData {
+      Account: msg.Provider.String(),
       Id: id,
-      Originator: "createQuote",
       Market: msg.Market,
       Duration: mt.MicrotickDurationNameFromDur(msg.Duration),
       Spot: msg.Spot,
@@ -154,8 +145,14 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
+    var events []sdk.Event
+    events = append(events, sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+    ))
+    
 	return sdk.Result {
 	    Data: bz,
-	    Events: []sdk.Event{ event },
+	    Events: events,
 	}
 }

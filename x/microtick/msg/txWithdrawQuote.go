@@ -27,8 +27,9 @@ func NewTxWithdrawQuote(id mt.MicrotickId, requester sdk.AccAddress,
 }
 
 type WithdrawQuoteData struct {
+    Account string `json:"account"`
     Id mt.MicrotickId `json:"id"`
-    Originator string `json:"originator"`
+    Market mt.MicrotickMarket `json:"market"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Backing mt.MicrotickCoin `json:"backing"`
@@ -113,17 +114,11 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
     coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
     balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
     
-    event := sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.withdraw"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.withdraw"),
-        sdk.NewAttribute("mtm.MarketTick", quote.Market),
-    )
-    
     // Data
     data := WithdrawQuoteData {
+      Account: msg.Requester.String(),
       Id: quote.Id,
-      Originator: "withdrawQuote",
+      Market: dataMarket.Market,
       Consensus: dataMarket.Consensus,
       Time: now,
       Backing: msg.Withdraw,
@@ -133,8 +128,14 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
+    var events []sdk.Event
+    events = append(events, sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+    ))
+    
     return sdk.Result {
         Data: bz,
-        Events: []sdk.Event{ event },
+        Events: events,
     }
 }

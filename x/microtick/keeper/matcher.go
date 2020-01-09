@@ -39,12 +39,12 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         
         // We save the current quote parameters in the trade because these may change
         // and we use them for historical and accounting purposes
-        params := DataQuoteParams {
-            Id: thisQuote.Id,
-            Premium: thisQuote.Premium,
-            Quantity: thisQuote.Quantity,
-            Spot: thisQuote.Spot,
-        }
+        params := NewDataQuoteParams(
+            thisQuote.Id,
+            thisQuote.Premium,
+            thisQuote.Quantity,
+            thisQuote.Spot,
+        )
         
         // Pay premium
         keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Cost)
@@ -97,6 +97,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             Backing: transferredBacking,
             Cost: thisFill.Cost,
             FilledQuantity: mt.NewMicrotickQuantityFromDec(thisFill.BoughtQuantity),
+            FinalFill: thisFill.FinalFill,
             Short: thisQuote.Provider,
             Quoted: params,
             Balance: keeper.GetTotalBalance(ctx, thisQuote.Provider),

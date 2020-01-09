@@ -16,6 +16,8 @@ const ExtPerInt = 1000000
 
 const Leverage = 10
 
+const ModuleKey = "microtick"
+
 // Account
 
 type MicrotickAccount = sdk.AccAddress

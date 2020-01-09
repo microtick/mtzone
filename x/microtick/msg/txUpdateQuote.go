@@ -29,8 +29,8 @@ func NewTxUpdateQuote(id mt.MicrotickId, requester sdk.AccAddress,
 }
 
 type UpdateQuoteData struct {
+    Account string `json:"account"`
     Id mt.MicrotickId `json:"id"`
-    Originator string `json:"originator"`
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
     Spot mt.MicrotickSpot `json:"spot"`
@@ -113,18 +113,10 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     
     balance := keeper.GetTotalBalance(ctx, msg.Requester)
    
-    // Events
-    event := sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.update"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update"),
-        sdk.NewAttribute("mtm.MarketTick", quote.Market),
-    )
-    
     // Data
     data := UpdateQuoteData {
+      Account: msg.Requester.String(),
       Id: quote.Id,
-      Originator: "updateQuote",
       Market: quote.Market,
       Duration: mt.MicrotickDurationNameFromDur(quote.Duration),
       Spot: quote.Spot,
@@ -136,8 +128,14 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
+    var events []sdk.Event
+    events = append(events, sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+    ))
+    
     return sdk.Result {
         Data: bz,
-        Events: []sdk.Event{ event },
+        Events: events,
     }
 }

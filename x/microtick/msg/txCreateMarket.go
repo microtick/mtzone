@@ -47,5 +47,18 @@ func HandleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxCreateM
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
         mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
     }
-    return sdk.Result{}
+    
+    event := sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+    )
+    events := []sdk.Event{ event }
+    events = append(events, sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("market", msg.Market),
+    ))
+    
+    return sdk.Result{
+        Events: events,
+    }
 }
