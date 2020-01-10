@@ -21,7 +21,7 @@ func NewTxCreateMarket(account mt.MicrotickAccount, market mt.MicrotickMarket) T
 
 func (msg TxCreateMarket) Route() string { return "microtick" }
 
-func (msg TxCreateMarket) Type() string { return "create_market" }
+func (msg TxCreateMarket) Type() string { return "market_create" }
 
 func (msg TxCreateMarket) ValidateBasic() sdk.Error {
     if msg.Account.Empty() {

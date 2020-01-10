@@ -48,7 +48,7 @@ type CreateQuoteData struct {
 
 func (msg TxCreateQuote) Route() string { return "microtick" }
 
-func (msg TxCreateQuote) Type() string { return "create_quote" }
+func (msg TxCreateQuote) Type() string { return "quote_create" }
 
 func (msg TxCreateQuote) ValidateBasic() sdk.Error {
     if len(msg.Market) == 0 {

@@ -40,7 +40,7 @@ type WithdrawQuoteData struct {
 
 func (msg TxWithdrawQuote) Route() string { return "microtick" }
 
-func (msg TxWithdrawQuote) Type() string { return "withdraw_quote" }
+func (msg TxWithdrawQuote) Type() string { return "quote_withdraw" }
 
 func (msg TxWithdrawQuote) ValidateBasic() sdk.Error {
     if msg.Requester.Empty() {

@@ -55,7 +55,7 @@ type TradeSettlementData struct {
 
 func (msg TxSettleTrade) Route() string { return "microtick" }
 
-func (msg TxSettleTrade) Type() string { return "settle-trade" }
+func (msg TxSettleTrade) Type() string { return "trade_settle" }
 
 func (msg TxSettleTrade) ValidateBasic() sdk.Error {
     if msg.Requester.Empty() {

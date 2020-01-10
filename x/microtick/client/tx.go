@@ -13,9 +13,9 @@ import (
 	"github.com/mjackson001/mtzone/x/microtick/msg"
 )
 
-func GetCmdCreateMarket(cdc *codec.Codec) *cobra.Command {
+func GetCmdMarketCreate(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "create-market [market]",
+		Use:   "market-create [market]",
 		Short: "Create a new market",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,9 +35,31 @@ func GetCmdCreateMarket(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdCreateQuote(cdc *codec.Codec) *cobra.Command {
+func GetCmdQuoteCancel(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "create-quote [market] [duration] [backing] [spot] [premium]",
+		Use:   "quote-cancel [id]",
+		Short: "Cancel a quote",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+
+			id := mt.NewMicrotickIdFromString(args[0])
+
+			txmsg := msg.NewTxCancelQuote(id, cliCtx.GetFromAddress())
+			err := txmsg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+		},
+	}
+}
+
+func GetCmdQuoteCreate(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "quote-create [market] [duration] [backing] [spot] [premium]",
 		Short: "Create a new quote",
 		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,18 +84,19 @@ func GetCmdCreateQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdCancelQuote(cdc *codec.Codec) *cobra.Command {
+func GetCmdQuoteDeposit(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "cancel-quote [id]",
-		Short: "Cancel a quote",
-		Args:  cobra.ExactArgs(1),
+		Use:   "quote-deposit [id] [amount]",
+		Short: "Deposit more backing to a quote",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			id := mt.NewMicrotickIdFromString(args[0])
+			deposit := mt.NewMicrotickCoinFromString(args[1])
 
-			txmsg := msg.NewTxCancelQuote(id, cliCtx.GetFromAddress())
+			txmsg := msg.NewTxDepositQuote(id, cliCtx.GetFromAddress(), deposit)
 			err := txmsg.ValidateBasic()
 			if err != nil {
 				return err
@@ -84,9 +107,9 @@ func GetCmdCancelQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdUpdateQuote(cdc *codec.Codec) *cobra.Command {
+func GetCmdQuoteUpdate(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "update-quote [id] [newspot] [newpremium]",
+		Use:   "quote-update [id] [newspot] [newpremium]",
 		Short: "Update a quote",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -108,32 +131,9 @@ func GetCmdUpdateQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdDepositQuote(cdc *codec.Codec) *cobra.Command {
+func GetCmdQuoteWithdraw(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "deposit-quote [id] [amount]",
-		Short: "Deposit more backing to a quote",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			id := mt.NewMicrotickIdFromString(args[0])
-			deposit := mt.NewMicrotickCoinFromString(args[1])
-
-			txmsg := msg.NewTxDepositQuote(id, cliCtx.GetFromAddress(), deposit)
-			err := txmsg.ValidateBasic()
-			if err != nil {
-				return err
-			}
-
-			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
-		},
-	}
-}
-
-func GetCmdWithdrawQuote(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "withdraw-quote [id] [amount]",
+		Use:   "quote-withdraw [id] [amount]",
 		Short: "Withdraw backing from a quote",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -154,10 +154,10 @@ func GetCmdWithdrawQuote(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
+func GetCmdTradeMarket(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "trade-market [market] [duration] [call/put] [quantity]",
-		Short: "Create a new trade",
+		Short: "Create a new market trade",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
@@ -181,7 +181,7 @@ func GetCmdMarketTrade(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdLimitTrade(cdc *codec.Codec) *cobra.Command {
+func GetCmdTradeLimit(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "trade-limit [market] [duration] [call/put] [limit] [maxcost]",
 		Short: "Create a new limit trade",
@@ -209,9 +209,9 @@ func GetCmdLimitTrade(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdSettleTrade(cdc *codec.Codec) *cobra.Command {
+func GetCmdTradeSettle(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "settle [id]",
+		Use:   "trade-settle [id]",
 		Short: "Settle trade",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

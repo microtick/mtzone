@@ -43,7 +43,7 @@ type UpdateQuoteData struct {
 
 func (msg TxUpdateQuote) Route() string { return "microtick" }
 
-func (msg TxUpdateQuote) Type() string { return "update_quote" }
+func (msg TxUpdateQuote) Type() string { return "quote_update" }
 
 func (msg TxUpdateQuote) ValidateBasic() sdk.Error {
     if msg.Requester.Empty() {

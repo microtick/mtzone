@@ -40,7 +40,7 @@ type DepositQuoteData struct {
 
 func (msg TxDepositQuote) Route() string { return "microtick" }
 
-func (msg TxDepositQuote) Type() string { return "deposit_quote" }
+func (msg TxDepositQuote) Type() string { return "quote_deposit" }
 
 func (msg TxDepositQuote) ValidateBasic() sdk.Error {
     if msg.Requester.Empty() {

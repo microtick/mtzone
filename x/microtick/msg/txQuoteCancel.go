@@ -36,7 +36,7 @@ type CancelQuoteData struct {
 
 func (msg TxCancelQuote) Route() string { return "microtick" }
 
-func (msg TxCancelQuote) Type() string { return "cancel_quote" }
+func (msg TxCancelQuote) Type() string { return "quote_cancel" }
 
 func (msg TxCancelQuote) ValidateBasic() sdk.Error {
     if msg.Requester.Empty() {

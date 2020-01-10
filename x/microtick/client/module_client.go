@@ -32,15 +32,15 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 	}
 
 	mtTxCmd.AddCommand(client.PostCommands(
-		GetCmdCreateMarket(cdc),
-		GetCmdCreateQuote(cdc),
-		GetCmdCancelQuote(cdc),
-		GetCmdUpdateQuote(cdc),
-		GetCmdDepositQuote(cdc),
-		GetCmdWithdrawQuote(cdc),
-		GetCmdMarketTrade(cdc),
-		GetCmdLimitTrade(cdc),
-		GetCmdSettleTrade(cdc),
+		GetCmdMarketCreate(cdc),
+		GetCmdQuoteCancel(cdc),
+		GetCmdQuoteCreate(cdc),
+		GetCmdQuoteDeposit(cdc),
+		GetCmdQuoteUpdate(cdc),
+		GetCmdQuoteWithdraw(cdc),
+		GetCmdTradeMarket(cdc),
+		GetCmdTradeLimit(cdc),
+		GetCmdTradeSettle(cdc),
 	)...)
 
 	return mtTxCmd
