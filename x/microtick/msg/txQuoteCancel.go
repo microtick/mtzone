@@ -31,7 +31,6 @@ type CancelQuoteData struct {
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Refund mt.MicrotickCoin `json:"refund"`
-    Balance mt.MicrotickCoin `json:"balance"`
 }
 
 func (msg TxCancelQuote) Route() string { return "microtick" }
@@ -91,8 +90,6 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
     accountStatus.ActiveQuotes.Delete(quote.Id)
     keeper.SetAccountStatus(ctx, quote.Provider, accountStatus)
     
-    balance := keeper.GetTotalBalance(ctx, quote.Provider)
-    
     // Data
     data := CancelQuoteData {
       Account: msg.Requester.String(),
@@ -102,7 +99,6 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
       Consensus: dataMarket.Consensus,
       Time: ctx.BlockHeader().Time,
       Refund: quote.Backing,
-      Balance: balance,
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     

@@ -125,7 +125,6 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         mtKeeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
         mtKeeper.SetDataMarket(ctx, market)
         
-        matcher.Trade.Balance = mtKeeper.GetTotalBalance(ctx, msg.Buyer)
         mtKeeper.SetActiveTrade(ctx, matcher.Trade)
     
         // Data

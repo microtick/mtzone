@@ -100,7 +100,6 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             FinalFill: thisFill.FinalFill,
             Short: thisQuote.Provider,
             Quoted: params,
-            Balance: keeper.GetTotalBalance(ctx, thisQuote.Provider),
         })
     }
 }

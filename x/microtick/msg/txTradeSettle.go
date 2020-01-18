@@ -36,7 +36,6 @@ type SettlementData struct {
     Short mt.MicrotickAccount `json:"short"`
     Settle mt.MicrotickCoin `json:"settle"`
     Refund mt.MicrotickCoin `json:"refund"`
-    Balance mt.MicrotickCoin `json:"balance"`
 }
 
 type TradeSettlementData struct {
@@ -48,9 +47,7 @@ type TradeSettlementData struct {
     CounterParties []SettlementData `json:"counterparties"`
     Incentive mt.MicrotickCoin `json:"incentive"`
     Commission mt.MicrotickCoin `json:"commission"`
-    Balance mt.MicrotickCoin `json:"balance"`
     Settler mt.MicrotickAccount `json:"settler"`
-    SettlerBalance mt.MicrotickCoin `json:"settlerBalance"`
 }
 
 func (msg TxSettleTrade) Route() string { return "microtick" }
@@ -132,7 +129,6 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
                 Short: pair.RefundAddress,
                 Settle: pair.Settle,
                 Refund: pair.Refund,
-                Balance: keeper.GetTotalBalance(ctx, pair.RefundAddress),
             })
         }
         
@@ -158,9 +154,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
         CounterParties: settleData,
         Incentive: trade.SettleIncentive,
         Commission: commission,
-        Balance: keeper.GetTotalBalance(ctx, trade.Long),
         Settler: msg.Requester,
-        SettlerBalance: keeper.GetTotalBalance(ctx, msg.Requester),
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
 

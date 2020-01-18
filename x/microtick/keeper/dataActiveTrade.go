@@ -24,7 +24,6 @@ type DataActiveTrade struct {
     Strike mt.MicrotickSpot `json:"strike"`
     Commission mt.MicrotickCoin `json:"commission"`
     SettleIncentive mt.MicrotickCoin `json:"settleIncentive"`
-    Balance mt.MicrotickCoin `json:"balance"`
 }
 
 func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, dur mt.MicrotickDuration,
@@ -76,7 +75,6 @@ type DataCounterParty struct {
     FinalFill bool `json:"final"`
     Short mt.MicrotickAccount `json:"short"`
     Quoted DataQuoteParams `json:"quoted"`
-    Balance mt.MicrotickCoin `json:"balance"`
 }
 
 func (dat DataActiveTrade) CurrentValue(current mt.MicrotickSpot) mt.MicrotickCoin {

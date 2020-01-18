@@ -42,7 +42,6 @@ type CreateQuoteData struct {
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Backing mt.MicrotickCoin `json:"backing"`
-    Balance mt.MicrotickCoin `json:"balance"`
     Commission mt.MicrotickCoin `json:"commission"`
 }
 
@@ -106,8 +105,6 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     accountStatus.ActiveQuotes.Insert(keeper.NewListItem(id, sdk.NewDec(int64(id))))
     accountStatus.NumQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Backing)
-    coins := mtKeeper.CoinKeeper.GetCoins(ctx, msg.Provider)
-    balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
     
     // DataMarket
     
@@ -140,7 +137,6 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
       Consensus: dataMarket.Consensus,
       Time: now,
       Backing: msg.Backing,
-      Balance: balance,
       Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)

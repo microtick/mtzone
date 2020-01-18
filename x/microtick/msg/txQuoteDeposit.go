@@ -34,7 +34,6 @@ type DepositQuoteData struct {
     Time time.Time `json:"time"`
     Backing mt.MicrotickCoin `json:"backing"`
     QuoteBacking mt.MicrotickCoin `json:"quoteBacking"`
-    Balance mt.MicrotickCoin `json:"balance"`
     Commission mt.MicrotickCoin `json:"commission"`
 }
 
@@ -106,9 +105,6 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Deposit)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
-    coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
-    balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
-    
     // Data
     data := DepositQuoteData {
       Account: msg.Requester.String(),
@@ -118,7 +114,6 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
       Time: now,
       Backing: msg.Deposit,
       QuoteBacking: quote.Backing,
-      Balance: balance,
       Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)

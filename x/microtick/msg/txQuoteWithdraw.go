@@ -34,7 +34,6 @@ type WithdrawQuoteData struct {
     Time time.Time `json:"time"`
     Backing mt.MicrotickCoin `json:"backing"`
     QuoteBacking mt.MicrotickCoin `json:"quoteBacking"`
-    Balance mt.MicrotickCoin `json:"balance"`
     Commission mt.MicrotickCoin `json:"commission"`
 }
 
@@ -111,9 +110,6 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(msg.Withdraw)
     keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
-    coins := keeper.CoinKeeper.GetCoins(ctx, msg.Requester)
-    balance := mt.NewMicrotickCoinFromExtCoinInt(coins.AmountOf(mt.ExtTokenType).Int64())
-    
     // Data
     data := WithdrawQuoteData {
       Account: msg.Requester.String(),
@@ -123,7 +119,6 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
       Time: now,
       Backing: msg.Withdraw,
       QuoteBacking: quote.Backing,
-      Balance: balance,
       Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)

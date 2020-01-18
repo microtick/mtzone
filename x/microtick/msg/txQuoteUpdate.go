@@ -37,7 +37,6 @@ type UpdateQuoteData struct {
     Premium mt.MicrotickPremium `json:"premium"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
-    Balance mt.MicrotickCoin `json:"balance"`
     Commission mt.MicrotickCoin `json:"commission"`
 }
 
@@ -111,8 +110,6 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     //fmt.Printf("Update Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, msg.Requester, commission)
     
-    balance := keeper.GetTotalBalance(ctx, msg.Requester)
-   
     // Data
     data := UpdateQuoteData {
       Account: msg.Requester.String(),
@@ -123,7 +120,6 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
       Premium: quote.Premium,
       Consensus: dataMarket.Consensus,
       Time: now,
-      Balance: balance,
       Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
