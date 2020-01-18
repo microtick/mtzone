@@ -15,7 +15,6 @@ import (
 type ResponseAccountStatus struct {
     Account string `json:"account"`
     Balance mt.MicrotickCoin `json:"balance"`
-    Change mt.MicrotickCoin `json:"change"`
     NumQuotes uint32 `json:"numQuotes"`
     NumTrades uint32 `json:"numTrades"`
     ActiveQuotes []mt.MicrotickId `json:"activeQuotes"`
@@ -28,7 +27,6 @@ type ResponseAccountStatus struct {
 func (ras ResponseAccountStatus) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Account: %s
 Balance: %s
-Change: %s
 Num Quotes: %d
 Num Trades: %d
 Active Quotes: %v
@@ -37,7 +35,6 @@ Quote Backing: %s
 Trade Backing: %s
 Settle Backing: %s`, ras.Account, 
     ras.Balance.String(),
-    ras.Change,
     ras.NumQuotes, 
     ras.NumTrades, 
     ras.ActiveQuotes, ras.ActiveTrades,
