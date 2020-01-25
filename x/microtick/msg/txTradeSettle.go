@@ -1,6 +1,7 @@
 package msg
 
 import (
+    "fmt"
     "time"
     
     "github.com/cosmos/cosmos-sdk/codec"
@@ -162,7 +163,35 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
+        sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
     ))
+    
+    var found bool = false
+    if trade.Long.Equals(msg.Requester) {
+        found = true
+    }
+    
+    for i := 0; i < len(trade.CounterParties); i++ {
+        cp := trade.CounterParties[i]
+        
+        events = append(events, sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", cp.Short), "settle.short"),
+        ))
+        if cp.Short.Equals(msg.Requester) {
+            found = true
+        }
+    }
+    
+    if !found {
+        events = append(events, sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
+        ))
+    }
     
 	return sdk.Result {
 	    Data: bz,

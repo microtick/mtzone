@@ -145,6 +145,12 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("mtm.NewQuote", fmt.Sprintf("%d", id)),
+        sdk.NewAttribute(fmt.Sprintf("quote.%d", id), "event.create"),
+        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create"),
+        sdk.NewAttribute("mtm.MarketTick", msg.Market),
     ))
     
 	return sdk.Result {
