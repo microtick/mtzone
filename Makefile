@@ -3,7 +3,7 @@ VERSIONFILE=app/version.go
 all: install
 
 install:
-	$(eval override VERSION = $(shell git describe))
+	$(eval override VERSION = $(shell git describe --tags))
 	$(eval override DATE = $(shell date))
 	$(eval override HOST = $(shell hostname))
 	$(eval override COMMIT = $(shell git log -1 --format='%H'))
