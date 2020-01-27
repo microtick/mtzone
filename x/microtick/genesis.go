@@ -1,57 +1,77 @@
 package microtick
 
 import (
-    "fmt"
-    "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
     "github.com/cosmos/cosmos-sdk/x/distribution/types"
-    distr "github.com/cosmos/cosmos-sdk/x/distribution"
+    
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-type GenesisState struct {
-    Params Params `json:"params"`
-    Pool MicrotickCoin `json:"commission_pool"`
+type GenesisAccount struct {
+    Account mt.MicrotickAccount `json:"account"`
+    NumQuotes uint32 `json:"numQuotes"`
+    NumTrades uint32 `json:"numTrades"`
 }
 
-func NewGenesisState(params Params, pool MicrotickCoin) GenesisState {
+func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) GenesisAccount {
+    var ga GenesisAccount
+    ga.Account = das.Account
+    ga.NumQuotes = das.NumQuotes
+    ga.NumTrades = das.NumTrades
+    return ga
+}
+
+type GenesisState struct {
+    Params mt.Params `json:"params"`
+    Accounts []GenesisAccount `json:"accounts"`
+}
+
+func NewGenesisState(params mt.Params, accounts []GenesisAccount) GenesisState {
     return GenesisState {
         Params: params,
-        Pool: pool,
+        Accounts: accounts,
     }
 }
 
 func DefaultGenesisState() GenesisState {
-    return NewGenesisState(DefaultParams(), NewMicrotickCoinFromInt(0))
+    return NewGenesisState(mt.DefaultParams(), nil)
 }
 
-func InitGenesis(ctx sdk.Context, keeper Keeper, data GenesisState) {
-    keeper.SetParams(ctx, data.Params)
+func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data GenesisState) {
+    mtKeeper.SetParams(ctx, data.Params)
     
-    store := ctx.KVStore(keeper.storeKeys.AppGlobals)
-    key := []byte("commissionPool")
+    for _, acct := range data.Accounts {
+        status := mtKeeper.GetAccountStatus(ctx, acct.Account)
+        status.NumQuotes = acct.NumQuotes
+        status.NumTrades = acct.NumTrades
+        mtKeeper.SetAccountStatus(ctx, acct.Account, status)
+    }
     
-    store.Set(key, keeper.cdc.MustMarshalBinaryBare(data.Pool))
-    
-    fmt.Printf("Prearranged halt time: %s\n", time.Unix(data.Params.HaltTime, 0).String())
+    //fmt.Printf("Prearranged halt time: %s\n", data.Params.HaltTime)
 }
 
-func ExportGenesis(ctx sdk.Context, keeper Keeper, distrKeeper distr.Keeper) GenesisState {
-    distrKeeper.IterateValidatorOutstandingRewards(ctx, 
+func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {
+    mtKeeper.DistrKeeper.IterateValidatorOutstandingRewards(ctx, 
         func(addr sdk.ValAddress, rewards types.ValidatorOutstandingRewards) (stop bool) {
-            fmt.Printf("Reward: %+v\n", rewards)
             return false
         },
     )
     
-    store := ctx.KVStore(keeper.storeKeys.AppGlobals)
-    key := []byte("commissionPool")
-    var pool MicrotickCoin = NewMicrotickCoinFromInt(0)
-    if store.Has(key) {
-        bz := store.Get(key)
-        keeper.cdc.MustUnmarshalBinaryBare(bz, &pool)
-    }
+    params := mtKeeper.GetParams(ctx)
     
-    params := keeper.GetParams(ctx)
+    var accounts []GenesisAccount
+    mtKeeper.IterateAccountStatus(ctx, 
+        func(acct keeper.DataAccountStatus) (stop bool) {
+            genAcct := GenesisAccountFromDataAccountStatus(acct)
+            accounts = append(accounts, genAcct)
+            return false
+        },
+    )
     
-    return NewGenesisState(params, pool)
+    return NewGenesisState(params, accounts)
+}
+
+func ValidateGenesis(data GenesisState) error {
+    return nil
 }

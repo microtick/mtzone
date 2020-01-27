@@ -4,45 +4,42 @@ This is the proof of concept port of Microtick to the [Cosmos SDK](https://githu
 
 ## Instructions for building
 
-These instructions assuming a working Go installation and GOPATH
+You must set GOPATH to a working directory somewhere and have your PATH set to point to its bin directory.
 
 ```
-$ cd $GOPATH/src
-$ mkdir -p github.com/mjackson001/mtzone
-$ cd github.com/mjackson001/mtzone
+$ git clone https://github.com/mjackson001/mtzone.git
+$ cd mtzone
+$ export GOPATH=<some absolute path to a working directory>
+$ export PATH=$PATH:$GOPATH/bin
 $ make
 ```
 
 ## Instructions for running
 
-1. Remove any existing configuration directories:
+1. Clean out any existing working data
 ```
-$ rm -rf ~/.mtd
-$ rm -rf ~/.mtcli
-```
-
-2. ```$ mtd init --chain-id=mtzone```
-
-3. Create several keys and add the keys to the genesis file
-```
-$ mtcli keys add marketmaker1
-$ mtcli keys add marketmaker2
-$ mtcli keys add trader
-$ mtd add-genesis-account $(mtcli keys show marketmaker1 -a) 1000fox
-$ mtd add-genesis-account $(mtcli keys show marketmaker2 -a) 1000fox
-$ mtd add-genesis-account $(mtcli keys show trader -a) 1000fox
+$ rm -r $HOME/.microtick
 ```
 
-4. Set up the command line tool:
+2. Initialize working data
 ```
-$ mtcli config chain-id mtzone
+$ mtd init --chain-id=<your chain id>
+```
+
+3. Create a validator with staking tokens (stake) and a test account with fox tokens (kits).  1 fox = 1000000 kits.
+```
+$ mtcli config chain-id <your chain id>
 $ mtcli config output text
 $ mtcli config trust-node true
+$ mtcli keys add validator
+$ mtcli keys add test
+$ mtd add-genesis-account $(mtcli keys show validator -a) 1000000000000stake
+$ mtd add-genesis-account $(mtcli keys show test -a) 1000000000000kits
+$ mtd gentx --name validator
+$ mtd collect-gentxs
 ```
 
-5. Run the chain:
+5. Run your test chain:
 ```
 $ mtd start
 ```
-
-Next step: [Creating a Market](https://github.com/mjackson001/mtzone/blob/master/doc/createmarket.md)

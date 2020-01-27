@@ -2,56 +2,45 @@ package client
 
 import (
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/spf13/cobra"
-	amino "github.com/tendermint/go-amino"
-	
-    "github.com/mjackson001/mtzone/x/microtick/client/cli"
 )
 
-// ModuleClient exports all client functionality from this module
-type ModuleClient struct {
-	storeKey string
-	cdc      *amino.Codec
-}
-
-func NewModuleClient(storeKey string, cdc *amino.Codec) ModuleClient {
-	return ModuleClient{storeKey, cdc}
-}
-
 // GetQueryCmd returns the cli query commands for this module
-func (mc ModuleClient) GetQueryCmd() *cobra.Command {
-	namesvcQueryCmd := &cobra.Command{
+func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {
+	mtQueryCmd := &cobra.Command{
 		Use:   "microtick",
 		Short: "Querying commands for the microtick module",
 	}
 
-	namesvcQueryCmd.AddCommand(client.GetCommands(
-		cli.GetCmdAccountStatus(mc.storeKey, mc.cdc),
-		cli.GetCmdMarketStatus(mc.storeKey, mc.cdc),
-		cli.GetCmdMarketConsensus(mc.storeKey, mc.cdc),
-		cli.GetCmdOrderBook(mc.storeKey, mc.cdc),
-		cli.GetCmdActiveQuote(mc.storeKey, mc.cdc),
-		cli.GetCmdActiveTrade(mc.storeKey, mc.cdc),
+	mtQueryCmd.AddCommand(client.GetCommands(
+		GetCmdAccountStatus(moduleName, cdc),
+		GetCmdMarketStatus(moduleName, cdc),
+		GetCmdMarketConsensus(moduleName, cdc),
+		GetCmdOrderBook(moduleName, cdc),
+		GetCmdActiveQuote(moduleName, cdc),
+		GetCmdActiveTrade(moduleName, cdc),
 	)...)
 
-	return namesvcQueryCmd
+	return mtQueryCmd
 }
 
-func (mc ModuleClient) GetTxCmd() *cobra.Command {
+func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 	mtTxCmd := &cobra.Command{
 		Use:   "microtick",
 		Short: "Microtick transactions subcommands",
 	}
 
 	mtTxCmd.AddCommand(client.PostCommands(
-		cli.GetCmdCreateMarket(mc.cdc),
-		cli.GetCmdCreateQuote(mc.cdc),
-		cli.GetCmdCancelQuote(mc.cdc),
-		cli.GetCmdUpdateQuote(mc.cdc),
-		cli.GetCmdDepositQuote(mc.cdc),
-		cli.GetCmdMarketTrade(mc.cdc),
-		cli.GetCmdLimitTrade(mc.cdc),
-		cli.GetCmdSettleTrade(mc.cdc),
+		GetCmdMarketCreate(cdc),
+		GetCmdQuoteCancel(cdc),
+		GetCmdQuoteCreate(cdc),
+		GetCmdQuoteDeposit(cdc),
+		GetCmdQuoteUpdate(cdc),
+		GetCmdQuoteWithdraw(cdc),
+		GetCmdTradeMarket(cdc),
+		GetCmdTradeLimit(cdc),
+		GetCmdTradeSettle(cdc),
 	)...)
 
 	return mtTxCmd
