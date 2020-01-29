@@ -225,11 +225,13 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit mt.MicrotickPremium, 
                 cost := premium.Amount.Mul(boughtQuantity)
                 
                 // Check if cost is > max cost
+                finalFill := true
                 if cost.GT(maxCost.Amount) {
                     // Adjust quantity to fit max amount
                     boughtQuantity = maxCost.Amount.Quo(premium.Amount)
                     cost = premium.Amount.Mul(boughtQuantity)
                     maxCost.Amount = sdk.NewDec(0)
+                    finalFill = false
                 }
                 
                 matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
@@ -240,7 +242,7 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit mt.MicrotickPremium, 
                     Quote: quote,
                     BoughtQuantity: boughtQuantity,
                     Cost: mt.NewMicrotickCoinFromDec(cost),
-                    FinalFill: true,
+                    FinalFill: finalFill,
                 })
                 
                 if maxCost.IsZero() {
