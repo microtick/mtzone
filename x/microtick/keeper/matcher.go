@@ -18,7 +18,7 @@ type FetchQuoteFunc func(mt.MicrotickId) DataActiveQuote
 type Matcher struct {
     Trade DataActiveTrade
     TotalQuantity sdk.Dec
-    TotalCost sdk.Dec
+    TotalCost mt.MicrotickCoin
     FillInfo []QuoteFillInfo
     FetchQuote FetchQuoteFunc
 }
@@ -27,7 +27,7 @@ func NewMatcher(trade DataActiveTrade, fetchQuoteFunc FetchQuoteFunc) Matcher {
     return Matcher {
         Trade: trade,
         TotalQuantity: sdk.ZeroDec(),
-        TotalCost: sdk.ZeroDec(),
+        TotalCost: mt.NewMicrotickCoinFromDec(sdk.ZeroDec()),
         FetchQuote: fetchQuoteFunc,
     }
 }

@@ -104,7 +104,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         
         // Step 3 - Deduct premium from buyer account and add it to provider account
         // We do this first because if the funds aren't there we abort
-        total := mt.NewMicrotickCoinFromDec(matcher.TotalCost.Add(trade.Commission.Amount).Add(settleIncentive.Amount))
+        total := matcher.TotalCost.Add(trade.Commission).Add(settleIncentive)
         mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())

@@ -179,7 +179,7 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity mt.MicrotickQua
             
             matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
             cost := premium.Amount.Mul(boughtQuantity)
-            matcher.TotalCost = matcher.TotalCost.Add(cost)
+            matcher.TotalCost = matcher.TotalCost.Add(mt.NewMicrotickCoinFromDec(cost))
             
             matcher.FillInfo = append(matcher.FillInfo, QuoteFillInfo {
                 Quote: quote,
@@ -235,7 +235,7 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit mt.MicrotickPremium, 
                 }
                 
                 matcher.TotalQuantity = matcher.TotalQuantity.Add(boughtQuantity)
-                matcher.TotalCost = matcher.TotalCost.Add(cost)
+                matcher.TotalCost = matcher.TotalCost.Add(mt.NewMicrotickCoinFromDec(cost))
                 maxCost.Amount = maxCost.Amount.Sub(cost)
                 
                 matcher.FillInfo = append(matcher.FillInfo, QuoteFillInfo {
