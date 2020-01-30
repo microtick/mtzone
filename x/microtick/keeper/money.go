@@ -15,8 +15,6 @@ const MTPoolName = "commissionPool"
 func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
     extCoins := mt.MicrotickCoinToExtCoin(amount)
     
-    //fmt.Printf("Add Pool Commission: requested %s actual %s\n", amount.String(), extCoins.String())
-    
 	store := ctx.KVStore(k.AppGlobalsKey)
 	
 	// Get current pool amount
@@ -27,6 +25,8 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
 	pool = pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
+	
+    //fmt.Printf("Add Pool Commission: requested %s actual %s pool %s\n", amount.String(), extCoins.String(), pool.String())
 	
 	store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
 }
@@ -41,11 +41,9 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 		bz := store.Get(key)
 		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
 	}
-	//fmt.Printf("Sweep amount: %s\n", pool.String())
-	
 	coin, _ := pool.TruncateDecimal()
 	
-    //fmt.Printf("Sweep: %s\n", coin.String())
+    //fmt.Printf("Sweep: %s %s\n", pool.String(), coin.String())
     k.supplyKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
     	auth.FeeCollectorName, sdk.Coins{coin})
     	
@@ -67,7 +65,7 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
     	
     extCoins := mt.MicrotickCoinToExtCoin(withdrawAmount)
     
-    //fmt.Printf("Withdraw account %s: %s (%s)\n", account.String(), extCoins.String(), remainder.String())
+    //fmt.Printf("Withdraw account %s: %s\n", account.String(), extCoins.String())
     
 	if extCoins.Amount.IsPositive() {
 		err := k.supplyKeeper.SendCoinsFromAccountToModule(ctx, account, MTModuleAccount, sdk.Coins{extCoins})
