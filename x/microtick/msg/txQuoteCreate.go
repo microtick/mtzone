@@ -113,7 +113,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
         panic("Invalid market")
     }
     dataMarket.AddQuote(dataActiveQuote)
-    if !dataMarket.FactorIn(dataActiveQuote) {
+    if !dataMarket.FactorIn(dataActiveQuote, true) {
         return sdk.ErrInternal("Quote params out of range").Result()
     }
     

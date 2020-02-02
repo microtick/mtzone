@@ -69,7 +69,14 @@ func (dm *DataMarket) SetOrderBook(dur mt.MicrotickDuration, ob DataOrderBook) {
     panic("Invalid duration")
 }
 
-func (dm *DataMarket) FactorIn(quote DataActiveQuote) bool {
+func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool {
+    // FactorIn is called from Tx's that originate from the quote provider, i.e.
+    // create quote, update quote and from Tx's that result from a counter party, 
+    // i.e. trade market, trade limit.
+    // We only want to test invariants when we're not trade matching, because
+    // the invariants apply only to creation or updates, not from the results
+    // of market action over time.  (quotes can go stale, etc)
+
     dm.SumBacking = dm.SumBacking.Add(quote.Backing)
     dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(
         quote.Quantity.Amount))
@@ -83,11 +90,15 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote) bool {
     // A quote cannot be placed or updated that will be a free call or put on the 
     // resulting order book (spot more than 2x premium from resulting consensus)
     // Purpose: protects market maker from damaging quotes
-    if quote.Spot.Amount.Sub(quote.Premium.Amount.MulInt64(2)).GT(dm.Consensus.Amount) {
-        return false
-    }
-    if quote.Spot.Amount.Add(quote.Premium.Amount.MulInt64(2)).LT(dm.Consensus.Amount) {
-        return false
+    if testInvariants {
+        if quote.Spot.Amount.Sub(quote.Premium.Amount.MulInt64(2)).GT(dm.Consensus.Amount) {
+            //fmt.Printf("Failed Spot Invariant (1): %d\n", quote.Id)
+            return false
+        }
+        if quote.Spot.Amount.Add(quote.Premium.Amount.MulInt64(2)).LT(dm.Consensus.Amount) {
+            //fmt.Printf("Failed Spot Invariant (2): %d\n", quote.Id)
+            return false
+        }
     }
     
     orderBook := dm.GetOrderBook(quote.Duration)
@@ -99,8 +110,9 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote) bool {
     // A quote cannot be placed or updated with a premium of more than 2x the 
     // current market consensus premium (backing / (leverage * weight) for that time duration
     // Purpose: keeps premium realistic and tradeable within the quote's time frame
-    if orderBook.SumWeight.Amount.IsPositive() {
+    if testInvariants && orderBook.SumWeight.Amount.IsPositive() {
         if orderBook.SumBacking.Amount.Quo(orderBook.SumWeight.Amount.MulInt64(mt.Leverage)).MulInt64(2).LT(quote.Premium.Amount) {
+            //fmt.Printf("Failed Premium Invariant: %d\n", quote.Id)
             return false
         }
     }

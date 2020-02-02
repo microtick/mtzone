@@ -75,7 +75,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             accountStatus.ActiveQuotes.Delete(thisQuote.Id)
         } else {
             // else, factor quote back into market consensus
-            market.FactorIn(thisQuote)
+            market.FactorIn(thisQuote, false)
             keeper.SetActiveQuote(ctx, thisQuote)
         }
         

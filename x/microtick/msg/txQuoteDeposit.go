@@ -70,7 +70,6 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
         return sdk.ErrInternal("Account can't modify quote").Result()
     }
     
-    // No freeze for deposits
     if quote.Frozen(ctx.BlockHeader().Time) {
         return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     }
@@ -95,7 +94,9 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     now := ctx.BlockHeader().Time
     quote.Freeze(now, params)
     
-    dataMarket.FactorIn(quote)
+    if !dataMarket.FactorIn(quote, true) {
+        return sdk.ErrInternal("Quote params out of range").Result()
+    }
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
     

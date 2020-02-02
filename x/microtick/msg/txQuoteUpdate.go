@@ -97,7 +97,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     }
     
     dataMarket.AddQuote(quote)
-    if !dataMarket.FactorIn(quote) {
+    if !dataMarket.FactorIn(quote, true) {
         return sdk.ErrInternal("Quote params out of range").Result()
     }
     

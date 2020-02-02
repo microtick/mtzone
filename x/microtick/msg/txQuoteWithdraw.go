@@ -70,7 +70,6 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
         return sdk.ErrInternal("Account can't modify quote").Result()
     }
     
-    // No freeze for withdraws
     if quote.Frozen(ctx.BlockHeader().Time) {
         return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
     }
@@ -100,7 +99,9 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
     now := ctx.BlockHeader().Time
     quote.Freeze(now, params)
     
-    dataMarket.FactorIn(quote)
+    if !dataMarket.FactorIn(quote, true) {
+        return sdk.ErrInternal("Quote params out of range").Result()
+    }
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
     
