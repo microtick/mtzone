@@ -79,7 +79,11 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     total := msg.Deposit.Add(commission)
     
     // Subtract coins from requester
-    keeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
+    err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
+    if err != nil {
+        return sdk.ErrInternal("Insufficient funds").Result()
+    }
+    
     // Add commission to pool
     //fmt.Printf("Deposit Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, msg.Requester, commission)

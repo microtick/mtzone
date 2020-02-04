@@ -110,7 +110,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     
     dataMarket, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
-        panic("Invalid market")
+        return sdk.ErrInternal("Invalid market").Result()
     }
     dataMarket.AddQuote(dataActiveQuote)
     if !dataMarket.FactorIn(dataActiveQuote, true) {
@@ -122,7 +122,12 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     
     // Subtract coins from quote provider
     //fmt.Printf("Total: %s\n", total.String())
-    mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
+    
+    err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
+    if err2!= nil {
+        return sdk.ErrInternal("Insufficient funds").Result()
+    }
+    
     //fmt.Printf("Create Commission: %s\n", commission.String())
     mtKeeper.PoolCommission(ctx, msg.Provider, commission)
     

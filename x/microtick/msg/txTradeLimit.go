@@ -105,7 +105,10 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         // Step 3 - Deduct premium from buyer account and add it to provider account
         // We do this first because if the funds aren't there we abort
         total := matcher.TotalCost.Add(trade.Commission).Add(settleIncentive)
-        mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        if err2 != nil {
+            return sdk.ErrInternal("Insufficient funds").Result()
+        }
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
         mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
@@ -113,7 +116,10 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         // Step 4 - Finalize trade 
         matcher.Trade.Id = mtKeeper.GetNextActiveTradeId(ctx)
         
-        matcher.AssignCounterparties(ctx, mtKeeper, &market)
+        err2 = matcher.AssignCounterparties(ctx, mtKeeper, &market)
+        if err2 != nil {
+            return sdk.ErrInternal("Error assigning counterparties").Result()
+        }
         
         // Update the account status for the buyer
         accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Buyer)

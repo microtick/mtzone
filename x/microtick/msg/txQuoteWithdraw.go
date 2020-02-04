@@ -84,7 +84,10 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
     total := msg.Withdraw.Sub(commission)
     
     // Add coins from requester
-    keeper.DepositMicrotickCoin(ctx, msg.Requester, total)
+    err = keeper.DepositMicrotickCoin(ctx, msg.Requester, total)
+    if err != nil {
+        return sdk.ErrInternal("Fund mismatch").Result()
+    }
     // Add commission to pool
     fmt.Printf("Withdraw Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, msg.Requester, commission)

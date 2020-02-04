@@ -76,7 +76,10 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
     }
     
     // Everything ok, let's refund the backing and delete the quote
-    keeper.DepositMicrotickCoin(ctx, msg.Requester, quote.Backing)
+    err = keeper.DepositMicrotickCoin(ctx, msg.Requester, quote.Backing)
+    if err != nil {
+        return sdk.ErrInternal("Fund mismatch").Result()
+    }
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
     dataMarket.FactorOut(quote)

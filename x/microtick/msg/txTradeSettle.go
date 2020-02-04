@@ -98,12 +98,20 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     settlements := trade.CounterPartySettlements(dataMarket.Consensus)
     
     // Incentive 
-    keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
+    err2 = keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
+    if err2 != nil {
+        return sdk.ErrInternal("Fund mismatch (incentive)").Result()
+    }
     //fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
     
     // Commission
     commission := mt.NewMicrotickCoinFromDec(params.CommissionSettleFixed)
-    keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+     
+    err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    if err != nil {
+        return sdk.ErrInternal("Insufficient funds").Result()
+    }
+    
     //fmt.Printf("Settle Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, msg.Requester, commission)
     
@@ -114,11 +122,17 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
             pair := settlements[i]
             
             // Long
-            keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
+            err2 = keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
+            if err2 != nil {
+                return sdk.ErrInternal("Fund mismatch (long)").Result()
+            }
             totalPaid = totalPaid.Add(pair.Settle.Amount)
             
             // Refund
-            keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
+            err2 := keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
+            if err2 != nil {
+                return sdk.ErrInternal("Fund mismatch (refund)").Result()
+            }
             
             // Adjust trade backing
             accountStatus := keeper.GetAccountStatus(ctx, pair.RefundAddress)

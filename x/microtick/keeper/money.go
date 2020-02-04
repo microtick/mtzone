@@ -61,7 +61,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 // Account balances
 
 func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress, 
-    withdrawAmount mt.MicrotickCoin) {
+    withdrawAmount mt.MicrotickCoin) error {
     	
     extCoins := mt.MicrotickCoinToExtCoin(withdrawAmount)
     
@@ -70,13 +70,14 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	if extCoins.Amount.IsPositive() {
 		err := k.supplyKeeper.SendCoinsFromAccountToModule(ctx, account, MTModuleAccount, sdk.Coins{extCoins})
 		if err != nil {
-	    	panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
-	depositAmount mt.MicrotickCoin) {
+	depositAmount mt.MicrotickCoin) error {
 		
 	extCoins := mt.MicrotickCoinToExtCoin(depositAmount)	
 	
@@ -86,9 +87,10 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	if extCoins.Amount.IsPositive() {
 		err := k.supplyKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, account, sdk.Coins{extCoins})
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {

@@ -32,7 +32,7 @@ func NewMatcher(trade DataActiveTrade, fetchQuoteFunc FetchQuoteFunc) Matcher {
     }
 }
 
-func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, market *DataMarket) {
+func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, market *DataMarket) error {
     for i := 0; i < len(matcher.FillInfo); i++ {
         thisFill := matcher.FillInfo[i]
         thisQuote := thisFill.Quote
@@ -47,7 +47,10 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         )
         
         // Pay premium
-        keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Cost)
+        err := keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Cost)
+        if err != nil {
+            return err
+        }
         
         accountStatus := keeper.GetAccountStatus(ctx, thisQuote.Provider)
         
@@ -102,6 +105,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             Quoted: params,
         })
     }
+    return nil
 }
 
 func (matcher Matcher) HasQuantity() bool {

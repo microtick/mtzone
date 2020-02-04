@@ -105,7 +105,11 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     keeper.SetActiveQuote(ctx, quote)
     
     // Subtract coins from requester
-    keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    if err != nil {
+        return sdk.ErrInternal("Insufficient funds").Result()
+    }
+    
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, msg.Requester, commission)

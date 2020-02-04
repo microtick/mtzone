@@ -105,7 +105,10 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
         //fmt.Printf("Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
         total := matcher.TotalCost.Add(trade.Commission).Add(settleIncentive)
-        mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        if err2 != nil {
+            return sdk.ErrInternal("Insufficient funds").Result()
+        }
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
         mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
@@ -113,7 +116,10 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
         // Step 4 - Finalize trade 
         matcher.Trade.Id = mtKeeper.GetNextActiveTradeId(ctx)
         
-        matcher.AssignCounterparties(ctx, mtKeeper, &market)
+        err2 = matcher.AssignCounterparties(ctx, mtKeeper, &market)
+        if err2 != nil {
+            return sdk.ErrInternal("Error assigning counterparties").Result()
+        }
         
         // Update the account status for the buyer
         accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Buyer)
