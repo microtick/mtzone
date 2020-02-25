@@ -88,7 +88,9 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         matcher.Trade.FilledQuantity = mt.NewMicrotickQuantityFromDec(matcher.Trade.FilledQuantity.Amount.Add(thisFill.BoughtQuantity))
         
         // Update the account status of this counterparty
-        accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
+        if !accountStatus.ActiveTrades.Contains(matcher.Trade.Id) {
+          accountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
+        }
         accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(transferredBacking)
         accountStatus.TradeBacking = accountStatus.TradeBacking.Add(transferredBacking)
         

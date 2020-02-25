@@ -105,18 +105,6 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
     orderBook.SumBacking = orderBook.SumBacking.Add(quote.Backing)
     orderBook.SumWeight = orderBook.SumWeight.Add(quote.Quantity)
     
-    // Test quote invariant:
-    // Premium 2x limitation
-    // A quote cannot be placed or updated with a premium of more than 2x the 
-    // current market consensus premium (backing / (leverage * weight) for that time duration
-    // Purpose: keeps premium realistic and tradeable within the quote's time frame
-    if testInvariants && orderBook.SumWeight.Amount.IsPositive() {
-        if orderBook.SumBacking.Amount.Quo(orderBook.SumWeight.Amount.MulInt64(mt.Leverage)).MulInt64(2).LT(quote.Premium.Amount) {
-            //fmt.Printf("Failed Premium Invariant: %d\n", quote.Id)
-            return false
-        }
-    }
-    
     dm.SetOrderBook(quote.Duration, orderBook)
     return true
 }

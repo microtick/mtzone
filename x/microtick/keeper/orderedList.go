@@ -46,6 +46,16 @@ func (ol *OrderedList) Search(li ListItem) int {
     return lo
 }
 
+func (ol OrderedList) Contains(id mt.MicrotickId) bool {
+    curlen := len(ol.Data)
+    for i := 0; i < curlen; i++ {
+        if ol.Data[i].Id == id {
+            return true
+        }
+    }
+    return false
+}
+
 // TODO: more efficient algorithms for insert / delete
 
 func (ol *OrderedList) Insert(li ListItem) {
