@@ -73,6 +73,10 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
         limit := mt.NewMicrotickPremiumFromString(path[4])
         maxcost := mt.NewMicrotickCoinFromString(path[5])
         txmsg = NewTxLimitTrade(market, duration, accAddr, tradetype, limit, maxcost)
+    case "picktrade":
+        id := mt.NewMicrotickIdFromString(path[1])
+        tradetype := mt.MicrotickTradeTypeFromName(path[2])
+        txmsg = NewTxPickTrade(accAddr, id, tradetype)
     case "settletrade":
         id := mt.NewMicrotickIdFromString(path[1])
         txmsg = NewTxSettleTrade(id, accAddr)

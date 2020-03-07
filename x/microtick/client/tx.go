@@ -209,6 +209,29 @@ func GetCmdTradeLimit(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
+func GetCmdTradePick(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "trade-pick [id] [call/put]",
+		Short: "Create a new trade against specific quote id",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+
+			id := mt.NewMicrotickIdFromString(args[0])
+			ttype := mt.MicrotickTradeTypeFromName(args[1])
+			
+			txmsg := msg.NewTxPickTrade(cliCtx.GetFromAddress(), id, ttype)
+			err := txmsg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+		},
+	}
+}
+
 func GetCmdTradeSettle(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "trade-settle [id]",

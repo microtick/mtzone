@@ -14,6 +14,7 @@ func RegisterCodec(cdc *codec.Codec) {
     cdc.RegisterConcrete(TxWithdrawQuote{}, "microtick/WithdrawQuote", nil)
     cdc.RegisterConcrete(TxMarketTrade{}, "microtick/MarketTrade", nil)
     cdc.RegisterConcrete(TxLimitTrade{}, "microtick/LimitTrade", nil)
+    cdc.RegisterConcrete(TxPickTrade{}, "microtick/PickTrade", nil)
     cdc.RegisterConcrete(TxSettleTrade{}, "microtick/SettleTrade", nil)
 }
 

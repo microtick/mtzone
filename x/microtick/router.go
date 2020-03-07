@@ -52,6 +52,8 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 			return msg.HandleTxMarketTrade(ctx, keeper, tmp)
 		case msg.TxLimitTrade:
 			return msg.HandleTxLimitTrade(ctx, keeper, tmp)
+		case msg.TxPickTrade:
+		    return msg.HandleTxPickTrade(ctx, keeper, tmp)
 		case msg.TxSettleTrade:
 			return msg.HandleTxSettleTrade(ctx, keeper, tmp)
 		default:
