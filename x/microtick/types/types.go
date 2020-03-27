@@ -175,8 +175,8 @@ func MicrotickCoinToExtCoin(mc MicrotickCoin) ExtCoin {
     return extCoin
 }
 
-func ExtCoinToMicrotickCoin(ext sdk.Coins) MicrotickCoin {
-    var amt = ext.AmountOf(ExtTokenType).Int64()
+func ExtCoinToMicrotickCoin(ext sdk.Coin) MicrotickCoin {
+    var amt = ext.Amount.Int64()
     var mc MicrotickCoin = NewMicrotickCoinFromExtCoinInt(amt)
     return mc
 }

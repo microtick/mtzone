@@ -3,6 +3,7 @@ package msg
 import (
     "fmt"
     "time"
+    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -49,15 +50,15 @@ func (msg TxCreateQuote) Route() string { return "microtick" }
 
 func (msg TxCreateQuote) Type() string { return "quote_create" }
 
-func (msg TxCreateQuote) ValidateBasic() sdk.Error {
+func (msg TxCreateQuote) ValidateBasic() error {
     if len(msg.Market) == 0 {
-        return sdk.ErrInternal("Unknown market")
+        return errors.New("Unknown market")
     }
     if msg.Provider.Empty() {
-        return sdk.ErrInvalidAddress(msg.Provider.String())
+        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Provider.String()))
     }
     if !msg.Backing.IsPositive() {
-        return sdk.ErrInsufficientCoins("Backing must be positive")
+        return errors.New("Backing must be positive")
     }
     return nil
 }
@@ -73,7 +74,7 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 // Handler
 
 func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, 
-    msg TxCreateQuote) sdk.Result {
+    msg TxCreateQuote) (*sdk.Result, error) {
         
     params := mtKeeper.GetParams(ctx)
         
@@ -82,7 +83,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     }
     
     if !mt.ValidMicrotickDuration(msg.Duration) {
-        return sdk.ErrInternal(fmt.Sprintf("Invalid duration: %d", msg.Duration)).Result()
+        return nil, errors.New(fmt.Sprintf("Invalid duration: %d", msg.Duration))
     }
     
     commission := mt.NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
@@ -110,11 +111,11 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     
     dataMarket, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
-        return sdk.ErrInternal("Invalid market").Result()
+        return nil, errors.New("Invalid market")
     }
     dataMarket.AddQuote(dataActiveQuote)
     if !dataMarket.FactorIn(dataActiveQuote, true) {
-        return sdk.ErrInternal("Quote params out of range").Result()
+        return nil, errors.New("Quote params out of range")
     }
     
     mtKeeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
@@ -125,7 +126,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     
     err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
     if err2!= nil {
-        return sdk.ErrInternal("Insufficient funds").Result()
+        return nil, errors.New("Insufficient funds")
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())
@@ -158,8 +159,8 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
         sdk.NewAttribute("mtm.MarketTick", msg.Market),
     ))
     
-	return sdk.Result {
+	return &sdk.Result {
 	    Data: bz,
 	    Events: events,
-	}
+	}, nil
 }

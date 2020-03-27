@@ -94,7 +94,7 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 }
 
 func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {
-	coins := k.CoinKeeper.GetCoins(ctx, addr)
+	coins := k.CoinKeeper.GetBalance(ctx, addr, mt.ExtTokenType)
     balance := mt.ExtCoinToMicrotickCoin(coins)
     return balance
 }

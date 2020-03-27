@@ -1,6 +1,8 @@
 package msg
 
 import (
+    "errors"
+    
     sdk "github.com/cosmos/cosmos-sdk/types"
     "github.com/cosmos/cosmos-sdk/codec"
     "github.com/cosmos/cosmos-sdk/x/auth"
@@ -11,15 +13,15 @@ import (
 )
 
 func GenerateTx(ctx sdk.Context, txType string, path []string, 
-    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
         
     defer func() {
         if r := recover(); r != nil {
             switch x := r.(type) {
             case string:
-                err = sdk.ErrInternal(x)
+                err = errors.New(x)
             default:
-                err = sdk.ErrInternal("Unknown error")
+                err = errors.New("Unknown error")
             }
         }
     }()
@@ -30,7 +32,7 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
     accAddr, _ := sdk.AccAddressFromBech32(acct)
     account := keeper.AccountKeeper.GetAccount(ctx, accAddr)
     if account == nil {
-        return nil, sdk.ErrInternal("No such address")
+        return nil, errors.New("No such address")
     }
         
     switch txType {

@@ -3,6 +3,7 @@ package msg
 import (
     "fmt"
     "time"
+    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -37,9 +38,9 @@ func (msg TxCancelQuote) Route() string { return "microtick" }
 
 func (msg TxCancelQuote) Type() string { return "quote_cancel" }
 
-func (msg TxCancelQuote) ValidateBasic() sdk.Error {
+func (msg TxCancelQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
-        return sdk.ErrInvalidAddress(msg.Requester.String())
+        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Requester.String()))
     }
     return nil
 }
@@ -54,10 +55,10 @@ func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuote) sdk.Result {
+func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuote) (*sdk.Result, error) {
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
-        return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()
+        return nil, errors.New(fmt.Sprintf("No such quote: %d", msg.Id))
     }
     
     // Time 2x invariant:
@@ -67,18 +68,18 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
     // to keep the quotes timely.
     if quote.Provider.String() != msg.Requester.String() {
         if !quote.Stale(ctx.BlockHeader().Time) {
-            return sdk.ErrInternal("Quote is not stale").Result()
+            return nil, errors.New("Quote is not stale")
         }
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
+        return nil, errors.New(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify))
     }
     
     // Everything ok, let's refund the backing and delete the quote
     err = keeper.DepositMicrotickCoin(ctx, msg.Requester, quote.Backing)
     if err != nil {
-        return sdk.ErrInternal("Fund mismatch").Result()
+        return nil, errors.New("Fund mismatch")
     }
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
@@ -116,8 +117,8 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
     ))
     
-    return sdk.Result {
+    return &sdk.Result {
         Data: bz,
         Events: events,
-    }
+    }, nil
 }

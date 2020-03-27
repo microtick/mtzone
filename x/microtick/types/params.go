@@ -7,6 +7,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/x/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 // DefaultParamspace defines the default microtick module parameter subspace
@@ -53,7 +54,7 @@ type Params struct {
 
 // ParamKeyTable for microtick module
 func ParamKeyTable() params.KeyTable {
-	return params.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
 // ParamSetPairs implements the ParamSet interface and returns all the key/value pairs
@@ -61,15 +62,55 @@ func ParamKeyTable() params.KeyTable {
 // nolint
 func (p *Params) ParamSetPairs() params.ParamSetPairs {
 	return params.ParamSetPairs{
-	    {KeyEuropeanOptions, &p.EuropeanOptions},
-	    {KeyCommissionQuotePercent, &p.CommissionQuotePercent},
-	    {KeyCommissionTradeFixed, &p.CommissionTradeFixed},
-	    {KeyCommissionUpdatePercent, &p.CommissionUpdatePercent},
-	    {KeyCommissionSettleFixed, &p.CommissionSettleFixed},
-	    {KeySettleIncentive, &p.SettleIncentive},
-	    {KeyFreezeTime, &p.FreezeTime},
-	    {KeyHaltTime, &p.HaltTime},
+	    {KeyEuropeanOptions, &p.EuropeanOptions, validateEuropeanOptions},
+	    {KeyCommissionQuotePercent, &p.CommissionQuotePercent, validatePercent},
+	    {KeyCommissionTradeFixed, &p.CommissionTradeFixed, validateFixed},
+	    {KeyCommissionUpdatePercent, &p.CommissionUpdatePercent, validatePercent},
+	    {KeyCommissionSettleFixed, &p.CommissionSettleFixed, validateFixed},
+	    {KeySettleIncentive, &p.SettleIncentive, validateFixed},
+	    {KeyFreezeTime, &p.FreezeTime, validateFreezeTime},
+	    {KeyHaltTime, &p.HaltTime, validateTime},
 	}
+}
+
+func validateEuropeanOptions(i interface{}) error {
+	_, ok := i.(bool)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validatePercent(i interface{}) error {
+	_, ok := i.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateFixed(i interface{}) error {
+	_, ok := i.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateFreezeTime(i interface{}) error {
+	v, ok := i.(int8)
+	if !ok {
+		return fmt.Errorf("invalid freeze time: %s", v)
+	}
+	return nil
+}
+
+func validateTime(i interface{}) error {
+	_, ok := i.(time.Time)
+	if !ok {
+		return fmt.Errorf("invalid time: %T", i)
+	}
+	return nil
 }
 
 // Equal returns a boolean determining if two Params types are identical.

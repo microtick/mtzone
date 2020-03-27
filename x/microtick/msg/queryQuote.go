@@ -5,6 +5,7 @@ import (
     "strconv"
     "strings"
     "time"
+    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -56,19 +57,19 @@ CanModify: %s`,
     rqs.CanModify.String()))
 }
 
-func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
+func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Invalid quote ID: %s", err2))
+        return nil, errors.New(fmt.Sprintf("Invalid quote ID: %s", err2))
     }
     data, err2 := keeper.GetActiveQuote(ctx, mt.MicrotickId(id))
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch quote data: %s", err2))
+        return nil, errors.New(fmt.Sprintf("Could not fetch quote data: %s", err2))
     }
     dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
     if err3 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market consensus: %s", err3))
+        return nil, errors.New(fmt.Sprintf("Could not fetch market consensus: %s", err3))
     }
     
     response := ResponseQuoteStatus {

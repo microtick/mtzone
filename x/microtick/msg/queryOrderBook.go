@@ -3,6 +3,7 @@ package msg
 import (
     "fmt"
     "strings"
+    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -27,14 +28,14 @@ Puts: %v`, rma.SumBacking, rma.SumWeight, rma.Calls, rma.Puts))
 }
 
 func QueryOrderBook(ctx sdk.Context, path []string, 
-    req abci.RequestQuery, keeper keeper.Keeper)(res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.Keeper)(res []byte, err error) {
         
     market := path[0]
     dur := mt.MicrotickDurationFromName(path[1])
     
     dataMarket, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Unknown market: %s", err2))
+        return nil, errors.New(fmt.Sprintf("Unknown market: %s", err2))
     }
     
     orderBook := dataMarket.GetOrderBook(dur)

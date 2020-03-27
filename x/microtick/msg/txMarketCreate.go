@@ -1,6 +1,9 @@
 package msg
 
 import (
+    "fmt"
+    "errors"
+    
     sdk "github.com/cosmos/cosmos-sdk/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -23,12 +26,12 @@ func (msg TxCreateMarket) Route() string { return "microtick" }
 
 func (msg TxCreateMarket) Type() string { return "market_create" }
 
-func (msg TxCreateMarket) ValidateBasic() sdk.Error {
+func (msg TxCreateMarket) ValidateBasic() error {
     if msg.Account.Empty() {
-        return sdk.ErrInvalidAddress(msg.Account.String())
+        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Account.String()))
     }
     if len(msg.Market) == 0 {
-        return sdk.ErrInternal("Invalid market: " + msg.Market)
+        return errors.New("Invalid market: " + msg.Market)
     }
     return nil
 }
@@ -43,7 +46,7 @@ func (msg TxCreateMarket) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxCreateMarket) sdk.Result {
+func HandleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxCreateMarket) (*sdk.Result, error) {
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
         mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
     }
@@ -58,7 +61,7 @@ func HandleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxCreateM
         sdk.NewAttribute("market", msg.Market),
     ))
     
-    return sdk.Result{
+    return &sdk.Result{
         Events: events,
-    }
+    }, nil
 }
