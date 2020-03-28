@@ -61,9 +61,9 @@ var (
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
 		supply.AppModuleBasic{},
-		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
+		ibc.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		microtick.AppModuleBasic{},
 	)
@@ -75,6 +75,7 @@ var (
 		staking.BondedPoolName:    {supply.Burner, supply.Staking},
 		staking.NotBondedPoolName: {supply.Burner, supply.Staking},
 		gov.ModuleName:            {supply.Burner},
+		transfer.GetModuleAccountName(): {supply.Minter, supply.Burner},
 		microtick.ModuleName:	   {supply.Minter, supply.Burner},
 	}
 )
@@ -188,7 +189,8 @@ func SetAppVersion() {
 
 // NewMTApp returns a reference to an initialized MTApp.
 func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool,
-	invCheckPeriod uint, skipUpgradeHeights map[int64]bool, home string, baseAppOptions ...func(*bam.BaseApp)) *MTApp {
+	invCheckPeriod uint, skipUpgradeHeights map[int64]bool, home string, 
+	baseAppOptions ...func(*bam.BaseApp)) *MTApp {
 		
 	cdc := codecstd.MakeCodec(ModuleBasics)
 	appCodec := codecstd.NewAppCodec(cdc)
@@ -197,9 +199,10 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 	bApp.SetCommitMultiStoreTracer(traceStore)
 
 	keys := sdk.NewKVStoreKeys(
-		bam.MainStoreKey, auth.StoreKey, staking.StoreKey,
+		bam.MainStoreKey, auth.StoreKey, bank.StoreKey, staking.StoreKey,
 		supply.StoreKey, distr.StoreKey, slashing.StoreKey,
-		gov.StoreKey, params.StoreKey,
+		gov.StoreKey, params.StoreKey, ibc.StoreKey, 
+		transfer.StoreKey, evidence.StoreKey, upgrade.StoreKey,
 		microtick.GlobalsKey,
 		microtick.AccountStatusKey,
 		microtick.ActiveQuotesKey,
@@ -243,7 +246,8 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 		appCodec, keys[staking.StoreKey], app.bankKeeper, app.supplyKeeper, app.subspaces[staking.ModuleName],
 	)
 	app.distrKeeper = distr.NewKeeper(
-		appCodec, keys[distr.StoreKey], app.subspaces[distr.ModuleName], app.bankKeeper, &stakingKeeper, app.supplyKeeper, auth.FeeCollectorName, app.ModuleAccountAddrs(),
+		appCodec, keys[distr.StoreKey], app.subspaces[distr.ModuleName], app.bankKeeper, &stakingKeeper, 
+		app.supplyKeeper, auth.FeeCollectorName, app.ModuleAccountAddrs(),
 	)
 	app.slashingKeeper = slashing.NewKeeper(
 		appCodec, keys[slashing.StoreKey], &stakingKeeper, app.subspaces[slashing.ModuleName],
@@ -316,8 +320,8 @@ func NewMTApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest boo
 		staking.NewAppModule(app.stakingKeeper, app.accountKeeper, app.bankKeeper, app.supplyKeeper),
 		upgrade.NewAppModule(app.upgradeKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
-		transfer.NewAppModule(app.transferKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
+		transfer.NewAppModule(app.transferKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that

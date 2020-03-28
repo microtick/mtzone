@@ -106,8 +106,8 @@ func validateFreezeTime(i interface{}) error {
 }
 
 func validateTime(i interface{}) error {
-	_, ok := i.(time.Time)
-	if !ok {
+	_, ok := time.Parse(TimeFormat, i.(string))
+	if ok != nil {
 		return fmt.Errorf("invalid time: %T", i)
 	}
 	return nil
