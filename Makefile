@@ -1,5 +1,5 @@
 VERSIONFILE=app/version.go
-TEST_DOCKER_REPO=jackzampolin/mtzonetest
+TEST_DOCKER_REPO=microtick/mtzonetest
 
 all: install
 
