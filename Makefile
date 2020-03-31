@@ -1,4 +1,5 @@
 VERSIONFILE=app/version.go
+TEST_DOCKER_REPO=jackzampolin/mtzonetest
 
 all: install
 
@@ -14,3 +15,11 @@ install:
 	@echo "const MTCommit = \"$(COMMIT)\"" >> $(VERSIONFILE)
 	GO111MODULE=on go install ./cmd/mtd 
 	GO111MODULE=on go install -tags="ledger" ./cmd/mtcli
+
+test-docker:
+	@docker build -f contrib/Dockerfile.test -t ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) .
+	@docker tag ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) ${TEST_DOCKER_REPO}:$(shell git rev-parse --abbrev-ref HEAD | sed 's#/#_#g')
+	@docker tag ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) ${TEST_DOCKER_REPO}:latest
+	@docker push ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD)
+	@docker push ${TEST_DOCKER_REPO}:$(shell git rev-parse --abbrev-ref HEAD | sed 's#/#_#g')
+	@docker push ${TEST_DOCKER_REPO}:latest
