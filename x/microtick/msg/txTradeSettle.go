@@ -183,11 +183,6 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
         sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
     ))
     
-    var found bool = false
-    if trade.Long.Equals(msg.Requester) {
-        found = true
-    }
-    
     for i := 0; i < len(trade.CounterParties); i++ {
         cp := trade.CounterParties[i]
         
@@ -195,17 +190,12 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
             sdk.EventTypeMessage,
             sdk.NewAttribute(fmt.Sprintf("acct.%s", cp.Short), "settle.short"),
         ))
-        if cp.Short.Equals(msg.Requester) {
-            found = true
-        }
     }
     
-    if !found {
-        events = append(events, sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
-        ))
-    }
+    events = append(events, sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
+    ))
     
 	return sdk.Result {
 	    Data: bz,
