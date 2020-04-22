@@ -13,6 +13,7 @@ import (
 )
 
 type ResponseMarketOrderBookStatus struct {
+    Name string `json:"name"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
     InsideCall mt.MicrotickPremium `json:"insideCall"`
@@ -28,9 +29,9 @@ type ResponseMarketStatus struct {
 }
 
 func (rm ResponseMarketStatus) String() string {
-    obStrings := make([]string, len(mt.MicrotickDurations))
-    for i := 0; i < len(mt.MicrotickDurations); i++ {
-        obStrings[i] = formatOrderBook(mt.MicrotickDurations[i], rm.OrderBooks[i])
+    var obStrings []string
+    for i := 0; i < len(rm.OrderBooks); i++ {
+        obStrings = append(obStrings, formatOrderBook(rm.OrderBooks[i]))
     }
     return strings.TrimSpace(fmt.Sprintf(`Market: %s
 Consensus: %s
@@ -40,14 +41,14 @@ Sum Weight: %s`, rm.Market, rm.Consensus.String(), obStrings, rm.SumBacking.Stri
     rm.SumWeight.String()))
 }
 
-func formatOrderBook(dur mt.MicrotickDuration, rob ResponseMarketOrderBookStatus) string {
+func formatOrderBook(rob ResponseMarketOrderBookStatus) string {
     return fmt.Sprintf(`
   %s:
     Sum Backing: %s
     Sum Weight: %s
     Inside Call: %s
     Inside Put: %s`, 
-        mt.MicrotickDurationNameFromDur(dur),
+        rob.Name,
         rob.SumBacking.String(), rob.SumWeight.String(),
         rob.InsideCall.String(), rob.InsidePut.String())
 }
@@ -59,18 +60,18 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
         return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market data: %s", err2))
     }
     
-    orderbookStatus := make([]ResponseMarketOrderBookStatus, len(mt.MicrotickDurations))
-    for i := 0; i < len(mt.MicrotickDurations); i++ {
-        orderbookStatus[i].SumBacking = data.OrderBooks[i].SumBacking
-        orderbookStatus[i].SumWeight = data.OrderBooks[i].SumWeight
-        
-        if len(data.OrderBooks[i].Calls.Data) > 0 {
+    var orderbookStatus []ResponseMarketOrderBookStatus
+    for i := 0; i < len(data.OrderBooks); i++ {
+        if data.OrderBooks[i].SumBacking.Amount.GT(sdk.ZeroDec()) {
             call, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Calls.Data[0].Id)
-            orderbookStatus[i].InsideCall = call.PremiumAsCall(data.Consensus)
-        }
-        if len(data.OrderBooks[i].Puts.Data) > 0 {
             put, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Puts.Data[0].Id)
-            orderbookStatus[i].InsidePut = put.PremiumAsPut(data.Consensus)
+            orderbookStatus = append(orderbookStatus, ResponseMarketOrderBookStatus {
+                Name: mt.MicrotickDurationNames[i],
+                SumBacking: data.OrderBooks[i].SumBacking,
+                SumWeight: data.OrderBooks[i].SumWeight,
+                InsideCall: call.PremiumAsCall(data.Consensus),
+                InsidePut: put.PremiumAsPut(data.Consensus),
+            })
         }
     }
     

@@ -41,7 +41,7 @@ echo "Adding validator genesis account"
 MTROOT=$WORK mtd add-genesis-account validator 1000000000000stake > /dev/null 2>&1
 
 echo "Adding microtick genesis account"
-MTROOT=$WORK mtd add-genesis-account microtick 1000000000000kits > /dev/null 2>&1
+MTROOT=$WORK mtd add-genesis-account microtick 1000000000000udai > /dev/null 2>&1
 
 echo "Creating genesis transaction"
 MTROOT=$WORK mtd gentx --name validator < $WORK/pass > /dev/null 2>&1
