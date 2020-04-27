@@ -3,6 +3,7 @@ package msg
 import (
     "fmt"
     "strings"
+    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -27,11 +28,11 @@ Sum Weight: %s`, rm.Market, rm.Consensus.String(), rm.SumBacking.String(),
     rm.SumWeight.String()))
 }
 
-func QueryMarketConsensus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
+func QueryMarketConsensus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     market := path[0]
     data, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market data: %s", err2))
+        return nil, errors.New(fmt.Sprintf("Could not fetch market data: %s", err2))
     }
     
     response := ResponseMarketConsensus {

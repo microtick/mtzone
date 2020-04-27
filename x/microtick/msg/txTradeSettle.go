@@ -3,6 +3,7 @@ package msg
 import (
     "fmt"
     "time"
+    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
@@ -55,9 +56,9 @@ func (msg TxSettleTrade) Route() string { return "microtick" }
 
 func (msg TxSettleTrade) Type() string { return "trade_settle" }
 
-func (msg TxSettleTrade) ValidateBasic() sdk.Error {
+func (msg TxSettleTrade) ValidateBasic() error {
     if msg.Requester.Empty() {
-        return sdk.ErrInvalidAddress(msg.Requester.String())
+        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Requester.String()))
     }
     return nil
 }
@@ -72,12 +73,12 @@ func (msg TxSettleTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrade) sdk.Result {
+func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrade) (*sdk.Result, error) {
     params := keeper.GetParams(ctx)
     
     trade, err := keeper.GetActiveTrade(ctx, msg.Id)
     if err != nil {
-        return sdk.ErrInternal("Invalid trade ID").Result()
+        return nil, errors.New("Invalid trade ID")
     }
     
     var settleData []SettlementData
@@ -87,12 +88,12 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
         
     // check if trade has expired
     if now.Before(trade.Expiration) {
-        return sdk.ErrInternal("Trade cannot be settled until expiration").Result()
+        return nil, errors.New("Trade cannot be settled until expiration")
     }
         
     dataMarket, err2 := keeper.GetDataMarket(ctx, trade.Market)
     if err2 != nil {
-        return sdk.ErrInternal("Could not fetch market consensus").Result()
+        return nil, errors.New("Could not fetch market consensus")
     }
     
     settlements := trade.CounterPartySettlements(dataMarket.Consensus)
@@ -100,7 +101,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     // Incentive 
     err2 = keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
     if err2 != nil {
-        return sdk.ErrInternal("Fund mismatch (incentive)").Result()
+        return nil, errors.New("Fund mismatch (incentive)")
     }
     //fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
     
@@ -109,7 +110,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
      
     err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
-        return sdk.ErrInternal("Insufficient funds").Result()
+        return nil, errors.New("Insufficient funds")
     }
     
     //fmt.Printf("Settle Commission: %s\n", commission.String())
@@ -124,14 +125,14 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
             // Long
             err2 = keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
             if err2 != nil {
-                return sdk.ErrInternal("Fund mismatch (long)").Result()
+                return nil, errors.New("Fund mismatch (long)")
             }
             totalPaid = totalPaid.Add(pair.Settle.Amount)
             
             // Refund
             err2 := keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
             if err2 != nil {
-                return sdk.ErrInternal("Fund mismatch (refund)").Result()
+                return nil, errors.New("Fund mismatch (refund)")
             }
             
             // Adjust trade backing
@@ -156,7 +157,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     } else {
         
         // American options not implemented yet
-        return sdk.ErrInternal("American style option settlement not implemented yet").Result()
+        return nil, errors.New("American style option settlement not implemented yet")
         
     }
     
@@ -197,8 +198,8 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
     ))
     
-	return sdk.Result {
+	return &sdk.Result {
 	    Data: bz,
 	    Events: events,
-	}
+	}, nil
 }

@@ -2,6 +2,7 @@ package microtick
 
 import (
     "fmt"
+    "errors"
     
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
@@ -11,7 +12,7 @@ import (
 )
 
 func NewQuerier(keeper keeper.Keeper) sdk.Querier {
-    return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err sdk.Error) {
+    return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
         switch path[0] {
         case "account":
             return msg.QueryAccountStatus(ctx, path[1:], req, keeper)
@@ -28,13 +29,13 @@ func NewQuerier(keeper keeper.Keeper) sdk.Querier {
         case "generate":
             return msg.GenerateTx(ctx, path[1], path[2:], req, keeper)
         default:
-            return nil, sdk.ErrUnknownRequest("unknown microtick query endpoint")
+            return nil, errors.New("unknown microtick query endpoint")
         }
     }
 }
 
 func NewHandler(keeper keeper.Keeper) sdk.Handler {
-	return func(ctx sdk.Context, txmsg sdk.Msg) sdk.Result {
+	return func(ctx sdk.Context, txmsg sdk.Msg) (*sdk.Result, error) {
 		switch tmp := txmsg.(type) {
 		case msg.TxCreateMarket:
 		    return msg.HandleTxCreateMarket(ctx, keeper, tmp)
@@ -58,7 +59,7 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 			return msg.HandleTxSettleTrade(ctx, keeper, tmp)
 		default:
 			errMsg := fmt.Sprintf("Unrecognized microtick tx type: %v", txmsg.Type())
-			return sdk.ErrUnknownRequest(errMsg).Result()
+			return nil, errors.New(errMsg)
 		}
 	}
 }
