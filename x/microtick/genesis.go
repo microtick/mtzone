@@ -2,7 +2,6 @@ package microtick
 
 import (
     sdk "github.com/cosmos/cosmos-sdk/types"
-    "github.com/cosmos/cosmos-sdk/x/distribution/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -52,12 +51,6 @@ func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data GenesisState) {
 }
 
 func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {
-    mtKeeper.DistrKeeper.IterateValidatorOutstandingRewards(ctx, 
-        func(addr sdk.ValAddress, rewards types.ValidatorOutstandingRewards) (stop bool) {
-            return false
-        },
-    )
-    
     params := mtKeeper.GetParams(ctx)
     
     var accounts []GenesisAccount

@@ -84,7 +84,7 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
         SumWeight: data.SumWeight,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
+    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

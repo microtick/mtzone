@@ -11,7 +11,6 @@ import (
 )
 
 // DefaultParamspace defines the default microtick module parameter subspace
-const DefaultParamspace = "mtmparams"
 const TimeFormat = "2006-01-02T15:04:05Z"
 const HaltTimeString = "168h"
 
@@ -37,8 +36,6 @@ var (
     KeyFreezeTime = []byte("KeyFreezeTime")
     KeyHaltTime = []byte("KeyHaltTime")
 )
-
-var _ params.ParamSet = &Params{}
 
 // Params defines the parameters for the microtick module.
 type Params struct {

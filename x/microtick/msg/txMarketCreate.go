@@ -51,17 +51,19 @@ func HandleTxCreateMarket(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxCreateM
         mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
     }
     
-    event := sdk.NewEvent(
+    var events []sdk.Event
+    events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
-    )
-    events := []sdk.Event{ event }
+    ))
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute("market", msg.Market),
     ))
     
+    ctx.EventManager().EmitEvents(events)
+    
     return &sdk.Result{
-        Events: events,
+        Events: ctx.EventManager().ABCIEvents(),
     }, nil
 }

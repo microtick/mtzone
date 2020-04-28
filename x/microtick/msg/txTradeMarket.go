@@ -171,10 +171,12 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
                 sdk.NewAttribute(quoteKey, matchType),
             ))
         }
+        
+        ctx.EventManager().EmitEvents(events)
             
         return &sdk.Result {
             Data: bz,
-            Events: events,
+            Events: ctx.EventManager().ABCIEvents(),
         }, nil
         
     } else {

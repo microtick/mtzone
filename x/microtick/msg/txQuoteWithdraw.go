@@ -139,8 +139,10 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdraw
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
     ))
     
+    ctx.EventManager().EmitEvents(events)
+    
     return &sdk.Result {
         Data: bz,
-        Events: events,
+        Events: ctx.EventManager().ABCIEvents(),
     }, nil
 }

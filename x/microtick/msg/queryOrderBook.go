@@ -55,7 +55,7 @@ func QueryOrderBook(ctx sdk.Context, path []string,
         Puts: puts,
     }
     
-    bz, err3 := codec.MarshalJSONIndent(ModuleCdc, response)
+    bz, err3 := codec.MarshalJSONIndent(keeper.Cdc, response)
     if err3 != nil {
         panic("Could not marshal result to JSON")
     }

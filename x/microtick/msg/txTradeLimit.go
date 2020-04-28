@@ -171,10 +171,12 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
                 sdk.NewAttribute(quoteKey, matchType),
             ))
         }
+        
+        ctx.EventManager().EmitEvents(events)
             
         return &sdk.Result {
             Data: bz,
-            Events: events,
+            Events: ctx.EventManager().ABCIEvents(),
         }, nil
         
     } else {

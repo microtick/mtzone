@@ -198,8 +198,10 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
     ))
     
+    ctx.EventManager().EmitEvents(events)
+    
 	return &sdk.Result {
 	    Data: bz,
-	    Events: events,
+	    Events: ctx.EventManager().ABCIEvents(),
 	}, nil
 }

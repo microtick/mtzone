@@ -159,8 +159,10 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
         sdk.NewAttribute("mtm.MarketTick", msg.Market),
     ))
     
+    ctx.EventManager().EmitEvents(events)
+    
 	return &sdk.Result {
 	    Data: bz,
-	    Events: events,
+	    Events: ctx.EventManager().ABCIEvents(),
 	}, nil
 }

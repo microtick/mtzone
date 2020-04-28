@@ -10,6 +10,10 @@ import (
 const MTModuleAccount = "microtick"
 const MTPoolName = "commissionPool"
 
+type CommissionPool struct {
+	Pool sdk.DecCoin `json:"pool"`
+}
+
 // Commissions
 
 func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
@@ -19,16 +23,18 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	
 	// Get current pool amount
 	key := []byte(MTPoolName)
-	var pool sdk.DecCoin = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
+	var pool CommissionPool = CommissionPool {
+		Pool: sdk.NewInt64DecCoin(mt.ExtTokenType, 0),
+	}
 	if store.Has(key) {
 		bz := store.Get(key)
-		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
+		k.Cdc.MustUnmarshalJSON(bz, &pool)
 	}
-	pool = pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
+	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
 	
     //fmt.Printf("Add Pool Commission: requested %s actual %s pool %s\n", amount.String(), extCoins.String(), pool.String())
 	
-	store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
+	store.Set(key, k.Cdc.MustMarshalJSON(pool))
 }
 
 func (k Keeper) Sweep(ctx sdk.Context) {
@@ -36,19 +42,21 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 	
 	// Get current pool amount
 	key := []byte(MTPoolName)
-	var pool sdk.DecCoin = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
+	var pool CommissionPool = CommissionPool {
+		Pool: sdk.NewInt64DecCoin(mt.ExtTokenType, 0),
+	}
 	if store.Has(key) {
 		bz := store.Get(key)
-		k.Cdc.MustUnmarshalBinaryBare(bz, &pool)
+		k.Cdc.MustUnmarshalJSON(bz, &pool)
 	}
-	coin, _ := pool.TruncateDecimal()
+	coin, _ := pool.Pool.TruncateDecimal()
 	
     //fmt.Printf("Sweep: %s %s\n", pool.String(), coin.String())
-    k.supplyKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
+    k.BankKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
     	auth.FeeCollectorName, sdk.Coins{coin})
     	
-    pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
-    store.Set(key, k.Cdc.MustMarshalBinaryBare(pool))
+    pool.Pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
+    store.Set(key, k.Cdc.MustMarshalJSON(pool))
     
     ctx.EventManager().EmitEvent(
         sdk.NewEvent(
@@ -68,7 +76,7 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
     //fmt.Printf("Withdraw account %s: %s\n", account.String(), extCoins.String())
     
 	if extCoins.Amount.IsPositive() {
-		err := k.supplyKeeper.SendCoinsFromAccountToModule(ctx, account, MTModuleAccount, sdk.Coins{extCoins})
+		err := k.BankKeeper.SendCoinsFromAccountToModule(ctx, account, MTModuleAccount, sdk.Coins{extCoins})
 		if err != nil {
 			return err
 		}
@@ -85,7 +93,7 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
     //fmt.Printf("Deposit account %s: %s\n", account.String(), extCoins.String())
 	
 	if extCoins.Amount.IsPositive() {
-		err := k.supplyKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, account, sdk.Coins{extCoins})
+		err := k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, account, sdk.Coins{extCoins})
 		if err != nil {
 			return err
 		}
@@ -94,7 +102,7 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 }
 
 func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {
-	coins := k.CoinKeeper.GetBalance(ctx, addr, mt.ExtTokenType)
+	coins := k.BankKeeper.GetBalance(ctx, addr, mt.ExtTokenType)
     balance := mt.ExtCoinToMicrotickCoin(coins)
     return balance
 }

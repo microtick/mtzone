@@ -135,7 +135,7 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         SettleIncentive: data.SettleIncentive,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
+    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }
