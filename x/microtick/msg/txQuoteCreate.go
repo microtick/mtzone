@@ -3,10 +3,10 @@ package msg
 import (
     "fmt"
     "time"
-    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -52,13 +52,13 @@ func (msg TxCreateQuote) Type() string { return "quote_create" }
 
 func (msg TxCreateQuote) ValidateBasic() error {
     if len(msg.Market) == 0 {
-        return errors.New("Unknown market")
+        return sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     if msg.Provider.Empty() {
-        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Provider.String()))
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Provider.String())
     }
     if !msg.Backing.IsPositive() {
-        return errors.New("Backing must be positive")
+        return mt.ErrQuoteBacking
     }
     return nil
 }
@@ -83,7 +83,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     }
     
     if !mt.ValidMicrotickDuration(msg.Duration) {
-        return nil, errors.New(fmt.Sprintf("Invalid duration: %d", msg.Duration))
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%d", msg.Duration)
     }
     
     commission := mt.NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
@@ -111,11 +111,11 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     
     dataMarket, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
-        return nil, errors.New("Invalid market")
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     dataMarket.AddQuote(dataActiveQuote)
     if !dataMarket.FactorIn(dataActiveQuote, true) {
-        return nil, errors.New("Quote params out of range")
+        return nil, mt.ErrQuoteParams
     }
     
     mtKeeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
@@ -126,7 +126,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     
     err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
     if err2!= nil {
-        return nil, errors.New("Insufficient funds")
+        return nil, mt.ErrInsufficientFunds
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())

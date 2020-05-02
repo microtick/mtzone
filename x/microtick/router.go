@@ -1,12 +1,11 @@
 package microtick
 
 import (
-    "fmt"
-    "errors"
-    
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
     
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
     "github.com/mjackson001/mtzone/x/microtick/msg"
 )
@@ -29,7 +28,7 @@ func NewQuerier(keeper keeper.Keeper) sdk.Querier {
         case "generate":
             return msg.GenerateTx(ctx, path[1], path[2:], req, keeper)
         default:
-            return nil, errors.New("unknown microtick query endpoint")
+            return nil, sdkerrors.Wrap(mt.ErrInvalidRequest, "query endpoint")
         }
     }
 }
@@ -58,8 +57,7 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 		case msg.TxSettleTrade:
 			return msg.HandleTxSettleTrade(ctx, keeper, tmp)
 		default:
-			errMsg := fmt.Sprintf("Unrecognized microtick tx type: %v", txmsg.Type())
-			return nil, errors.New(errMsg)
+            return nil, sdkerrors.Wrapf(mt.ErrInvalidRequest, "tx type: %v", txmsg.Type())
 		}
 	}
 }

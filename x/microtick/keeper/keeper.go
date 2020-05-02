@@ -2,10 +2,9 @@ package keeper
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"time"
 	
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -150,7 +149,7 @@ func (k Keeper) GetDataMarket(ctx sdk.Context, market mt.MicrotickMarket) (DataM
 	key := []byte(market)
 	var dataMarket DataMarket
 	if !store.Has(key) {
-		return dataMarket, errors.New(fmt.Sprintf("No such market: {%s}", market))
+		return dataMarket, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
 	}
 	bz := store.Get(key)
 	k.Cdc.MustUnmarshalJSON(bz, &dataMarket)
@@ -189,7 +188,7 @@ func (k Keeper) GetActiveQuote(ctx sdk.Context, id mt.MicrotickId) (DataActiveQu
 	var activeQuote DataActiveQuote
 	binary.LittleEndian.PutUint32(key, id)
 	if !store.Has(key) {
-		return activeQuote, errors.New(fmt.Sprintf("No such quote ID: {%i}", id))
+		return activeQuote, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%i", id)
 	}
 	bz := store.Get(key)
 	k.Cdc.MustUnmarshalJSON(bz, &activeQuote)
@@ -236,7 +235,7 @@ func (k Keeper) GetActiveTrade(ctx sdk.Context, id mt.MicrotickId) (DataActiveTr
 	var activeTrade DataActiveTrade
 	binary.LittleEndian.PutUint32(key, id)
 	if !store.Has(key) {
-		return activeTrade, errors.New(fmt.Sprintf("No such trade ID: {%i}", id))
+		return activeTrade, sdkerrors.Wrapf(mt.ErrInvalidTrade, "%i", id)
 	}
 	bz := store.Get(key)
 	k.Cdc.MustUnmarshalJSON(bz, &activeTrade)

@@ -3,10 +3,10 @@ package msg
 import (
     "fmt"
     "strings"
-    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -50,7 +50,7 @@ func QueryAccountStatus(ctx sdk.Context, path []string,
     balance := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
     if err2 != nil {
-        return nil, errors.New(fmt.Sprintf("Could not fetch address information: %s", err2))
+        return nil, sdkerrors.Wrap(mt.ErrInvalidAddress, acct)
     }
     activeQuotes := make([]mt.MicrotickId, len(data.ActiveQuotes.Data))
     activeTrades := make([]mt.MicrotickId, len(data.ActiveTrades.Data))

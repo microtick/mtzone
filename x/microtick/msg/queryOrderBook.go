@@ -3,10 +3,10 @@ package msg
 import (
     "fmt"
     "strings"
-    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -35,7 +35,7 @@ func QueryOrderBook(ctx sdk.Context, path []string,
     
     dataMarket, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
-        return nil, errors.New(fmt.Sprintf("Unknown market: %s", err2))
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
     orderBook := dataMarket.GetOrderBook(dur)

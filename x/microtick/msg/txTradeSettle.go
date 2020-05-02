@@ -3,10 +3,10 @@ package msg
 import (
     "fmt"
     "time"
-    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -58,7 +58,7 @@ func (msg TxSettleTrade) Type() string { return "trade_settle" }
 
 func (msg TxSettleTrade) ValidateBasic() error {
     if msg.Requester.Empty() {
-        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Requester.String()))
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
     }
     return nil
 }
@@ -78,7 +78,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     
     trade, err := keeper.GetActiveTrade(ctx, msg.Id)
     if err != nil {
-        return nil, errors.New("Invalid trade ID")
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidTrade, "%d", msg.Id)
     }
     
     var settleData []SettlementData
@@ -88,12 +88,12 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
         
     // check if trade has expired
     if now.Before(trade.Expiration) {
-        return nil, errors.New("Trade cannot be settled until expiration")
+        return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "trade not expired")
     }
         
     dataMarket, err2 := keeper.GetDataMarket(ctx, trade.Market)
     if err2 != nil {
-        return nil, errors.New("Could not fetch market consensus")
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, trade.Market)
     }
     
     settlements := trade.CounterPartySettlements(dataMarket.Consensus)
@@ -101,7 +101,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     // Incentive 
     err2 = keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
     if err2 != nil {
-        return nil, errors.New("Fund mismatch (incentive)")
+        return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "settle incentive")
     }
     //fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
     
@@ -110,7 +110,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
      
     err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
-        return nil, errors.New("Insufficient funds")
+        return nil, mt.ErrInsufficientFunds
     }
     
     //fmt.Printf("Settle Commission: %s\n", commission.String())
@@ -125,14 +125,14 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
             // Long
             err2 = keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
             if err2 != nil {
-                return nil, errors.New("Fund mismatch (long)")
+                return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "payout")
             }
             totalPaid = totalPaid.Add(pair.Settle.Amount)
             
             // Refund
             err2 := keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
             if err2 != nil {
-                return nil, errors.New("Fund mismatch (refund)")
+                return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "refund")
             }
             
             // Adjust trade backing
@@ -157,7 +157,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, msg TxSettleTrad
     } else {
         
         // American options not implemented yet
-        return nil, errors.New("American style option settlement not implemented yet")
+        return nil, sdkerrors.Wrap(mt.ErrGeneral, "American style option settlement not implemented yet")
         
     }
     

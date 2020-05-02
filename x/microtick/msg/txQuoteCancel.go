@@ -3,10 +3,10 @@ package msg
 import (
     "fmt"
     "time"
-    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -40,7 +40,7 @@ func (msg TxCancelQuote) Type() string { return "quote_cancel" }
 
 func (msg TxCancelQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
-        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Requester.String()))
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
     }
     return nil
 }
@@ -58,7 +58,7 @@ func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
 func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuote) (*sdk.Result, error) {
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
-        return nil, errors.New(fmt.Sprintf("No such quote: %d", msg.Id))
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
     
     // Time 2x invariant:
@@ -68,18 +68,18 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
     // to keep the quotes timely.
     if quote.Provider.String() != msg.Requester.String() {
         if !quote.Stale(ctx.BlockHeader().Time) {
-            return nil, errors.New("Quote is not stale")
+            return nil, mt.ErrQuoteNotStale
         }
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return nil, errors.New(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify))
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
     }
     
     // Everything ok, let's refund the backing and delete the quote
     err = keeper.DepositMicrotickCoin(ctx, msg.Requester, quote.Backing)
     if err != nil {
-        return nil, errors.New("Fund mismatch")
+        return nil, mt.ErrQuoteBacking
     }
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)

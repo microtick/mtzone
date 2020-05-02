@@ -1,10 +1,8 @@
 package msg
 
 import (
-    "fmt"
-    "errors"
-    
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -28,10 +26,10 @@ func (msg TxCreateMarket) Type() string { return "market_create" }
 
 func (msg TxCreateMarket) ValidateBasic() error {
     if msg.Account.Empty() {
-        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Account.String()))
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Account.String())
     }
     if len(msg.Market) == 0 {
-        return errors.New("Invalid market: " + msg.Market)
+        return sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     return nil
 }

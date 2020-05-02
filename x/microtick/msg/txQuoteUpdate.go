@@ -3,10 +3,10 @@ package msg
 import (
     "fmt"
     "time"
-    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -47,7 +47,7 @@ func (msg TxUpdateQuote) Type() string { return "quote_update" }
 
 func (msg TxUpdateQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
-        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Requester.String()))
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
     }
     return nil
 }
@@ -67,15 +67,15 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
-        return nil, errors.New(fmt.Sprintf("No such quote: %d", msg.Id))
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
     
     if quote.Provider.String() != msg.Requester.String() {
-        return nil, errors.New("Account can't modify quote")
+        return nil, mt.ErrNotOwner
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return nil, errors.New(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify))
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
     }
     
     commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
@@ -99,7 +99,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     
     dataMarket.AddQuote(quote)
     if !dataMarket.FactorIn(quote, true) {
-        return nil, errors.New("Quote params out of range")
+        return nil, mt.ErrQuoteParams
     }
     
     keeper.SetDataMarket(ctx, dataMarket)
@@ -108,7 +108,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     // Subtract coins from requester
     err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
-        return nil, errors.New("Insufficient funds")
+        return nil, mt.ErrInsufficientFunds
     }
     
     // Add commission to pool

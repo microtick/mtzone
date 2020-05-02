@@ -3,10 +3,10 @@ package msg
 import (
     "fmt"
     "time"
-    "errors"
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -46,10 +46,10 @@ func (msg TxMarketTrade) Type() string { return "trade_market" }
 
 func (msg TxMarketTrade) ValidateBasic() error {
     if len(msg.Market) == 0 {
-        return errors.New("Unknown market")
+        return sdkerrors.Wrap(mt.ErrMissingParam, "market")
     }
     if msg.Buyer.Empty() {
-        return errors.New(fmt.Sprintf("Invalid address: %s", msg.Buyer.String()))
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Buyer.String())
     }
     return nil
 }
@@ -68,17 +68,17 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
     params := mtKeeper.GetParams(ctx)
      
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
-        return nil, errors.New("No such market: " + msg.Market)
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     
     if !mt.ValidMicrotickDuration(msg.Duration) {
-        return nil, errors.New(fmt.Sprintf("Invalid duration: %d", msg.Duration))
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%d", msg.Duration)
     }
     
     // Step 1 - Obtain the strike spot price and create trade struct
     market, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
-        return nil, errors.New("Error fetching market")
+        return nil, mt.ErrInvalidMarket
     }
     commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
     settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
@@ -108,7 +108,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
         total := matcher.TotalCost.Add(trade.Commission).Add(settleIncentive)
         err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
         if err2 != nil {
-            return nil, errors.New("Insufficient funds")
+            return nil, mt.ErrInsufficientFunds
         }
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
@@ -119,7 +119,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
         
         err2 = matcher.AssignCounterparties(ctx, mtKeeper, &market)
         if err2 != nil {
-            return nil, errors.New("Error assigning counterparties")
+            return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "counterparty assignment")
         }
         
         // Update the account status for the buyer
@@ -182,7 +182,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTr
     } else {
        
         // No liquidity available
-        return nil, errors.New("No liquidity available")
+        return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "no liquidity available")
         
     }
 }
