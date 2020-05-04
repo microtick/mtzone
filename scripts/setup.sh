@@ -39,13 +39,13 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Adding validator genesis account"
-MTROOT=$WORK mtd add-genesis-account validator 1000000000000stake > /dev/null 2>&1
+MTROOT=$WORK mtd add-genesis-account validator 1000000000000stake --keyring-backend=test > /dev/null 2>&1
 
 echo "Adding microtick genesis account"
-MTROOT=$WORK mtd add-genesis-account microtick 1000000000000udai > /dev/null 2>&1
+MTROOT=$WORK mtd add-genesis-account microtick 1000000000000udai --keyring-backend=test > /dev/null 2>&1
 
 echo "Creating genesis transaction"
-MTROOT=$WORK mtd gentx --name validator < $WORK/pass > /dev/null 2>&1
+MTROOT=$WORK mtd gentx --name validator --keyring-backend=test < $WORK/pass > /dev/null 2>&1
 
 echo "Collecting genesis transactions"
 MTROOT=$WORK mtd collect-gentxs > /dev/null 2>&1
