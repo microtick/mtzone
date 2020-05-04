@@ -1,7 +1,5 @@
 #!/bin/sh
 
-BACKEND="--keyring-backend=test"
-
 if [ -z "$MTROOT" ]; then
   WORK=$HOME/.microtick
 else
@@ -23,30 +21,31 @@ echo "Setting chain id"
 GENESIS=$WORK/mtd/config/genesis.json
 jq '.chain_id="mtlocal"' $WORK/mtd/config/genesis.json > $WORK/tmp && mv $WORK/tmp $WORK/mtd/config/genesis.json
 MTROOT=$WORK mtcli config chain-id mtlocal > /dev/null 2>&1
+MTROOT=$WORK mtcli config keyring-backend test > /dev/null 2>&1
 
 # Create password file
 echo "temp1234" > $WORK/pass
 
-MTROOT=$WORK mtcli keys show validator -a $BACKEND > /dev/null 2>&1
+MTROOT=$WORK mtcli keys show validator -a > /dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo "Creating validator key"
-  MTROOT=$WORK mtcli keys add validator $BACKEND < $WORK/pass > /dev/null 2>&1
+  MTROOT=$WORK mtcli keys add validator < $WORK/pass > /dev/null 2>&1
 fi
 
-MTROOT=$WORK mtcli keys show microtick -a $BACKEND > /dev/null 2>&1
+MTROOT=$WORK mtcli keys show microtick -a > /dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo "Creating microtick key"
-  MTROOT=$WORK mtcli keys add microtick $BACKEND < $WORK/pass > /dev/null 2>&1
+  MTROOT=$WORK mtcli keys add microtick < $WORK/pass > /dev/null 2>&1
 fi
 
 echo "Adding validator genesis account"
-MTROOT=$WORK mtd add-genesis-account validator 1000000000000stake $BACKEND > /dev/null 2>&1
+MTROOT=$WORK mtd add-genesis-account validator 1000000000000stake > /dev/null 2>&1
 
 echo "Adding microtick genesis account"
-MTROOT=$WORK mtd add-genesis-account microtick 1000000000000udai $BACKEND > /dev/null 2>&1
+MTROOT=$WORK mtd add-genesis-account microtick 1000000000000udai > /dev/null 2>&1
 
 echo "Creating genesis transaction"
-MTROOT=$WORK mtd gentx --name validator < $WORK/pass $BACKEND > /dev/null 2>&1
+MTROOT=$WORK mtd gentx --name validator < $WORK/pass > /dev/null 2>&1
 
 echo "Collecting genesis transactions"
 MTROOT=$WORK mtd collect-gentxs > /dev/null 2>&1
