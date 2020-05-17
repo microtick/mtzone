@@ -23,7 +23,6 @@ func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router) {
 	r.HandleFunc("/microtick/trade/{id}", queryTradeHandler(cliCtx)).Methods("GET")
 	
 	// These tx functions just generate the signing bytes with correct chain ID, account and sequence numbers
-	r.HandleFunc("/microtick/createmarket/{acct}/{market}", txCreateMarketHandler(cliCtx)).Methods("GET")
 	r.HandleFunc("/microtick/createquote/{acct}/{market}/{duration}/{backing}/{spot}/{premium}", txCreateQuoteHandler(cliCtx)).Methods("GET")
 	r.HandleFunc("/microtick/cancelquote/{requester}/{id}", txCancelQuoteHandler(cliCtx)).Methods("GET")
 	r.HandleFunc("/microtick/depositquote/{requester}/{id}/{amount}", txDepositQuoteHandler(cliCtx)).Methods("GET")
@@ -65,22 +64,6 @@ func broadcastSignedTx(cliCtx context.CLIContext) http.HandlerFunc {
 			return
 		}
 		
-		rest.PostProcessResponse(w, cliCtx, res)
-	}
-}
-
-func txCreateMarketHandler(cliCtx context.CLIContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		account := vars["acct"]
-		market := vars["market"]
-		
-		res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/generate/createmarket/%s/%s", account, market), nil)
-		if err != nil {
-			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
-			return
-		}
-
 		rest.PostProcessResponse(w, cliCtx, res)
 	}
 }

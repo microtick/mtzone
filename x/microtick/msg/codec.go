@@ -6,7 +6,6 @@ import (
 
 // Register concrete types on codec codec
 func RegisterCodec(cdc *codec.Codec) {
-    cdc.RegisterConcrete(TxCreateMarket{}, "microtick/CreateMarket", nil)
     cdc.RegisterConcrete(TxCreateQuote{}, "microtick/CreateQuote", nil)
     cdc.RegisterConcrete(TxCancelQuote{}, "microtick/CancelQuote", nil)
     cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/UpdateQuote", nil)

@@ -15,29 +15,6 @@ import (
 	"github.com/mjackson001/mtzone/x/microtick/msg"
 )
 
-func GetCmdMarketCreate(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "market-create [market]",
-		Short: "Create a new market",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			var market = args[0]
-
-			txmsg := msg.NewTxCreateMarket(cliCtx.GetFromAddress(), market)
-			err := txmsg.ValidateBasic()
-			if err != nil {
-				return err
-			}
-
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
-		},
-	}
-}
-
 func GetCmdQuoteCancel(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "quote-cancel [id]",

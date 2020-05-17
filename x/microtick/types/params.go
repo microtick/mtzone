@@ -16,6 +16,7 @@ const HaltTimeString = "168h"
 
 // Default parameter values
 var (
+	DefaultMarkets []string = nil
     DefaultEuropeanOptions bool = true
     DefaultCommissionQuotePercent = sdk.MustNewDecFromStr("0.0005")
     DefaultCommissionTradeFixed = sdk.MustNewDecFromStr("0.025")
@@ -27,6 +28,7 @@ var (
 
 // Parameter keys
 var (
+	KeyMarkets = []byte("Markets")
     KeyEuropeanOptions = []byte("EuropeanOptions")
     KeyCommissionQuotePercent = []byte("CommissionQuotePercent")
     KeyCommissionTradeFixed = []byte("KeyCommissionTradeFixed")
@@ -39,6 +41,7 @@ var (
 
 // Params defines the parameters for the microtick module.
 type Params struct {
+	Markets	[]string `json:"markets"`
     EuropeanOptions bool `json:"european_options"`
     CommissionQuotePercent sdk.Dec `json:"commission_quote_percent"`
     CommissionTradeFixed sdk.Dec `json:"commission_trade_fixed"`
@@ -59,6 +62,7 @@ func ParamKeyTable() params.KeyTable {
 // nolint
 func (p *Params) ParamSetPairs() params.ParamSetPairs {
 	return params.ParamSetPairs{
+		{KeyMarkets, &p.Markets, validateMarkets},
 	    {KeyEuropeanOptions, &p.EuropeanOptions, validateEuropeanOptions},
 	    {KeyCommissionQuotePercent, &p.CommissionQuotePercent, validatePercent},
 	    {KeyCommissionTradeFixed, &p.CommissionTradeFixed, validateFixed},
@@ -68,6 +72,14 @@ func (p *Params) ParamSetPairs() params.ParamSetPairs {
 	    {KeyFreezeTime, &p.FreezeTime, validateFreezeTime},
 	    {KeyHaltTime, &p.HaltTime, validateTime},
 	}
+}
+
+func validateMarkets(i interface{}) error {
+	_, ok := i.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
 }
 
 func validateEuropeanOptions(i interface{}) error {
@@ -123,6 +135,7 @@ func DefaultParams() Params {
     interval, _ := time.ParseDuration(HaltTimeString)
     defaultHaltTime := time.Now().UTC().Add(interval)
 	return Params{
+		Markets: DefaultMarkets,
 	    EuropeanOptions: DefaultEuropeanOptions,
 	    CommissionQuotePercent: DefaultCommissionQuotePercent,
 	    CommissionTradeFixed: DefaultCommissionTradeFixed,
@@ -138,6 +151,7 @@ func DefaultParams() Params {
 func (p Params) String() string {
 	var sb strings.Builder
 	sb.WriteString("Params: \n")
+	sb.WriteString(fmt.Sprintf("Markets: %t\n", p.Markets))
 	sb.WriteString(fmt.Sprintf("EuropeanOptions: %t\n", p.EuropeanOptions))
 	sb.WriteString(fmt.Sprintf("CommissionQuotePercent: %t\n", p.CommissionQuotePercent))
 	sb.WriteString(fmt.Sprintf("CommissionTradeFixed: %t\n", p.CommissionTradeFixed))
