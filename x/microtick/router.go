@@ -37,8 +37,6 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 	return func(ctx sdk.Context, txmsg sdk.Msg) (*sdk.Result, error) {
 	    ctx = ctx.WithEventManager(sdk.NewEventManager())
 		switch tmp := txmsg.(type) {
-		case msg.TxCreateMarket:
-		    return msg.HandleTxCreateMarket(ctx, keeper, tmp)
 		case msg.TxCreateQuote:
 			return msg.HandleTxCreateQuote(ctx, keeper, tmp)
 		case msg.TxCancelQuote:

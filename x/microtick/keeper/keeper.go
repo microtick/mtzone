@@ -32,7 +32,7 @@ type Keeper struct {
 }
 
 func NewKeeper(
-  cdc codec.Marshaler, 
+    cdc codec.Marshaler, 
 	accountKeeper auth.AccountKeeper, 
 	bankKeeper bank.Keeper,
 	distrKeeper distribution.Keeper,
@@ -68,24 +68,6 @@ func (keeper Keeper) GetCodec() codec.Marshaler {
 
 type Termination struct {
 	HaltTime int64 `json:"haltTime"`
-}
-
-// SetParams sets the module's parameters.
-func (keeper Keeper) SetParams(ctx sdk.Context, params mt.Params) {
-	keeper.paramSubspace.SetParamSet(ctx, &params)
-	haltTime, _ := time.Parse(mt.TimeFormat, params.HaltTime)
-	termination := Termination {
-		HaltTime: haltTime.Unix(),
-	}
-	store := ctx.KVStore(keeper.AppGlobalsKey)
-	key := []byte("termination")
-	store.Set(key, keeper.Cdc.MustMarshalJSON(termination))
-}
-
-// GetParams gets the module's parameters.
-func (keeper Keeper) GetParams(ctx sdk.Context) (params mt.Params) {
-	keeper.paramSubspace.GetParamSet(ctx, &params)
-	return params
 }
 
 func (keeper Keeper) GetHaltTime(ctx sdk.Context) int64 {
@@ -255,3 +237,30 @@ func (k Keeper) DeleteActiveTrade(ctx sdk.Context, id mt.MicrotickId) {
 	binary.LittleEndian.PutUint32(key, id)
 	store.Delete(key)
 }
+
+// SetParams sets the module's parameters.
+func (keeper Keeper) SetParams(ctx sdk.Context, params mt.Params) {
+	keeper.paramSubspace.SetParamSet(ctx, &params)
+	
+	haltTime, _ := time.Parse(mt.TimeFormat, params.HaltTime)
+	termination := Termination {
+		HaltTime: haltTime.Unix(),
+	}
+	store := ctx.KVStore(keeper.AppGlobalsKey)
+	key := []byte("termination")
+	store.Set(key, keeper.Cdc.MustMarshalJSON(termination))
+	
+	// create markets if necessary
+	for _, market := range params.Markets {
+		if !keeper.HasDataMarket(ctx, market) {
+            keeper.SetDataMarket(ctx, NewDataMarket(market))
+    	}
+	}
+}
+
+// GetParams gets the module's parameters.
+func (keeper Keeper) GetParams(ctx sdk.Context) (params mt.Params) {
+	keeper.paramSubspace.GetParamSet(ctx, &params)
+	return params
+}
+

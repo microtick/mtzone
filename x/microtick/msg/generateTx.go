@@ -30,9 +30,6 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
     }
         
     switch txType {
-    case "createmarket":
-        market := path[1]
-        txmsg = NewTxCreateMarket(accAddr, market)
     case "createquote":
         market := path[1]
         duration := mt.MicrotickDurationFromName(path[2])

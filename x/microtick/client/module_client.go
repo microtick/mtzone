@@ -32,7 +32,6 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 	}
 
 	mtTxCmd.AddCommand(flags.PostCommands(
-		GetCmdMarketCreate(cdc),
 		GetCmdQuoteCancel(cdc),
 		GetCmdQuoteCreate(cdc),
 		GetCmdQuoteDeposit(cdc),
