@@ -15,7 +15,7 @@ import (
 type TxPickTrade struct {
     Buyer mt.MicrotickAccount
     Id mt.MicrotickId
-    TradeType mt.MicrotickTradeType
+    TradeType mt.MicrotickTradeTypeName
 }
 
 func NewTxPickTrade(buyer sdk.AccAddress, id mt.MicrotickId, tradeType mt.MicrotickTradeType) TxPickTrade {

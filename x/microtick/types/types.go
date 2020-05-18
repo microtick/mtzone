@@ -98,12 +98,12 @@ func ValidMicrotickDuration(mtd MicrotickDuration) bool {
 
 // Type
 
-type MicrotickTradeType = bool
+type MicrotickTradeType = string
 type MicrotickTradeTypeName = string
 
 const (
-    MicrotickCall = false  // 0
-    MicrotickPut = true    // 1
+    MicrotickCall = "call"
+    MicrotickPut = "put"
 )
 
 func MicrotickTradeTypeFromName(str string) MicrotickTradeType {
@@ -113,10 +113,7 @@ func MicrotickTradeTypeFromName(str string) MicrotickTradeType {
 }
 
 func MicrotickTradeNameFromType(mtt MicrotickTradeType) MicrotickTradeTypeName {
-    if mtt {
-        return "put"
-    }
-    return "call"
+    return mtt
 }
 
 // Backing

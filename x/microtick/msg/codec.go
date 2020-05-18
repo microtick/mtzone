@@ -6,16 +6,16 @@ import (
 
 // Register concrete types on codec codec
 func RegisterCodec(cdc *codec.Codec) {
-    cdc.RegisterConcrete(TxCreateMarket{}, "microtick/CreateMarket", nil)
-    cdc.RegisterConcrete(TxCreateQuote{}, "microtick/CreateQuote", nil)
-    cdc.RegisterConcrete(TxCancelQuote{}, "microtick/CancelQuote", nil)
-    cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/UpdateQuote", nil)
-    cdc.RegisterConcrete(TxDepositQuote{}, "microtick/DepositQuote", nil)
-    cdc.RegisterConcrete(TxWithdrawQuote{}, "microtick/WithdrawQuote", nil)
-    cdc.RegisterConcrete(TxMarketTrade{}, "microtick/MarketTrade", nil)
-    cdc.RegisterConcrete(TxLimitTrade{}, "microtick/LimitTrade", nil)
-    cdc.RegisterConcrete(TxPickTrade{}, "microtick/PickTrade", nil)
-    cdc.RegisterConcrete(TxSettleTrade{}, "microtick/SettleTrade", nil)
+    cdc.RegisterConcrete(TxCreateMarket{}, "microtick/MarketCreate", nil)
+    cdc.RegisterConcrete(TxCreateQuote{}, "microtick/QuoteCreate", nil)
+    cdc.RegisterConcrete(TxCancelQuote{}, "microtick/QuoteCancel", nil)
+    cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/QuoteUpdate", nil)
+    cdc.RegisterConcrete(TxDepositQuote{}, "microtick/QuoteDeposit", nil)
+    cdc.RegisterConcrete(TxWithdrawQuote{}, "microtick/QuoteWithdraw", nil)
+    cdc.RegisterConcrete(TxMarketTrade{}, "microtick/TradeMarket", nil)
+    cdc.RegisterConcrete(TxLimitTrade{}, "microtick/TradeLimit", nil)
+    cdc.RegisterConcrete(TxPickTrade{}, "microtick/TradePick", nil)
+    cdc.RegisterConcrete(TxSettleTrade{}, "microtick/TradeSettle", nil)
 }
 
 // generic sealed codec to be used throughout this module

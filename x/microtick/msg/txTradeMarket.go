@@ -16,7 +16,7 @@ type TxMarketTrade struct {
     Market mt.MicrotickMarket
     Duration mt.MicrotickDuration
     Buyer mt.MicrotickAccount
-    TradeType mt.MicrotickTradeType
+    TradeType mt.MicrotickTradeTypeName
     Quantity mt.MicrotickQuantity
 }
 
