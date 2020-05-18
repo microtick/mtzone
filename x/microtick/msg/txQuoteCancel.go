@@ -117,6 +117,13 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
     ))
     
+    if quote.Provider.String() != msg.Requester.String() {
+        events = append(events, sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", quote.Provider.String()), "quote.cancel"),
+        ))
+    }
+    
     ctx.EventManager().EmitEvents(events)
     
     return &sdk.Result {
