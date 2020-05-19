@@ -29,8 +29,13 @@ func queryAccountStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		account := vars["acct"]
+		
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
 
-		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/account/%s", account), nil)
+		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/account/%s", account))
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -46,7 +51,12 @@ func queryMarketStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 		vars := mux.Vars(r)
 		market := vars["market"]
 
-		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/market/%s", market), nil)
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
+
+		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/market/%s", market))
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -62,7 +72,12 @@ func queryMarketConsensusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 		vars := mux.Vars(r)
 		market := vars["market"]
 
-		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/consensus/%s", market), nil)
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
+
+		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/consensus/%s", market))
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -79,7 +94,12 @@ func queryMarketOrderbookHandler(cliCtx context.CLIContext) http.HandlerFunc {
 		market := vars["market"]
 		duration := vars["duration"]
 
-		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/orderbook/%s/%s", market, duration), nil)
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
+
+		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/orderbook/%s/%s", market, duration))
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -95,7 +115,12 @@ func queryQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/quote/%s", id), nil)
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
+
+		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/quote/%s", id))
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -111,7 +136,12 @@ func queryTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/trade/%s", id), nil)
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
+
+		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/trade/%s", id))
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
