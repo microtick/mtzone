@@ -132,8 +132,9 @@ func (p Params) Equal(p2 Params) bool {
 
 // DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
-    interval, _ := time.ParseDuration(HaltTimeString)
-    defaultHaltTime := time.Now().UTC().Add(interval)
+    //interval, _ := time.ParseDuration(HaltTimeString)
+    //defaultHaltTime := time.Now().UTC().Add(interval)
+    defaultHaltTime, _ := time.Parse("2006-Jan-02", "2030-Jan-01")
 	return Params{
 		Markets: DefaultMarkets,
 	    EuropeanOptions: DefaultEuropeanOptions,

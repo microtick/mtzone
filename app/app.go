@@ -12,7 +12,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codecstd "github.com/cosmos/cosmos-sdk/codec/std"
+	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,7 +30,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/02-client"
 	port "github.com/cosmos/cosmos-sdk/x/ibc/05-port"
-	transfer "github.com/cosmos/cosmos-sdk/x/ibc/20-transfer"
+	transfer "github.com/cosmos/cosmos-sdk/x/ibc-transfer"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
@@ -80,12 +80,12 @@ var (
 	maccPerms = map[string][]string{
 		auth.FeeCollectorName:           nil,
 		distr.ModuleName:                nil,
-		mint.ModuleName:				 {auth.Minter},
+		mint.ModuleName:				         {auth.Minter},
 		staking.BondedPoolName:          {auth.Burner, auth.Staking},
 		staking.NotBondedPoolName:       {auth.Burner, auth.Staking},
 		gov.ModuleName:                  {auth.Burner},
-		transfer.GetModuleAccountName(): {auth.Minter, auth.Burner},
-		microtick.ModuleName:	         {auth.Minter, auth.Burner},
+		transfer.ModuleName:						 {auth.Minter, auth.Burner},
+		microtick.ModuleName:	           {auth.Minter, auth.Burner},
 	}
 	
 	// module accounts that are allowed to receive tokens
@@ -202,8 +202,7 @@ func NewMTApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *MTApp {
 		
-	cdc := codecstd.MakeCodec(ModuleBasics)
-	appCodec := codecstd.NewAppCodec(cdc)
+	appCodec, cdc := MakeCodecs()
 
 	bApp := baseapp.NewBaseApp(appName, logger, db, auth.DefaultTxDecoder(cdc), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
@@ -296,12 +295,12 @@ func NewMTApp(
 
   // Create IBC Keeper
 	app.ibcKeeper = ibc.NewKeeper(
-		app.cdc, keys[ibc.StoreKey], stakingKeeper, scopedIBCKeeper,
+		app.cdc, appCodec, keys[ibc.StoreKey], stakingKeeper, scopedIBCKeeper,
 	)
 	
 	// Create Transfer Keepers
 	app.transferKeeper = transfer.NewKeeper(
-		app.cdc, keys[transfer.StoreKey],
+		appCodec, keys[transfer.StoreKey],
 		app.ibcKeeper.ChannelKeeper, &app.ibcKeeper.PortKeeper,
 		app.accountKeeper, app.bankKeeper,
 		scopedTransferKeeper,
@@ -341,7 +340,7 @@ func NewMTApp(
 		genutil.NewAppModule(app.accountKeeper, app.stakingKeeper, app.BaseApp.DeliverTx),
 		auth.NewAppModule(appCodec, app.accountKeeper),
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
-		capability.NewAppModule(*app.capabilityKeeper),
+		capability.NewAppModule(appCodec, *app.capabilityKeeper),
 		crisis.NewAppModule(&app.crisisKeeper),
 		gov.NewAppModule(appCodec, app.govKeeper, app.accountKeeper, app.bankKeeper),
 		mint.NewAppModule(appCodec, app.mintKeeper, app.accountKeeper),
@@ -349,7 +348,7 @@ func NewMTApp(
 		distr.NewAppModule(appCodec, app.distrKeeper, app.accountKeeper, app.bankKeeper, app.stakingKeeper),
 		staking.NewAppModule(appCodec, app.stakingKeeper, app.accountKeeper, app.bankKeeper),
 		upgrade.NewAppModule(app.upgradeKeeper),
-		evidence.NewAppModule(appCodec, app.evidenceKeeper),
+		evidence.NewAppModule(app.evidenceKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
 		params.NewAppModule(app.paramsKeeper),
 		transferModule,
@@ -402,15 +401,15 @@ func NewMTApp(
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(err.Error())
 		}
-	}
 	
-	// Initialize and seal the capability keeper so all persistent capabilities
-	// are loaded in-memory and prevent any further modules from creating scoped
-	// sub-keepers.
-	// This must be done during creation of baseapp rather than in InitChain so
-	// that in-memory capabilities get regenerated on app restart
-	ctx := app.BaseApp.NewContext(true, abci.Header{})
-	app.capabilityKeeper.InitializeAndSeal(ctx)
+	  // Initialize and seal the capability keeper so all persistent capabilities
+	  // are loaded in-memory and prevent any further modules from creating scoped
+	  // sub-keepers.
+	  // This must be done during creation of baseapp rather than in InitChain so
+	  // that in-memory capabilities get regenerated on app restart
+	  ctx := app.BaseApp.NewUncachedContext(true, abci.Header{})
+	  app.capabilityKeeper.InitializeAndSeal(ctx)
+	}
 
 	app.scopedIBCKeeper = scopedIBCKeeper
 	app.scopedTransferKeeper = scopedTransferKeeper
@@ -468,6 +467,19 @@ func (app *MTApp) BlacklistedAccAddrs() map[string]bool {
 // for modules to register their own custom testing types.
 func (app *MTApp) Codec() *codec.Codec {
 	return app.cdc
+}
+
+// MakeCodecs constructs the *std.Codec and *codec.Codec instances used by
+// GaiaApp.
+func MakeCodecs() (*std.Codec, *codec.Codec) {
+	cdc := std.MakeCodec(ModuleBasics)
+	interfaceRegistry := cdctypes.NewInterfaceRegistry()
+	appCodec := std.NewAppCodec(cdc, interfaceRegistry)
+
+	sdk.RegisterInterfaces(interfaceRegistry)
+	ModuleBasics.RegisterInterfaceModules(interfaceRegistry)
+
+	return appCodec, cdc
 }
 
 // GetMaccPerms returns a copy of the module account permissions
