@@ -19,7 +19,7 @@ MTROOT=$WORK mtd init testnet > /dev/null 2>&1
 
 echo "Setting chain id"
 GENESIS=$WORK/mtd/config/genesis.json
-jq '.chain_id="mtlocal"|.app_state.microtick.params.markets=["ETHUSD"]' $WORK/mtd/config/genesis.json > $WORK/tmp && mv $WORK/tmp $WORK/mtd/config/genesis.json
+jq '.chain_id="mtlocal"|.app_state.microtick.params.markets=[{name:"ETHUSD",description:"Crypto - Ethereum"}]' $WORK/mtd/config/genesis.json > $WORK/tmp && mv $WORK/tmp $WORK/mtd/config/genesis.json
 MTROOT=$WORK mtcli config chain-id mtlocal > /dev/null 2>&1
 MTROOT=$WORK mtcli config keyring-backend test > /dev/null 2>&1
 

@@ -14,14 +14,14 @@ import (
 
 type TxLimitTrade struct {
     Market mt.MicrotickMarket
-    Duration mt.MicrotickDuration
+    Duration mt.MicrotickDurationName
     Buyer mt.MicrotickAccount
     TradeType mt.MicrotickTradeTypeName
     Limit mt.MicrotickPremium
     MaxCost mt.MicrotickCoin
 }
 
-func NewTxLimitTrade(market mt.MicrotickMarket, dur mt.MicrotickDuration, buyer sdk.AccAddress,
+func NewTxLimitTrade(market mt.MicrotickMarket, dur mt.MicrotickDurationName, buyer sdk.AccAddress,
     tradeType mt.MicrotickTradeType, limit mt.MicrotickPremium, maxCost mt.MicrotickCoin) TxLimitTrade {
         
     return TxLimitTrade {
@@ -74,8 +74,8 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     
-    if !mt.ValidMicrotickDuration(msg.Duration) {
-        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%d", msg.Duration)
+    if !mt.ValidMicrotickDurationName(msg.Duration) {
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
     // Step 1 - Obtain the strike spot price and create trade struct
@@ -86,7 +86,8 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
     commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
     settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
     now := ctx.BlockHeader().Time
-    trade := keeper.NewDataActiveTrade(now, msg.Market, msg.Duration, msg.TradeType,
+    trade := keeper.NewDataActiveTrade(now, msg.Market, 
+        mt.MicrotickDurationFromName(msg.Duration), msg.TradeType,
         msg.Buyer, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, func (id mt.MicrotickId) keeper.DataActiveQuote {
@@ -137,7 +138,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         // Data
         data := LimitTradeData {
             Market: msg.Market,
-            Duration: mt.MicrotickDurationNameFromDur(msg.Duration),
+            Duration: msg.Duration,
             Consensus: market.Consensus,
             Time: now,
             Trade: matcher.Trade,

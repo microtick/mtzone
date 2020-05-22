@@ -49,7 +49,7 @@ func GetCmdQuoteCreate(cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			market := args[0]
-			dur := mt.MicrotickDurationFromName(args[1])
+			dur := args[1]
 			coins := mt.NewMicrotickCoinFromString(args[2])
 			spot := mt.NewMicrotickSpotFromString(args[3])
 			premium := mt.NewMicrotickPremiumFromString(args[4])
@@ -150,8 +150,7 @@ func GetCmdTradeMarket(cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			market := args[0]
-			
-			dur := mt.MicrotickDurationFromName(args[1])
+			dur := args[1]
 			ttype := mt.MicrotickTradeTypeFromName(args[2])
 			quantity := mt.NewMicrotickQuantityFromString(args[3])
 			
@@ -178,8 +177,7 @@ func GetCmdTradeLimit(cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			market := args[0]
-			
-			dur := mt.MicrotickDurationFromName(args[1])
+			dur := args[1]
 			ttype := mt.MicrotickTradeTypeFromName(args[2])
 			limit := mt.NewMicrotickPremiumFromString(args[3])
 			maxcost := mt.NewMicrotickCoinFromString(args[4])

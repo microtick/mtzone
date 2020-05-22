@@ -14,14 +14,14 @@ import (
 
 type TxCreateQuote struct {
     Market mt.MicrotickMarket
-    Duration mt.MicrotickDuration
+    Duration mt.MicrotickDurationName
     Provider mt.MicrotickAccount
     Backing mt.MicrotickCoin
     Spot mt.MicrotickSpot
     Premium mt.MicrotickPremium
 }
 
-func NewTxCreateQuote(market mt.MicrotickMarket, dur mt.MicrotickDuration, provider mt.MicrotickAccount, 
+func NewTxCreateQuote(market mt.MicrotickMarket, dur mt.MicrotickDurationName, provider mt.MicrotickAccount, 
     backing mt.MicrotickCoin, spot mt.MicrotickSpot, premium mt.MicrotickPremium) TxCreateQuote {
     return TxCreateQuote {
         Market: market,
@@ -76,14 +76,16 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, 
     msg TxCreateQuote) (*sdk.Result, error) {
         
+    fmt.Println("HandleTxCreateQuote")
     params := mtKeeper.GetParams(ctx)
         
-    if !mtKeeper.HasDataMarket(ctx, msg.Market) {
-        mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
-    }
+    // Do not create since markets are now a governance question
+    //if !mtKeeper.HasDataMarket(ctx, msg.Market) {
+        //mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
+    //}
     
-    if !mt.ValidMicrotickDuration(msg.Duration) {
-        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%d", msg.Duration)
+    if !mt.ValidMicrotickDurationName(msg.Duration) {
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
     commission := mt.NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
@@ -94,7 +96,8 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
     id := mtKeeper.GetNextActiveQuoteId(ctx)
      
     now := ctx.BlockHeader().Time
-    dataActiveQuote := keeper.NewDataActiveQuote(now, id, msg.Market, msg.Duration, msg.Provider,
+    dataActiveQuote := keeper.NewDataActiveQuote(now, id, msg.Market, 
+        mt.MicrotickDurationFromName(msg.Duration), msg.Provider,
         msg.Backing, msg.Spot, msg.Premium)
     dataActiveQuote.ComputeQuantity()
     dataActiveQuote.Freeze(now, params)
@@ -137,7 +140,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper,
       Account: msg.Provider.String(),
       Id: id,
       Market: msg.Market,
-      Duration: mt.MicrotickDurationNameFromDur(msg.Duration),
+      Duration: msg.Duration,
       Spot: msg.Spot,
       Premium: msg.Premium,
       Consensus: dataMarket.Consensus,

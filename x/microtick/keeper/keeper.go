@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"encoding/binary"
 	"time"
 	
@@ -250,17 +251,32 @@ func (keeper Keeper) SetParams(ctx sdk.Context, params mt.Params) {
 	key := []byte("termination")
 	store.Set(key, keeper.Cdc.MustMarshalJSON(termination))
 	
+	for _, dur := range params.Durations {
+		fmt.Printf("Configured Duration: %s %d\n", dur.Name, dur.Seconds)
+		mt.MicrotickDurations = append(mt.MicrotickDurations, dur.Seconds)
+		mt.MicrotickDurationNames = append(mt.MicrotickDurationNames, dur.Name)
+	}
+	
 	// create markets if necessary
+	// must create market after durations so we get the correct # of order books
 	for _, market := range params.Markets {
-		if !keeper.HasDataMarket(ctx, market) {
-            keeper.SetDataMarket(ctx, NewDataMarket(market))
-    	}
+		if !keeper.HasDataMarket(ctx, market.Name) {
+			fmt.Printf("Genesis Market: %s \"%s\"\n", market.Name, market.Description)
+      keeper.SetDataMarket(ctx, NewDataMarket(market.Name))
+    }
 	}
 }
 
 // GetParams gets the module's parameters.
 func (keeper Keeper) GetParams(ctx sdk.Context) (params mt.Params) {
 	keeper.paramSubspace.GetParamSet(ctx, &params)
+	
+	if len(mt.MicrotickDurations) == 0 {
+	  for _, dur := range params.Durations {
+		  mt.MicrotickDurations = append(mt.MicrotickDurations, dur.Seconds)
+		  mt.MicrotickDurationNames = append(mt.MicrotickDurationNames, dur.Name)
+	  }
+	}
+	
 	return params
 }
-

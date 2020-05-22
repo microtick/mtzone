@@ -43,31 +43,8 @@ type MicrotickMarket = string
 type MicrotickDuration = uint32
 type MicrotickDurationName = string
 
-var MicrotickDurations = []MicrotickDuration {
-    300, // 5 minutes
-    600, // 10 minutes
-    900, // 15 minutes
-    1800, // 30 minutes
-    3600, // 1 hour
-    7200, // 2 hours
-    14400, // 4 hours
-    28800, // 8 hours
-    43200, // 12 hours
-    86400, // 1 day
-}
-
-var MicrotickDurationNames = []string {
-    "5minute",
-    "10minute",
-    "15minute",
-    "30minute",
-    "1hour",
-    "2hour",
-    "4hour",
-    "8hour",
-    "12hour",
-    "1day",
-}
+var MicrotickDurations []MicrotickDuration
+var MicrotickDurationNames []string 
 
 func MicrotickDurationFromName(dur MicrotickDurationName) MicrotickDuration {
     for i, d := range MicrotickDurationNames {
@@ -87,9 +64,9 @@ func MicrotickDurationNameFromDur(dur MicrotickDuration) MicrotickDurationName {
     panic(fmt.Sprintf("Invalid duration: %d", dur))
 }
 
-func ValidMicrotickDuration(mtd MicrotickDuration) bool {
-    for i := 0; i < len(MicrotickDurations); i++ {
-        if (mtd == MicrotickDurations[i]) {
+func ValidMicrotickDurationName(mtd MicrotickDurationName) bool {
+    for i := 0; i < len(MicrotickDurationNames); i++ {
+        if (mtd == MicrotickDurationNames[i]) {
             return true
         }
     }
