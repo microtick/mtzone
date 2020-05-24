@@ -73,11 +73,8 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, 
+func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
     msg TxCreateQuote) (*sdk.Result, error) {
-        
-    fmt.Println("HandleTxCreateQuote")
-    params := mtKeeper.GetParams(ctx)
         
     // Do not create since markets are now a governance question
     //if !mtKeeper.HasDataMarket(ctx, msg.Market) {

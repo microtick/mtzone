@@ -55,8 +55,8 @@ func (msg TxPickTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxPickTrade) (*sdk.Result, error) {
-    params := mtKeeper.GetParams(ctx)
+func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+    msg TxPickTrade) (*sdk.Result, error) {
     
     quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {

@@ -59,9 +59,9 @@ func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQuote) (*sdk.Result, error) {
-    params := keeper.GetParams(ctx)
-    
+func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+    msg TxDepositQuote) (*sdk.Result, error) {
+        
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)

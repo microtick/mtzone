@@ -59,9 +59,9 @@ func (msg TxWithdrawQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxWithdrawQuote) (*sdk.Result, error) {
-    params := keeper.GetParams(ctx)
-    
+func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+    msg TxWithdrawQuote) (*sdk.Result, error) {
+        
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)

@@ -62,9 +62,9 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuote) (*sdk.Result, error) {
-    params := keeper.GetParams(ctx)
-    
+func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+    msg TxUpdateQuote) (*sdk.Result, error) {
+        
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)

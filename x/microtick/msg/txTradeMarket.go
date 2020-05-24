@@ -64,8 +64,8 @@ func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxMarketTrade) (*sdk.Result, error) {
-    params := mtKeeper.GetParams(ctx)
+func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+    msg TxMarketTrade) (*sdk.Result, error) {
      
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
