@@ -310,7 +310,7 @@ func NewMTApp(
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := port.NewRouter()
 	ibcRouter.AddRoute(transfer.ModuleName, transferModule)
-	app.ibcKeeper.SetRouter(ibcRouter)
+	//app.ibcKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidence.NewKeeper(
@@ -320,7 +320,7 @@ func NewMTApp(
 		AddRoute(ibcclient.RouterKey, ibcclient.HandlerClientMisbehaviour(app.ibcKeeper.ClientKeeper))
 
 	evidenceKeeper.SetRouter(evidenceRouter)
-	app.evidenceKeeper = *evidenceKeeper
+	//app.evidenceKeeper = *evidenceKeeper
 	
 	app.mtKeeper = microtick.NewKeeper(
 		appCodec,
@@ -349,9 +349,9 @@ func NewMTApp(
 		staking.NewAppModule(appCodec, app.stakingKeeper, app.accountKeeper, app.bankKeeper),
 		upgrade.NewAppModule(app.upgradeKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
-		ibc.NewAppModule(app.ibcKeeper),
+		//ibc.NewAppModule(app.ibcKeeper),
 		params.NewAppModule(app.paramsKeeper),
-		transferModule,
+		//transferModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
