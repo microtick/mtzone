@@ -29,7 +29,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/02-client"
-	port "github.com/cosmos/cosmos-sdk/x/ibc/05-port"
+	//port "github.com/cosmos/cosmos-sdk/x/ibc/05-port"
 	transfer "github.com/cosmos/cosmos-sdk/x/ibc-transfer"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	"github.com/cosmos/cosmos-sdk/x/params"
@@ -69,10 +69,10 @@ var (
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
-		ibc.AppModuleBasic{},
+		//ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{},
+		//transfer.AppModuleBasic{},
 		microtick.AppModuleBasic{},
 	)
 
@@ -305,11 +305,11 @@ func NewMTApp(
 		app.accountKeeper, app.bankKeeper,
 		scopedTransferKeeper,
 	)
-	transferModule := transfer.NewAppModule(app.transferKeeper)
+	//transferModule := transfer.NewAppModule(app.transferKeeper)
 
 	// Create static IBC router, add transfer route, then set and seal it
-	ibcRouter := port.NewRouter()
-	ibcRouter.AddRoute(transfer.ModuleName, transferModule)
+	//ibcRouter := port.NewRouter()
+	//ibcRouter.AddRoute(transfer.ModuleName, transferModule)
 	//app.ibcKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -359,7 +359,7 @@ func NewMTApp(
 	// CanWithdrawInvariant invariant.
 	app.mm.SetOrderBeginBlockers(
 		upgrade.ModuleName, mint.ModuleName, distr.ModuleName, slashing.ModuleName, 
-		evidence.ModuleName, staking.ModuleName, ibc.ModuleName,
+		evidence.ModuleName, staking.ModuleName, //ibc.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -373,7 +373,8 @@ func NewMTApp(
 		microtick.ModuleName,
 		capability.ModuleName, auth.ModuleName, distr.ModuleName, staking.ModuleName, bank.ModuleName,
 		slashing.ModuleName, gov.ModuleName, mint.ModuleName, crisis.ModuleName,
-		ibc.ModuleName, genutil.ModuleName, evidence.ModuleName, transfer.ModuleName,
+		//ibc.ModuleName, genutil.ModuleName, evidence.ModuleName, transfer.ModuleName,
+		genutil.ModuleName, evidence.ModuleName,
 	)
 	
 	//app.distrKeeper.SetBaseProposerReward(ctx, sdk.ZeroDec())
