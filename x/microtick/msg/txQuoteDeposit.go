@@ -6,6 +6,7 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -41,9 +42,9 @@ func (msg TxDepositQuote) Route() string { return "microtick" }
 
 func (msg TxDepositQuote) Type() string { return "quote_deposit" }
 
-func (msg TxDepositQuote) ValidateBasic() sdk.Error {
+func (msg TxDepositQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
-        return sdk.ErrInvalidAddress(msg.Requester.String())
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
     }
     return nil
 }
@@ -58,20 +59,20 @@ func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQuote) sdk.Result {
-    params := keeper.GetParams(ctx)
-    
+func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+    msg TxDepositQuote) (*sdk.Result, error) {
+        
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
-        return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
     
     if quote.Provider.String() != msg.Requester.String() {
-        return sdk.ErrInternal("Account can't modify quote").Result()
+        return nil, mt.ErrNotOwner
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
     }
     
     commission := mt.NewMicrotickCoinFromDec(msg.Deposit.Amount.Mul(params.CommissionQuotePercent))
@@ -81,7 +82,7 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     // Subtract coins from requester
     err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
     if err != nil {
-        return sdk.ErrInternal("Insufficient funds").Result()
+        return nil, mt.ErrInsufficientFunds
     }
     
     // Add commission to pool
@@ -99,7 +100,7 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
     quote.Freeze(now, params)
     
     if !dataMarket.FactorIn(quote, true) {
-        return sdk.ErrInternal("Quote params out of range").Result()
+        return nil, mt.ErrQuoteParams
     }
     keeper.SetDataMarket(ctx, dataMarket)
     keeper.SetActiveQuote(ctx, quote)
@@ -134,8 +135,10 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxDepositQu
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
     ))
     
-    return sdk.Result {
+    ctx.EventManager().EmitEvents(events)
+    
+    return &sdk.Result {
         Data: bz,
-        Events: events,
-    }
+        Events: ctx.EventManager().ABCIEvents(),
+    }, nil
 }

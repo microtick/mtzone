@@ -80,7 +80,7 @@ type DataCounterParty struct {
 func (dat DataActiveTrade) CurrentValue(current mt.MicrotickSpot) mt.MicrotickCoin {
     strike := dat.Strike.Amount
     var delta sdk.Dec
-    if dat.Type {
+    if dat.Type == mt.MicrotickPut {
         // Put
         delta = strike.Sub(current.Amount)
     } else {
@@ -107,7 +107,7 @@ type CounterPartySettlement struct {
 func (dat DataActiveTrade) CounterPartySettlements(current mt.MicrotickSpot) []CounterPartySettlement {
     strike := dat.Strike.Amount
     var delta sdk.Dec
-    if dat.Type {
+    if dat.Type == mt.MicrotickPut {
         // Put
         delta = strike.Sub(current.Amount)
     } else {

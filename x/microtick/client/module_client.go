@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/spf13/cobra"
 )
@@ -13,7 +13,7 @@ func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {
 		Short: "Querying commands for the microtick module",
 	}
 
-	mtQueryCmd.AddCommand(client.GetCommands(
+	mtQueryCmd.AddCommand(flags.GetCommands(
 		GetCmdAccountStatus(moduleName, cdc),
 		GetCmdMarketStatus(moduleName, cdc),
 		GetCmdMarketConsensus(moduleName, cdc),
@@ -31,8 +31,7 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 		Short: "Microtick transactions subcommands",
 	}
 
-	mtTxCmd.AddCommand(client.PostCommands(
-		GetCmdMarketCreate(cdc),
+	mtTxCmd.AddCommand(flags.PostCommands(
 		GetCmdQuoteCancel(cdc),
 		GetCmdQuoteCreate(cdc),
 		GetCmdQuoteDeposit(cdc),

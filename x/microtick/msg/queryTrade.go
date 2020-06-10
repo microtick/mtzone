@@ -8,6 +8,7 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -100,19 +101,19 @@ func formatQuoteParams(params keeper.DataQuoteParams) string {
     )
 }
 
-func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
+func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Invalid trade ID: %s", err2))
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidTrade, "%d", id)
     }
     data, err2 := keeper.GetActiveTrade(ctx, mt.MicrotickId(id))
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch trade data: %s", err2))
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidTrade, "fetching %d", id)
     }
     dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
     if err3 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market consensus: %s", err3))
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, data.Market)
     }
     
     response := ResponseTradeStatus {
@@ -134,7 +135,7 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         SettleIncentive: data.SettleIncentive,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
+    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

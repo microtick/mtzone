@@ -19,8 +19,9 @@ MTROOT=$WORK mtd init testnet > /dev/null 2>&1
 
 echo "Setting chain id"
 GENESIS=$WORK/mtd/config/genesis.json
-jq '.chain_id="mtlocal"' $WORK/mtd/config/genesis.json > $WORK/tmp && mv $WORK/tmp $WORK/mtd/config/genesis.json
-MTROOT=$WORK mtcli config chain-id mtlocal > /dev/null 2>&1
+jq '.chain_id="'$1'"|.app_state.microtick.params.markets=[{name:"ETHUSD",description:"Crypto - Ethereum"}]' $WORK/mtd/config/genesis.json > $WORK/tmp && mv $WORK/tmp $WORK/mtd/config/genesis.json
+MTROOT=$WORK mtcli config chain-id $1 > /dev/null 2>&1
+MTROOT=$WORK mtcli config keyring-backend test > /dev/null 2>&1
 
 # Create password file
 echo "temp1234" > $WORK/pass
@@ -38,17 +39,15 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Adding validator genesis account"
-MTROOT=$WORK mtd add-genesis-account validator 1000000000000stake > /dev/null 2>&1
+MTROOT=$WORK mtd add-genesis-account validator 1000000000000stake --keyring-backend=test > /dev/null 2>&1
 
 echo "Adding microtick genesis account"
-MTROOT=$WORK mtd add-genesis-account microtick 1000000000000udai > /dev/null 2>&1
+MTROOT=$WORK mtd add-genesis-account microtick 1000000000000udai --keyring-backend=test > /dev/null 2>&1
 
 echo "Creating genesis transaction"
-MTROOT=$WORK mtd gentx --name validator < $WORK/pass > /dev/null 2>&1
+MTROOT=$WORK mtd gentx --name validator --keyring-backend=test < $WORK/pass > /dev/null 2>&1
 
 echo "Collecting genesis transactions"
 MTROOT=$WORK mtd collect-gentxs > /dev/null 2>&1
 
 rm $WORK/pass
-
-

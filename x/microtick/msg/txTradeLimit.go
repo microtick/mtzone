@@ -6,6 +6,7 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -13,14 +14,14 @@ import (
 
 type TxLimitTrade struct {
     Market mt.MicrotickMarket
-    Duration mt.MicrotickDuration
+    Duration mt.MicrotickDurationName
     Buyer mt.MicrotickAccount
-    TradeType mt.MicrotickTradeType
+    TradeType mt.MicrotickTradeTypeName
     Limit mt.MicrotickPremium
     MaxCost mt.MicrotickCoin
 }
 
-func NewTxLimitTrade(market mt.MicrotickMarket, dur mt.MicrotickDuration, buyer sdk.AccAddress,
+func NewTxLimitTrade(market mt.MicrotickMarket, dur mt.MicrotickDurationName, buyer sdk.AccAddress,
     tradeType mt.MicrotickTradeType, limit mt.MicrotickPremium, maxCost mt.MicrotickCoin) TxLimitTrade {
         
     return TxLimitTrade {
@@ -46,12 +47,12 @@ func (msg TxLimitTrade) Route() string { return "microtick" }
 
 func (msg TxLimitTrade) Type() string { return "trade_limit" }
 
-func (msg TxLimitTrade) ValidateBasic() sdk.Error {
+func (msg TxLimitTrade) ValidateBasic() error {
     if len(msg.Market) == 0 {
-        return sdk.ErrInternal("Unknown market")
+        return sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     if msg.Buyer.Empty() {
-        return sdk.ErrInvalidAddress(msg.Buyer.String())
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Buyer.String())
     }
     return nil
 }
@@ -66,26 +67,27 @@ func (msg TxLimitTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrade) sdk.Result {
-    params := mtKeeper.GetParams(ctx)
+func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+    msg TxLimitTrade) (*sdk.Result, error) {
      
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
-        return sdk.ErrInternal("No such market: " + msg.Market).Result()
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     
-    if !mt.ValidMicrotickDuration(msg.Duration) {
-        return sdk.ErrInternal(fmt.Sprintf("Invalid duration: %d", msg.Duration)).Result()
+    if !mt.ValidMicrotickDurationName(msg.Duration) {
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
     // Step 1 - Obtain the strike spot price and create trade struct
     market, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err2 != nil {
-        return sdk.ErrInternal("Error fetching market").Result()
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
     settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
     now := ctx.BlockHeader().Time
-    trade := keeper.NewDataActiveTrade(now, msg.Market, msg.Duration, msg.TradeType,
+    trade := keeper.NewDataActiveTrade(now, msg.Market, 
+        mt.MicrotickDurationFromName(msg.Duration), msg.TradeType,
         msg.Buyer, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, func (id mt.MicrotickId) keeper.DataActiveQuote {
@@ -107,7 +109,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         total := matcher.TotalCost.Add(trade.Commission).Add(settleIncentive)
         err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
         if err2 != nil {
-            return sdk.ErrInternal("Insufficient funds").Result()
+            return nil, mt.ErrInsufficientFunds
         }
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
@@ -118,7 +120,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         
         err2 = matcher.AssignCounterparties(ctx, mtKeeper, &market)
         if err2 != nil {
-            return sdk.ErrInternal("Error assigning counterparties").Result()
+            return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "counterparty assignment")
         }
         
         // Update the account status for the buyer
@@ -136,7 +138,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
         // Data
         data := LimitTradeData {
             Market: msg.Market,
-            Duration: mt.MicrotickDurationNameFromDur(msg.Duration),
+            Duration: msg.Duration,
             Consensus: market.Consensus,
             Time: now,
             Trade: matcher.Trade,
@@ -170,16 +172,18 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, msg TxLimitTrad
                 sdk.NewAttribute(quoteKey, matchType),
             ))
         }
+        
+        ctx.EventManager().EmitEvents(events)
             
-        return sdk.Result {
+        return &sdk.Result {
             Data: bz,
-            Events: events,
-        }
+            Events: ctx.EventManager().ABCIEvents(),
+        }, nil
         
     } else {
         
         // No liquidity available
-        return sdk.ErrInternal("No liquidity available").Result()
+        return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "no liquidity available")
         
     }
 }

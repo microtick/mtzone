@@ -6,6 +6,7 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -43,13 +44,13 @@ Settle Backing: %s`, ras.Account,
 }
 
 func QueryAccountStatus(ctx sdk.Context, path []string, 
-    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     acct := path[0]
     address, err2 := sdk.AccAddressFromBech32(acct)
     balance := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch address information: %s", err2))
+        return nil, sdkerrors.Wrap(mt.ErrInvalidAddress, acct)
     }
     activeQuotes := make([]mt.MicrotickId, len(data.ActiveQuotes.Data))
     activeTrades := make([]mt.MicrotickId, len(data.ActiveTrades.Data))
@@ -71,7 +72,7 @@ func QueryAccountStatus(ctx sdk.Context, path []string,
         SettleBacking: data.SettleBacking,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
+    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

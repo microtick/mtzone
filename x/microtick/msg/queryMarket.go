@@ -6,6 +6,7 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -53,11 +54,11 @@ func formatOrderBook(rob ResponseMarketOrderBookStatus) string {
         rob.InsideCall.String(), rob.InsidePut.String())
 }
 
-func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
+func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     market := path[0]
     data, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
-        return nil, sdk.ErrInternal(fmt.Sprintf("Could not fetch market data: %s", err2))
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
     var orderbookStatus []ResponseMarketOrderBookStatus
@@ -83,7 +84,7 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
         SumWeight: data.SumWeight,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(ModuleCdc, response)
+    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
     if err2 != nil {
         panic("Could not marshal result to JSON")
     }

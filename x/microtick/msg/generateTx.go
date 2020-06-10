@@ -2,6 +2,7 @@ package msg
 
 import (
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     "github.com/cosmos/cosmos-sdk/codec"
     "github.com/cosmos/cosmos-sdk/x/auth"
     abci "github.com/tendermint/tendermint/abci/types"
@@ -11,16 +12,11 @@ import (
 )
 
 func GenerateTx(ctx sdk.Context, txType string, path []string, 
-    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err sdk.Error) {
+    req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
         
     defer func() {
         if r := recover(); r != nil {
-            switch x := r.(type) {
-            case string:
-                err = sdk.ErrInternal(x)
-            default:
-                err = sdk.ErrInternal("Unknown error")
-            }
+            err = mt.ErrInvalidRequest
         }
     }()
         
@@ -30,16 +26,13 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
     accAddr, _ := sdk.AccAddressFromBech32(acct)
     account := keeper.AccountKeeper.GetAccount(ctx, accAddr)
     if account == nil {
-        return nil, sdk.ErrInternal("No such address")
+        return nil, sdkerrors.Wrap(mt.ErrInvalidAddress, acct)
     }
         
     switch txType {
-    case "createmarket":
-        market := path[1]
-        txmsg = NewTxCreateMarket(accAddr, market)
     case "createquote":
         market := path[1]
-        duration := mt.MicrotickDurationFromName(path[2])
+        duration := path[2]
         backing := mt.NewMicrotickCoinFromString(path[3])
         spot := mt.NewMicrotickSpotFromString(path[4])
         premium := mt.NewMicrotickPremiumFromString(path[5])
@@ -62,13 +55,13 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
         txmsg = NewTxUpdateQuote(id, accAddr, spot, premium)
     case "markettrade":
         market := path[1]
-        duration := mt.MicrotickDurationFromName(path[2])
+        duration := path[2]
         tradetype := mt.MicrotickTradeTypeFromName(path[3])
         quantity := mt.NewMicrotickQuantityFromString(path[4])
         txmsg = NewTxMarketTrade(market, duration, accAddr, tradetype, quantity)
     case "limittrade":
         market := path[1]
-        duration := mt.MicrotickDurationFromName(path[2])
+        duration := path[2]
         tradetype := mt.MicrotickTradeTypeFromName(path[3])
         limit := mt.NewMicrotickPremiumFromString(path[4])
         maxcost := mt.NewMicrotickCoinFromString(path[5])

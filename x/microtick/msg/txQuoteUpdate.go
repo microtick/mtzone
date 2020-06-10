@@ -6,6 +6,7 @@ import (
     
     "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
@@ -44,9 +45,9 @@ func (msg TxUpdateQuote) Route() string { return "microtick" }
 
 func (msg TxUpdateQuote) Type() string { return "quote_update" }
 
-func (msg TxUpdateQuote) ValidateBasic() sdk.Error {
+func (msg TxUpdateQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
-        return sdk.ErrInvalidAddress(msg.Requester.String())
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
     }
     return nil
 }
@@ -61,20 +62,20 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuote) sdk.Result {
-    params := keeper.GetParams(ctx)
-    
+func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+    msg TxUpdateQuote) (*sdk.Result, error) {
+        
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
-        return sdk.ErrInternal(fmt.Sprintf("No such quote: %d", msg.Id)).Result()
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
     
     if quote.Provider.String() != msg.Requester.String() {
-        return sdk.ErrInternal("Account can't modify quote").Result()
+        return nil, mt.ErrNotOwner
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return sdk.ErrInternal(fmt.Sprintf("Quote is frozen until: %s", quote.CanModify)).Result()
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
     }
     
     commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
@@ -98,7 +99,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     
     dataMarket.AddQuote(quote)
     if !dataMarket.FactorIn(quote, true) {
-        return sdk.ErrInternal("Quote params out of range").Result()
+        return nil, mt.ErrQuoteParams
     }
     
     keeper.SetDataMarket(ctx, dataMarket)
@@ -107,7 +108,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
     // Subtract coins from requester
     err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
-        return sdk.ErrInternal("Insufficient funds").Result()
+        return nil, mt.ErrInsufficientFunds
     }
     
     // Add commission to pool
@@ -139,8 +140,10 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxUpdateQuot
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
     ))
     
-    return sdk.Result {
+    ctx.EventManager().EmitEvents(events)
+    
+    return &sdk.Result {
         Data: bz,
-        Events: events,
-    }
+        Events: ctx.EventManager().ABCIEvents(),
+    }, nil
 }
