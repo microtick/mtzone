@@ -7,6 +7,7 @@ import (
 )
 
 type DataOrderBook struct {
+    Name string `json:"name"`
     Calls OrderedList `json:"calls"`
     Puts OrderedList `json:"puts"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
@@ -17,26 +18,31 @@ type DataMarket struct {
     Market mt.MicrotickMarket `json:"market"`
     Description string `json:"description"`
     Consensus mt.MicrotickSpot `json:"consensus"`
-    OrderBooks map[string]DataOrderBook `json:"orderBooks"`
+    OrderBooks []DataOrderBook `json:"orderBooks"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumSpots sdk.Dec `json:"sumSpots"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
 }
 
-func NewDataMarket(market mt.MicrotickMarket, description string) DataMarket {
+func NewDataMarket(market mt.MicrotickMarket, description string, durs []string) DataMarket {
+    orderBooks := make([]DataOrderBook, len(durs))
+    for i := 0; i < len(durs); i++ {
+        orderBooks[i] = newOrderBook(durs[i])
+    }
     return DataMarket {
         Market: market,
         Description: description,
         Consensus: mt.NewMicrotickSpotFromInt(0),
-        OrderBooks: make(map[string]DataOrderBook),
+        OrderBooks: orderBooks,
         SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
         SumSpots: sdk.ZeroDec(),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }
 }
 
-func newOrderBook() DataOrderBook {
+func newOrderBook(name string) DataOrderBook {
     return DataOrderBook {
+        Name: name,
         Calls: NewOrderedList(),
         Puts: NewOrderedList(),
         SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
@@ -44,17 +50,23 @@ func newOrderBook() DataOrderBook {
     }
 }
 
-func (dm *DataMarket) GetOrderBook(dur mt.MicrotickDurationName) DataOrderBook {
-    ob, ok := dm.OrderBooks[dur]
-    if ok {
-        return ob
-    } else {
-        return newOrderBook()
+func (dm *DataMarket) GetOrderBook(name string) DataOrderBook {
+    for i := 0; i < len(dm.OrderBooks); i++ {
+        if dm.OrderBooks[i].Name == name {
+            return dm.OrderBooks[i]
+        }
     }
+    panic("Invalid duration name")
 }
 
-func (dm *DataMarket) SetOrderBook(dur mt.MicrotickDurationName, ob DataOrderBook) {
-    dm.OrderBooks[dur] = ob
+func (dm *DataMarket) SetOrderBook(name string, ob DataOrderBook) {
+    for i := 0; i < len(dm.OrderBooks); i++ {
+        if dm.OrderBooks[i].Name == name {
+            dm.OrderBooks[i] = ob
+            return
+        }
+    }
+    panic("Invalid duration name")
 }
 
 func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool {

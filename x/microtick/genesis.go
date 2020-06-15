@@ -62,15 +62,18 @@ func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data GenesisState) {
         mtKeeper.SetAccountStatus(ctx, acct.Account, status)
     }
     
-	for _, market := range data.Markets {
-        fmt.Printf("Genesis Market: %s \"%s\"\n", market.Name, market.Description)
-	    mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(market.Name, market.Description))
-	}
+	durArray := make([]string, len(data.Durations))
 	
-    for _, dur := range data.Durations {
-        fmt.Printf("Genesis Duration: %s %d\n", dur.Name, dur.Seconds)
+    for i, dur := range data.Durations {
+        fmt.Printf("Genesis Duration %d: %s %d\n", i, dur.Name, dur.Seconds)
+        durArray[i] = dur.Name
         mtKeeper.AddDuration(ctx, dur.Name, dur.Seconds)
     }
+    
+	for _, market := range data.Markets {
+        fmt.Printf("Genesis Market: %s \"%s\"\n", market.Name, market.Description)
+	    mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(market.Name, market.Description, durArray))
+	}
 }
 
 func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {

@@ -64,12 +64,12 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     }
     
     var orderbookStatus []ResponseMarketOrderBookStatus
-    for k, _ := range data.OrderBooks {
+    for k := 0; k < len(data.OrderBooks); k++ {
         if data.OrderBooks[k].SumBacking.Amount.GT(sdk.ZeroDec()) {
             call, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].Calls.Data[0].Id)
             put, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].Puts.Data[0].Id)
             orderbookStatus = append(orderbookStatus, ResponseMarketOrderBookStatus {
-                Name: k,
+                Name: data.OrderBooks[k].Name,
                 SumBacking: data.OrderBooks[k].SumBacking,
                 SumWeight: data.OrderBooks[k].SumWeight,
                 InsideCall: call.PremiumAsCall(data.Consensus),
