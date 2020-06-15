@@ -119,7 +119,7 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     response := ResponseTradeStatus {
         Id: data.Id,
         Market: data.Market,
-        Duration: data.Duration,
+        Duration: data.DurationName,
         Type: mt.MicrotickTradeNameFromType(data.Type),
         CounterParties: data.CounterParties,
         Long: data.Long,

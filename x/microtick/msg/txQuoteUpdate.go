@@ -120,7 +120,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
       Account: msg.Requester.String(),
       Id: quote.Id,
       Market: quote.Market,
-      Duration: mt.MicrotickDurationNameFromDur(quote.Duration),
+      Duration: quote.DurationName,
       Spot: quote.Spot,
       Premium: quote.Premium,
       Consensus: dataMarket.Consensus,

@@ -31,14 +31,14 @@ func QueryOrderBook(ctx sdk.Context, path []string,
     req abci.RequestQuery, keeper keeper.Keeper)(res []byte, err error) {
         
     market := path[0]
-    dur := mt.MicrotickDurationFromName(path[1])
+    durName := path[1]
     
     dataMarket, err2 := keeper.GetDataMarket(ctx, market)
     if err2 != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
-    orderBook := dataMarket.GetOrderBook(dur)
+    orderBook := dataMarket.GetOrderBook(durName)
     
     calls := make([]mt.MicrotickId, len(orderBook.Calls.Data))
     puts := make([]mt.MicrotickId, len(orderBook.Puts.Data))

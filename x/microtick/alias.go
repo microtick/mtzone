@@ -15,6 +15,7 @@ const (
     ActiveQuotesKey = types.ActiveQuotesKey
     ActiveTradesKey = types.ActiveTradesKey
     MarketsKey = types.MarketsKey
+    DurationsKey = types.DurationsKey
 )
 
 var (

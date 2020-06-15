@@ -76,8 +76,9 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
     commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
     settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
     now := ctx.BlockHeader().Time
-    trade := keeper.NewDataActiveTrade(now, quote.Market, quote.Duration, msg.TradeType,
-        msg.Buyer, market.Consensus, commission, settleIncentive)
+    durName := mtKeeper.NameFromDuration(ctx, quote.Duration)
+    trade := keeper.NewDataActiveTrade(now, quote.Market, durName, mtKeeper.DurationFromName(ctx, durName),
+        msg.TradeType, msg.Buyer, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, nil)
         
@@ -141,7 +142,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
         // Data
         data := PickTradeData {
             Market: quote.Market,
-            Duration: mt.MicrotickDurationNameFromDur(quote.Duration),
+            Duration: quote.DurationName,
             Consensus: market.Consensus,
             Time: now,
             Trade: matcher.Trade,

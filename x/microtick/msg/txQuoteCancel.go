@@ -99,7 +99,7 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
       Account: msg.Requester.String(),
       Id: quote.Id,
       Market: quote.Market,
-      Duration: mt.MicrotickDurationNameFromDur(quote.Duration),
+      Duration: quote.DurationName,
       Consensus: dataMarket.Consensus,
       Time: ctx.BlockHeader().Time,
       Refund: quote.Backing,

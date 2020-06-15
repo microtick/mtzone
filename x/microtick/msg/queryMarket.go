@@ -23,6 +23,7 @@ type ResponseMarketOrderBookStatus struct {
 
 type ResponseMarketStatus struct {
     Market mt.MicrotickMarket `json:"market"`
+    Description string `json:"description"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     OrderBooks []ResponseMarketOrderBookStatus `json:"orderBooks"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
@@ -35,10 +36,11 @@ func (rm ResponseMarketStatus) String() string {
         obStrings = append(obStrings, formatOrderBook(rm.OrderBooks[i]))
     }
     return strings.TrimSpace(fmt.Sprintf(`Market: %s
+Description: %s
 Consensus: %s
 Orderbooks: %s
 Sum Backing: %s
-Sum Weight: %s`, rm.Market, rm.Consensus.String(), obStrings, rm.SumBacking.String(),
+Sum Weight: %s`, rm.Market, rm.Description, rm.Consensus.String(), obStrings, rm.SumBacking.String(),
     rm.SumWeight.String()))
 }
 
@@ -62,14 +64,14 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     }
     
     var orderbookStatus []ResponseMarketOrderBookStatus
-    for i := 0; i < len(data.OrderBooks); i++ {
-        if data.OrderBooks[i].SumBacking.Amount.GT(sdk.ZeroDec()) {
-            call, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Calls.Data[0].Id)
-            put, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[i].Puts.Data[0].Id)
+    for k, _ := range data.OrderBooks {
+        if data.OrderBooks[k].SumBacking.Amount.GT(sdk.ZeroDec()) {
+            call, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].Calls.Data[0].Id)
+            put, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].Puts.Data[0].Id)
             orderbookStatus = append(orderbookStatus, ResponseMarketOrderBookStatus {
-                Name: mt.MicrotickDurationNames[i],
-                SumBacking: data.OrderBooks[i].SumBacking,
-                SumWeight: data.OrderBooks[i].SumWeight,
+                Name: k,
+                SumBacking: data.OrderBooks[k].SumBacking,
+                SumWeight: data.OrderBooks[k].SumWeight,
                 InsideCall: call.PremiumAsCall(data.Consensus),
                 InsidePut: put.PremiumAsPut(data.Consensus),
             })
@@ -78,6 +80,7 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     
     response := ResponseMarketStatus {
         Market: data.Market,
+        Description: data.Description,
         Consensus: data.Consensus,
         OrderBooks: orderbookStatus,
         SumBacking: data.SumBacking,

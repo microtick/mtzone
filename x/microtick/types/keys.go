@@ -6,4 +6,5 @@ const (
     ActiveQuotesKey = "MTActiveQuotes"
     ActiveTradesKey = "MTActiveTrades"
     MarketsKey = "MTMarkets"
+    DurationsKey = "MTDurations"
 )

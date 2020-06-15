@@ -11,8 +11,8 @@ import (
 type DataActiveTrade struct {
     Id mt.MicrotickId `json:"id"`
     Market mt.MicrotickMarket `json:"market"`
-    // Duration is only a tag at this point, not functional
-    Duration mt.MicrotickDurationName `json:"duration"`
+    // DurationName is only a tag at this point, not functional
+    DurationName mt.MicrotickDurationName `json:"duration"`
     Type mt.MicrotickTradeType `json:"type"`
     CounterParties []DataCounterParty `json:"counterparties"`
     Long mt.MicrotickAccount `json:"long"`
@@ -26,18 +26,19 @@ type DataActiveTrade struct {
     SettleIncentive mt.MicrotickCoin `json:"settleIncentive"`
 }
 
-func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, dur mt.MicrotickDuration,
+func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, 
+    dur mt.MicrotickDurationName, durSeconds mt.MicrotickDuration,
     ttype mt.MicrotickTradeType, long mt.MicrotickAccount, strike mt.MicrotickSpot,
     commission mt.MicrotickCoin, settleIncentive mt.MicrotickCoin) DataActiveTrade {
         
-    expire, err := time.ParseDuration(fmt.Sprintf("%d", dur) + "s")
+    expire, err := time.ParseDuration(fmt.Sprintf("%d", durSeconds) + "s")
     if err != nil {
         panic("invalid time")
     }
     return DataActiveTrade {
         Id: 0, // set actual trade ID later after premium has been verified
         Market: market,
-        Duration: mt.MicrotickDurationNameFromDur(dur),
+        DurationName: dur,
         Type: ttype,
         Long: long,
         Backing: mt.NewMicrotickCoinFromExtCoinInt(0),

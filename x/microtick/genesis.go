@@ -1,6 +1,7 @@
 package microtick
 
 import (
+    "fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -11,6 +12,16 @@ type GenesisAccount struct {
     Account mt.MicrotickAccount `json:"account"`
     NumQuotes uint32 `json:"numQuotes"`
     NumTrades uint32 `json:"numTrades"`
+}
+
+type GenesisMarket struct {
+    Name mt.MicrotickMarket `json:"name"`
+    Description string `json:"description"`
+}
+
+type GenesisDuration struct {
+    Name mt.MicrotickDurationName `json:"name"`
+    Seconds mt.MicrotickDuration `json:"seconds"`
 }
 
 func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) GenesisAccount {
@@ -24,17 +35,21 @@ func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) GenesisAc
 type GenesisState struct {
     Params mt.Params `json:"params"`
     Accounts []GenesisAccount `json:"accounts"`
+    Markets []GenesisMarket `json:"markets"`
+    Durations []GenesisDuration `json:"durations"`
 }
 
-func NewGenesisState(params mt.Params, accounts []GenesisAccount) GenesisState {
+func NewGenesisState(params mt.Params, accounts []GenesisAccount, markets []GenesisMarket, durations []GenesisDuration) GenesisState {
     return GenesisState {
         Params: params,
         Accounts: accounts,
+        Markets: markets,
+        Durations: durations,
     }
 }
 
 func DefaultGenesisState() GenesisState {
-    return NewGenesisState(mt.DefaultParams(), nil)
+    return NewGenesisState(mt.DefaultParams(), nil, nil, nil)
 }
 
 func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data GenesisState) {
@@ -47,7 +62,15 @@ func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data GenesisState) {
         mtKeeper.SetAccountStatus(ctx, acct.Account, status)
     }
     
-    //fmt.Printf("Prearranged halt time: %s\n", data.Params.HaltTime)
+	for _, market := range data.Markets {
+        fmt.Printf("Genesis Market: %s \"%s\"\n", market.Name, market.Description)
+	    mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(market.Name, market.Description))
+	}
+	
+    for _, dur := range data.Durations {
+        fmt.Printf("Genesis Duration: %s %d\n", dur.Name, dur.Seconds)
+        mtKeeper.AddDuration(ctx, dur.Name, dur.Seconds)
+    }
 }
 
 func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {
@@ -62,7 +85,27 @@ func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) GenesisState {
         },
     )
     
-    return NewGenesisState(params, accounts)
+    var durations []GenesisDuration
+    mtKeeper.IterateDurations(ctx, func(name mt.MicrotickDurationName, seconds mt.MicrotickDuration) (stop bool) {
+            durations = append(durations, GenesisDuration{
+                Name: name,
+                Seconds: seconds,
+            })
+            return false
+        },
+    )
+    
+    var markets []GenesisMarket
+    mtKeeper.IterateMarkets(ctx, func(market keeper.DataMarket) (stop bool) {
+            markets = append(markets, GenesisMarket{
+                Name: market.Market,
+                Description: market.Description,
+            })
+            return false
+        },
+    )
+    
+    return NewGenesisState(params, accounts, markets, durations)
 }
 
 func ValidateGenesis(data GenesisState) error {

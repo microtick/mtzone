@@ -81,7 +81,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
         //mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
     //}
     
-    if !mt.ValidMicrotickDurationName(msg.Duration) {
+    if !mtKeeper.ValidDurationName(ctx, msg.Duration) {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
@@ -94,7 +94,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
      
     now := ctx.BlockHeader().Time
     dataActiveQuote := keeper.NewDataActiveQuote(now, id, msg.Market, 
-        mt.MicrotickDurationFromName(msg.Duration), msg.Provider,
+        mtKeeper.DurationFromName(ctx, msg.Duration), msg.Duration, msg.Provider,
         msg.Backing, msg.Spot, msg.Premium)
     dataActiveQuote.ComputeQuantity()
     dataActiveQuote.Freeze(now, params)

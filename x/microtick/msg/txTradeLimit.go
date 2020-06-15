@@ -74,7 +74,7 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Param
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     
-    if !mt.ValidMicrotickDurationName(msg.Duration) {
+    if !mtKeeper.ValidDurationName(ctx, msg.Duration) {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
@@ -86,9 +86,8 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Param
     commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
     settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
     now := ctx.BlockHeader().Time
-    trade := keeper.NewDataActiveTrade(now, msg.Market, 
-        mt.MicrotickDurationFromName(msg.Duration), msg.TradeType,
-        msg.Buyer, market.Consensus, commission, settleIncentive)
+    trade := keeper.NewDataActiveTrade(now, msg.Market, msg.Duration, mtKeeper.DurationFromName(ctx, msg.Duration),
+        msg.TradeType, msg.Buyer, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, func (id mt.MicrotickId) keeper.DataActiveQuote {
         quote, err := mtKeeper.GetActiveQuote(ctx, id)

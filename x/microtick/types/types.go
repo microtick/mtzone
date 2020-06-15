@@ -43,36 +43,6 @@ type MicrotickMarket = string
 type MicrotickDuration = uint32
 type MicrotickDurationName = string
 
-var MicrotickDurations []MicrotickDuration
-var MicrotickDurationNames []string 
-
-func MicrotickDurationFromName(dur MicrotickDurationName) MicrotickDuration {
-    for i, d := range MicrotickDurationNames {
-        if dur == d {
-            return MicrotickDurations[i]
-        }
-    }
-    panic(fmt.Sprintf("Invalid duration: %s", dur))
-}
-
-func MicrotickDurationNameFromDur(dur MicrotickDuration) MicrotickDurationName {
-    for i, d := range MicrotickDurations {
-        if dur == d {
-            return MicrotickDurationNames[i]
-        }
-    }
-    panic(fmt.Sprintf("Invalid duration: %d", dur))
-}
-
-func ValidMicrotickDurationName(mtd MicrotickDurationName) bool {
-    for i := 0; i < len(MicrotickDurationNames); i++ {
-        if (mtd == MicrotickDurationNames[i]) {
-            return true
-        }
-    }
-    return false
-}
-
 // Type
 
 type MicrotickTradeType = string

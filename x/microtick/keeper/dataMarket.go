@@ -15,30 +15,24 @@ type DataOrderBook struct {
 
 type DataMarket struct {
     Market mt.MicrotickMarket `json:"market"`
+    Description string `json:"description"`
     Consensus mt.MicrotickSpot `json:"consensus"`
-    OrderBooks []DataOrderBook `json:"orderBooks"`
+    OrderBooks map[string]DataOrderBook `json:"orderBooks"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumSpots sdk.Dec `json:"sumSpots"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
 }
 
-func NewDataMarket(market mt.MicrotickMarket) DataMarket {
+func NewDataMarket(market mt.MicrotickMarket, description string) DataMarket {
     return DataMarket {
         Market: market,
+        Description: description,
         Consensus: mt.NewMicrotickSpotFromInt(0),
-        OrderBooks: newOrderBooks(),
+        OrderBooks: make(map[string]DataOrderBook),
         SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
         SumSpots: sdk.ZeroDec(),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }
-}
-
-func newOrderBooks() []DataOrderBook {
-    orderBooks := make([]DataOrderBook, len(mt.MicrotickDurations))
-    for i := range mt.MicrotickDurations {
-        orderBooks[i] = newOrderBook()
-    }
-    return orderBooks
 }
 
 func newOrderBook() DataOrderBook {
@@ -50,23 +44,17 @@ func newOrderBook() DataOrderBook {
     }
 }
 
-func (dm *DataMarket) GetOrderBook(dur mt.MicrotickDuration) DataOrderBook {
-    for i := 0; i < len(mt.MicrotickDurations); i++ {
-        if mt.MicrotickDurations[i] == dur {
-            return dm.OrderBooks[i]
-        }
+func (dm *DataMarket) GetOrderBook(dur mt.MicrotickDurationName) DataOrderBook {
+    ob, ok := dm.OrderBooks[dur]
+    if ok {
+        return ob
+    } else {
+        return newOrderBook()
     }
-    panic("Invalid duration")
 }
 
-func (dm *DataMarket) SetOrderBook(dur mt.MicrotickDuration, ob DataOrderBook) {
-    for i := 0; i < len(mt.MicrotickDurations); i++ {
-        if mt.MicrotickDurations[i] == dur {
-            dm.OrderBooks[i] = ob
-            return
-        }
-    }
-    panic("Invalid duration")
+func (dm *DataMarket) SetOrderBook(dur mt.MicrotickDurationName, ob DataOrderBook) {
+    dm.OrderBooks[dur] = ob
 }
 
 func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool {
@@ -101,11 +89,11 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
         }
     }
     
-    orderBook := dm.GetOrderBook(quote.Duration)
+    orderBook := dm.GetOrderBook(quote.DurationName)
     orderBook.SumBacking = orderBook.SumBacking.Add(quote.Backing)
     orderBook.SumWeight = orderBook.SumWeight.Add(quote.Quantity)
     
-    dm.SetOrderBook(quote.Duration, orderBook)
+    dm.SetOrderBook(quote.DurationName, orderBook)
     return true
 }
 
@@ -118,30 +106,30 @@ func (dm *DataMarket) FactorOut(quote DataActiveQuote) {
         dm.Consensus = mt.NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
     }
     
-    orderBook := dm.GetOrderBook(quote.Duration)
+    orderBook := dm.GetOrderBook(quote.DurationName)
     orderBook.SumBacking = orderBook.SumBacking.Sub(quote.Backing)
     orderBook.SumWeight = orderBook.SumWeight.Sub(quote.Quantity)
-    dm.SetOrderBook(quote.Duration, orderBook)
+    dm.SetOrderBook(quote.DurationName, orderBook)
 }
 
 func (dm *DataMarket) AddQuote(quote DataActiveQuote) {
-    orderBook := dm.GetOrderBook(quote.Duration)
+    orderBook := dm.GetOrderBook(quote.DurationName)
     callValue := quote.Premium.Amount.Add(quote.Spot.Amount.QuoInt64(2))
     orderBook.Calls.Insert(NewListItem(quote.Id, callValue))
     putValue := quote.Premium.Amount.Sub(quote.Spot.Amount.QuoInt64(2))
     orderBook.Puts.Insert(NewListItem(quote.Id, putValue))
-    dm.SetOrderBook(quote.Duration, orderBook)
+    dm.SetOrderBook(quote.DurationName, orderBook)
 }
 
 func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
-    orderBook := dm.GetOrderBook(quote.Duration)
+    orderBook := dm.GetOrderBook(quote.DurationName)
     orderBook.Calls.Delete(quote.Id)
     orderBook.Puts.Delete(quote.Id)
-    dm.SetOrderBook(quote.Duration, orderBook)
+    dm.SetOrderBook(quote.DurationName, orderBook)
 }
 
 func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity mt.MicrotickQuantity) {
-    orderBook := dm.GetOrderBook(mt.MicrotickDurationFromName(matcher.Trade.Duration))
+    orderBook := dm.GetOrderBook(matcher.Trade.DurationName)
     quantityToMatch := quantity.Amount
     
     var list OrderedList
@@ -195,7 +183,7 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity mt.MicrotickQua
 }
 
 func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit mt.MicrotickPremium, maxCost mt.MicrotickCoin) {
-    orderBook := dm.GetOrderBook(mt.MicrotickDurationFromName(matcher.Trade.Duration))
+    orderBook := dm.GetOrderBook(matcher.Trade.DurationName)
     
     var list OrderedList
     if matcher.Trade.Type == mt.MicrotickCall {

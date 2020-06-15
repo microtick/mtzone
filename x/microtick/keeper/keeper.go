@@ -1,8 +1,9 @@
 package keeper
 
 import (
-	"fmt"
 	"encoding/binary"
+	"fmt"
+	"strings"
 	"time"
 	
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -29,11 +30,12 @@ type Keeper struct {
 	activeQuotesKey sdk.StoreKey
 	activeTradesKey sdk.StoreKey
 	marketsKey sdk.StoreKey
+	durationsKey sdk.StoreKey
 	paramSubspace params.Subspace
 }
 
 func NewKeeper(
-    cdc codec.Marshaler, 
+  cdc codec.Marshaler, 
 	accountKeeper auth.AccountKeeper, 
 	bankKeeper bank.Keeper,
 	distrKeeper distribution.Keeper,
@@ -43,8 +45,12 @@ func NewKeeper(
 	mtActiveQuotesKey sdk.StoreKey,
 	mtActiveTradesKey sdk.StoreKey,
 	mtMarketsKey sdk.StoreKey,
+	mtDurationsKey sdk.StoreKey,
   paramstore params.Subspace,
 ) Keeper {
+	if !paramstore.HasKeyTable() {
+		paramstore = paramstore.WithKeyTable(mt.ParamKeyTable())
+	}
 	return Keeper {
 		Cdc: cdc,
 		AccountKeeper: accountKeeper,
@@ -56,7 +62,8 @@ func NewKeeper(
 		activeQuotesKey: mtActiveQuotesKey,
 		activeTradesKey: mtActiveTradesKey,
 		marketsKey: mtMarketsKey,
-		paramSubspace: paramstore.WithKeyTable(mt.ParamKeyTable()),
+		durationsKey: mtDurationsKey,
+		paramSubspace: paramstore,
 	}
 }
 
@@ -119,6 +126,76 @@ func (k Keeper) IterateAccountStatus(ctx sdk.Context, process func(DataAccountSt
 	}
 }
 
+// Durations
+
+type InternalDuration struct {
+	Name mt.MicrotickDurationName;
+	Duration mt.MicrotickDuration;
+}
+
+func (k Keeper) AddDuration(ctx sdk.Context, name mt.MicrotickDurationName, dur mt.MicrotickDuration) {
+	store := ctx.KVStore(k.durationsKey)
+	keyByName := []byte(fmt.Sprintf("name:%s", name))
+	keyByDur := []byte(fmt.Sprintf("dur:%d", dur))
+	var id InternalDuration
+	id.Name = name
+	id.Duration = dur
+	store.Set(keyByName, k.Cdc.MustMarshalJSON(id))
+	store.Set(keyByDur, k.Cdc.MustMarshalJSON(id))
+}
+
+func (k Keeper) DurationFromName(ctx sdk.Context, name mt.MicrotickDurationName) mt.MicrotickDuration {
+	store := ctx.KVStore(k.durationsKey)
+	keyByName := []byte(fmt.Sprintf("name:%s", name))
+	var id InternalDuration
+	if !store.Has(keyByName) {
+		panic("Invalid duration")
+	}
+	bz := store.Get(keyByName)
+	k.Cdc.MustUnmarshalJSON(bz, &id)
+	return id.Duration
+}
+
+func (k Keeper) NameFromDuration(ctx sdk.Context, dur mt.MicrotickDuration) mt.MicrotickDurationName {
+	store := ctx.KVStore(k.durationsKey)
+	keyByDur := []byte(fmt.Sprintf("dur:%d", dur))
+	var id InternalDuration
+	if !store.Has(keyByDur) {
+		panic("Invalid duration")
+	}
+	bz := store.Get(keyByDur)
+	k.Cdc.MustUnmarshalJSON(bz, &id)
+	return id.Name
+}
+
+func (k Keeper) ValidDurationName(ctx sdk.Context, name mt.MicrotickDurationName) bool {
+	store := ctx.KVStore(k.durationsKey)
+	keyByName := []byte(fmt.Sprintf("name:%s", name))
+	return store.Has(keyByName)
+}
+
+func (k Keeper) IterateDurations(ctx sdk.Context, process func(mt.MicrotickDurationName, mt.MicrotickDuration) (stop bool)) {
+	store := ctx.KVStore(k.durationsKey)
+	iter := sdk.KVStorePrefixIterator(store, nil) 
+	defer iter.Close()
+	for {
+		if !iter.Valid() {
+			return
+		}
+		key := iter.Key()
+		if strings.HasPrefix(string(key), "name:") {
+		  bz := iter.Value()
+		  var id InternalDuration
+		  k.Cdc.MustUnmarshalJSON(bz, &id)
+		  if process(id.Name, id.Duration) {
+			  return
+		  }
+		}
+		iter.Next()
+	}	
+}
+
+
 // DataMarket
 
 func (k Keeper) HasDataMarket(ctx sdk.Context, market mt.MicrotickMarket) bool {
@@ -143,6 +220,24 @@ func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
 	store := ctx.KVStore(k.marketsKey)
 	key := []byte(dataMarket.Market)
 	store.Set(key, k.Cdc.MustMarshalJSON(dataMarket))
+}
+
+func (k Keeper) IterateMarkets(ctx sdk.Context, process func(DataMarket) (stop bool)) {
+	store := ctx.KVStore(k.marketsKey)
+	iter := sdk.KVStorePrefixIterator(store, nil) 
+	defer iter.Close()
+	for {
+		if !iter.Valid() {
+			return
+		}
+		bz := iter.Value()
+		var market DataMarket
+		k.Cdc.MustUnmarshalJSON(bz, &market)
+		if process(market) {
+			return
+		}
+		iter.Next()
+	}	
 }
 
 // DataActiveQuote
@@ -250,33 +345,10 @@ func (keeper Keeper) SetParams(ctx sdk.Context, params mt.Params) {
 	store := ctx.KVStore(keeper.AppGlobalsKey)
 	key := []byte("termination")
 	store.Set(key, keeper.Cdc.MustMarshalJSON(termination))
-	
-	for _, dur := range params.Durations {
-		fmt.Printf("Configured Duration: %s %d\n", dur.Name, dur.Seconds)
-		mt.MicrotickDurations = append(mt.MicrotickDurations, dur.Seconds)
-		mt.MicrotickDurationNames = append(mt.MicrotickDurationNames, dur.Name)
-	}
-	
-	// create markets if necessary
-	// must create market after durations so we get the correct # of order books
-	for _, market := range params.Markets {
-		if !keeper.HasDataMarket(ctx, market.Name) {
-			fmt.Printf("Genesis Market: %s \"%s\"\n", market.Name, market.Description)
-      keeper.SetDataMarket(ctx, NewDataMarket(market.Name))
-    }
-	}
 }
 
 // GetParams gets the module's parameters.
 func (keeper Keeper) GetParams(ctx sdk.Context) (params mt.Params) {
 	keeper.paramSubspace.GetParamSet(ctx, &params)
-	
-	if len(mt.MicrotickDurations) == 0 {
-	  for _, dur := range params.Durations {
-		  mt.MicrotickDurations = append(mt.MicrotickDurations, dur.Seconds)
-		  mt.MicrotickDurationNames = append(mt.MicrotickDurationNames, dur.Name)
-	  }
-	}
-	
 	return params
 }

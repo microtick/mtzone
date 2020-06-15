@@ -28,7 +28,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
-	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/02-client"
+	//ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/02-client"
 	//port "github.com/cosmos/cosmos-sdk/x/ibc/05-port"
 	transfer "github.com/cosmos/cosmos-sdk/x/ibc-transfer"
 	"github.com/cosmos/cosmos-sdk/x/mint"
@@ -78,14 +78,14 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		auth.FeeCollectorName:           nil,
-		distr.ModuleName:                nil,
-		mint.ModuleName:				         {auth.Minter},
-		staking.BondedPoolName:          {auth.Burner, auth.Staking},
-		staking.NotBondedPoolName:       {auth.Burner, auth.Staking},
-		gov.ModuleName:                  {auth.Burner},
-		transfer.ModuleName:						 {auth.Minter, auth.Burner},
-		microtick.ModuleName:	           {auth.Minter, auth.Burner},
+        auth.FeeCollectorName:           nil,
+        distr.ModuleName:                nil,
+        mint.ModuleName:                 {auth.Minter},
+        staking.BondedPoolName:          {auth.Burner, auth.Staking},
+        staking.NotBondedPoolName:       {auth.Burner, auth.Staking},
+        gov.ModuleName:                  {auth.Burner},
+        //transfer.ModuleName:           {auth.Minter, auth.Burner},
+        microtick.ModuleName:	         {auth.Minter, auth.Burner},
 	}
 	
 	// module accounts that are allowed to receive tokens
@@ -217,6 +217,7 @@ func NewMTApp(
 		microtick.ActiveQuotesKey,
 		microtick.ActiveTradesKey,
 		microtick.MarketsKey,
+		microtick.DurationsKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(params.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capability.MemStoreKey)
@@ -227,8 +228,8 @@ func NewMTApp(
 		invCheckPeriod: invCheckPeriod,
 		keys:           keys,
 		tkeys:          tkeys,
-		memKeys:		memKeys,
-		subspaces:		make(map[string]params.Subspace),
+		memKeys:		    memKeys,
+		subspaces:		  make(map[string]params.Subspace),
 	}
 
 	// init params keeper and subspaces
@@ -299,12 +300,12 @@ func NewMTApp(
 	)
 	
 	// Create Transfer Keepers
-	app.transferKeeper = transfer.NewKeeper(
-		appCodec, keys[transfer.StoreKey],
-		app.ibcKeeper.ChannelKeeper, &app.ibcKeeper.PortKeeper,
-		app.accountKeeper, app.bankKeeper,
-		scopedTransferKeeper,
-	)
+	//app.transferKeeper = transfer.NewKeeper(
+		//appCodec, keys[transfer.StoreKey],
+		//app.ibcKeeper.ChannelKeeper, &app.ibcKeeper.PortKeeper,
+		//app.accountKeeper, app.bankKeeper,
+		//scopedTransferKeeper,
+	//)
 	//transferModule := transfer.NewAppModule(app.transferKeeper)
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -316,11 +317,11 @@ func NewMTApp(
 	evidenceKeeper := evidence.NewKeeper(
 		appCodec, keys[evidence.StoreKey], &app.stakingKeeper, app.slashingKeeper,
 	)
-	evidenceRouter := evidence.NewRouter().
-		AddRoute(ibcclient.RouterKey, ibcclient.HandlerClientMisbehaviour(app.ibcKeeper.ClientKeeper))
+	evidenceRouter := evidence.NewRouter()
+    //.AddRoute(ibcclient.RouterKey, ibcclient.HandlerClientMisbehaviour(app.ibcKeeper.ClientKeeper))
 
 	evidenceKeeper.SetRouter(evidenceRouter)
-	//app.evidenceKeeper = *evidenceKeeper
+	app.evidenceKeeper = *evidenceKeeper
 	
 	app.mtKeeper = microtick.NewKeeper(
 		appCodec,
@@ -330,6 +331,7 @@ func NewMTApp(
 		keys[microtick.ActiveQuotesKey],
 		keys[microtick.ActiveTradesKey],
 		keys[microtick.MarketsKey],
+		keys[microtick.DurationsKey],
 		app.subspaces[microtick.ModuleName],
 	)
 

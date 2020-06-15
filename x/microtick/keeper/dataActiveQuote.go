@@ -14,6 +14,7 @@ type DataActiveQuote struct {
     Id mt.MicrotickId `json:"id"`
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDuration `json:"duration"`
+    DurationName mt.MicrotickDurationName `json:"duration_name"`
     Provider mt.MicrotickAccount `json:"provider"`
     Modified time.Time `json:"modified"`
     CanModify time.Time `json:"canModify"`
@@ -25,13 +26,14 @@ type DataActiveQuote struct {
 }
 
 func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMarket, dur mt.MicrotickDuration, 
-    provider mt.MicrotickAccount, backing mt.MicrotickCoin, spot mt.MicrotickSpot, 
+    durName mt.MicrotickDurationName, provider mt.MicrotickAccount, backing mt.MicrotickCoin, spot mt.MicrotickSpot, 
     premium mt.MicrotickPremium) DataActiveQuote {
         
     return DataActiveQuote {
         Id: id,
         Market: market,
         Duration: dur,
+        DurationName: durName,
         Provider: provider,
         Backing: backing,
         Spot: spot,

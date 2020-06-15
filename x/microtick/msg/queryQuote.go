@@ -75,7 +75,7 @@ func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     response := ResponseQuoteStatus {
         Id: data.Id,
         Market: data.Market,
-        Duration: mt.MicrotickDurationNameFromDur(data.Duration),
+        Duration: data.DurationName,
         Provider: data.Provider,
         Backing: data.Backing,
         Spot: data.Spot,
