@@ -86,17 +86,22 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
     }
     
     // Test quote invariant:
-    // Spot 2x limitation
-    // A quote cannot be placed or updated that will be a free call or put on the 
-    // resulting order book (spot more than 2x premium from resulting consensus)
-    // Purpose: protects market maker from damaging quotes
     if testInvariants {
+        // Spot 2x limitation
+        // A quote cannot be placed or updated that will be a free call or put on the 
+        // resulting order book (spot more than 2x premium from resulting consensus)
+        // Purpose: protects market maker from damaging quotes
         if quote.Spot.Amount.Sub(quote.Premium.Amount.MulInt64(2)).GT(dm.Consensus.Amount) {
             //fmt.Printf("Failed Spot Invariant (1): %d\n", quote.Id)
             return false
         }
         if quote.Spot.Amount.Add(quote.Premium.Amount.MulInt64(2)).LT(dm.Consensus.Amount) {
             //fmt.Printf("Failed Spot Invariant (2): %d\n", quote.Id)
+            return false
+        }
+        // Premium must be less than 1/2 spot, otherwise if consensus moves less than spot,
+        // it would be possible for the premium to reach negative price territory
+        if quote.Spot.Amount.QuoInt64(2).LT(quote.Premium.Amount) {
             return false
         }
     }
