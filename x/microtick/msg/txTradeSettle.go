@@ -114,7 +114,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     }
     
     //fmt.Printf("Settle Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, msg.Requester, commission)
+    reward := keeper.PoolCommission(ctx, msg.Requester, commission)
     
     if params.EuropeanOptions {
         
@@ -182,6 +182,10 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         sdk.EventTypeMessage,
         sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     for i := 0; i < len(trade.CounterParties); i++ {

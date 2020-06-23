@@ -130,7 +130,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    mtKeeper.PoolCommission(ctx, msg.Provider, commission)
+    reward := mtKeeper.PoolCommission(ctx, msg.Provider, commission)
     
     // Data
     data := CreateQuoteData {
@@ -157,6 +157,10 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
         sdk.NewAttribute(fmt.Sprintf("quote.%d", id), "event.create"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create"),
         sdk.NewAttribute("mtm.MarketTick", msg.Market),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

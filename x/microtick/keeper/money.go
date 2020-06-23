@@ -16,7 +16,7 @@ type CommissionPool struct {
 
 // Commissions
 
-func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
+func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) sdk.Coin {
 	params := k.GetParams(ctx)
     extCoins := mt.MicrotickCoinToExtCoin(amount)
     
@@ -34,15 +34,15 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
 	
     // Mint stake and award to commission payer
-    mintCoins := sdk.Coins{
-    	sdk.NewCoin(params.MintDenom, params.MintRatio.MulInt(extCoins.Amount).TruncateInt()),
-    }
+    rebate := sdk.NewCoin(params.MintDenom, params.MintRatio.MulInt(extCoins.Amount).TruncateInt())
+    mintCoins := sdk.Coins{ rebate }
     k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
 	k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
 	
     //fmt.Printf("Add Pool Commission: requested %s actual %s pool %s\n", amount.String(), extCoins.String(), pool.String())
     
 	store.Set(key, k.Cdc.MustMarshalJSON(pool))
+	return rebate
 }
 
 func (k Keeper) Sweep(ctx sdk.Context) {

@@ -113,7 +113,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, msg.Requester, commission)
+    reward := keeper.PoolCommission(ctx, msg.Requester, commission)
     
     // Data
     data := UpdateQuoteData {
@@ -138,6 +138,10 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.update"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update"),
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

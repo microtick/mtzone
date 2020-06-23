@@ -90,8 +90,8 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Para
         return nil, mt.ErrInsufficientFunds
     }
     // Add commission to pool
-    fmt.Printf("Withdraw Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, msg.Requester, commission)
+    //fmt.Printf("Withdraw Commission: %s\n", commission.String())
+    reward := keeper.PoolCommission(ctx, msg.Requester, commission)
     
     dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
     dataMarket.FactorOut(quote)
@@ -137,6 +137,10 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Para
         sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.withdraw"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.withdraw"),
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

@@ -117,7 +117,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
         }
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
-        mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
+        reward := mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
     
         // Step 4 - Finalize trade 
         matcher.Trade.Id = mtKeeper.GetNextActiveTradeId(ctx)
@@ -159,6 +159,10 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
             sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
             sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Buyer), "trade.long"),
             sdk.NewAttribute("mtm.MarketTick", quote.Market),
+        ), sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute("commission", commission.String()),
+            sdk.NewAttribute("reward", reward.String()),
         ))
         
         for i := 0; i < len(matcher.FillInfo); i++ {
