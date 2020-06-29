@@ -45,7 +45,7 @@ func (msg TxMarketTrade) Route() string { return "microtick" }
 func (msg TxMarketTrade) Type() string { return "trade_market" }
 
 func (msg TxMarketTrade) ValidateBasic() error {
-    if len(msg.Market) == 0 {
+    if msg.Market == "" {
         return sdkerrors.Wrap(mt.ErrMissingParam, "market")
     }
     if msg.Buyer.Empty() {

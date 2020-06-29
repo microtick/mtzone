@@ -51,7 +51,7 @@ func (msg TxCreateQuote) Route() string { return "microtick" }
 func (msg TxCreateQuote) Type() string { return "quote_create" }
 
 func (msg TxCreateQuote) ValidateBasic() error {
-    if len(msg.Market) == 0 {
+    if msg.Market == "" {
         return sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     if msg.Provider.Empty() {

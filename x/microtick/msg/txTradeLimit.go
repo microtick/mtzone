@@ -48,7 +48,7 @@ func (msg TxLimitTrade) Route() string { return "microtick" }
 func (msg TxLimitTrade) Type() string { return "trade_limit" }
 
 func (msg TxLimitTrade) ValidateBasic() error {
-    if len(msg.Market) == 0 {
+    if msg.Market == "" {
         return sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     if msg.Buyer.Empty() {
