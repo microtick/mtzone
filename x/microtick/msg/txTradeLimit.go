@@ -179,10 +179,8 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Param
             Events: ctx.EventManager().ABCIEvents(),
         }, nil
         
-    } else {
-        
-        // No liquidity available
-        return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "no liquidity available")
-        
     }
+    
+    // No liquidity available
+    return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "no liquidity available")
 }
