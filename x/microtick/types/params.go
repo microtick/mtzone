@@ -79,6 +79,28 @@ func (p *Params) ParamSetPairs() params.ParamSetPairs {
 	}
 }
 
+func (p Params) ValidateBasic() error {
+  if p.CommissionQuotePercent.IsNegative() || p.CommissionQuotePercent.GT(sdk.OneDec()) {
+    return fmt.Errorf("invalid quote commission: %s", p.CommissionQuotePercent)
+  }
+  if p.CommissionTradeFixed.IsNegative() {
+    return fmt.Errorf("invalid trade commission: %s", p.CommissionTradeFixed)
+  }
+  if p.CommissionUpdatePercent.IsNegative() || p.CommissionUpdatePercent.GT(sdk.OneDec()) {
+    return fmt.Errorf("invalid quote update commission: %s", p.CommissionUpdatePercent)
+  }
+  if p.CommissionSettleFixed.IsNegative() {
+    return fmt.Errorf("invalid settle commission: %s", p.CommissionSettleFixed)
+  }
+  if p.SettleIncentive.IsNegative() {
+    return fmt.Errorf("invalid settle incentive: %s", p.SettleIncentive)
+  }
+  if p.MintRatio.IsNegative() {
+    return fmt.Errorf("invalid mint ratio: %s", p.MintRatio)
+  }
+  return nil
+}
+
 func validateEuropeanOptions(i interface{}) error {
 	_, ok := i.(bool)
 	if !ok {
