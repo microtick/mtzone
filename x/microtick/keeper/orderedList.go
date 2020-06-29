@@ -73,11 +73,11 @@ func (ol *OrderedList) Insert(li ListItem) {
 }
 
 func (ol *OrderedList) Delete(id mt.MicrotickId) {
-    len := len(ol.Data)
-    if len > 0 {
+    curlen := len(ol.Data)
+    if curlen > 0 {
         cur := ol.Data
         ol.Data = make([]ListItem, 0)
-        for i := 0; i < len; i++ {
+        for i := 0; i < curlen; i++ {
             if cur[i].Id != id {
                 ol.Data = append(ol.Data, cur[i])
             }
