@@ -82,7 +82,11 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
         return nil, mt.ErrQuoteBacking
     }
     
-    dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err2 := keeper.GetDataMarket(ctx, quote.Market)
+    if err2 != nil {
+        return nil, mt.ErrInvalidMarket
+    }
+    
     dataMarket.FactorOut(quote)
     dataMarket.DeleteQuote(quote)
     keeper.SetDataMarket(ctx, dataMarket)

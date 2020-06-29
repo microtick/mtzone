@@ -80,7 +80,11 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
     
-    dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err2 := keeper.GetDataMarket(ctx, quote.Market)
+    if err2 != nil {
+        return nil, mt.ErrInvalidMarket
+    }
+    
     dataMarket.FactorOut(quote)
     dataMarket.DeleteQuote(quote)
     

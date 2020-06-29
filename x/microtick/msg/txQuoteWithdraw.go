@@ -93,7 +93,11 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Para
     fmt.Printf("Withdraw Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, msg.Requester, commission)
     
-    dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err2 := keeper.GetDataMarket(ctx, quote.Market)
+    if err2 != nil {
+        return nil, mt.ErrInvalidMarket
+    }
+    
     dataMarket.FactorOut(quote)
     
     quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Sub(msg.Withdraw.Amount))

@@ -89,7 +89,11 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Param
     //fmt.Printf("Deposit Commission: %s\n", commission.String())
     keeper.PoolCommission(ctx, msg.Requester, commission)
     
-    dataMarket, _ := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err2 := keeper.GetDataMarket(ctx, quote.Market)
+    if err2 != nil {
+        return nil, mt.ErrInvalidMarket
+    }
+    
     dataMarket.FactorOut(quote)
     
     quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Add(msg.Deposit.Amount))
