@@ -1,28 +1,21 @@
-package client
+package rest
 
 import (
-	"fmt"
-	"net/http"
-
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/client/context"
-	_ "github.com/cosmos/cosmos-sdk/codec"
-
-	"github.com/gorilla/mux"
+		"fmt"
+		"net/http"
+	
+		"github.com/gorilla/mux"
+		"github.com/cosmos/cosmos-sdk/types/rest"
+		"github.com/cosmos/cosmos-sdk/client/context"
 )
 
-// RegisterRoutes - Central function to define routes that get registered by the main application
-func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router) {
-	r.HandleFunc("/microtick/account/{acct}", queryAccountStatusHandler(cliCtx)).Methods("GET")
-	r.HandleFunc("/microtick/market/{market}", queryMarketStatusHandler(cliCtx)).Methods("GET")
-	r.HandleFunc("/microtick/consensus/{market}", queryMarketConsensusHandler(cliCtx)).Methods("GET")
-	r.HandleFunc("/microtick/orderbook/{market}/{duration}", queryMarketOrderbookHandler(cliCtx)).Methods("GET")
-	r.HandleFunc("/microtick/quote/{id}", queryQuoteHandler(cliCtx)).Methods("GET")
-	r.HandleFunc("/microtick/trade/{id}", queryTradeHandler(cliCtx)).Methods("GET")
-}
-
-type signedReq struct {
-	Tx string `json:"tx"`
+func registerQueryRoutes(cliCtx context.CLIContext, r *mux.Router) {
+		r.HandleFunc("/microtick/account/{acct}", queryAccountStatusHandler(cliCtx)).Methods("GET")
+		r.HandleFunc("/microtick/market/{market}", queryMarketStatusHandler(cliCtx)).Methods("GET")
+		r.HandleFunc("/microtick/consensus/{market}", queryMarketConsensusHandler(cliCtx)).Methods("GET")
+		r.HandleFunc("/microtick/orderbook/{market}/{duration}", queryMarketOrderbookHandler(cliCtx)).Methods("GET")
+		r.HandleFunc("/microtick/quote/{id}", queryQuoteHandler(cliCtx)).Methods("GET")
+		r.HandleFunc("/microtick/trade/{id}", queryTradeHandler(cliCtx)).Methods("GET")
 }
 
 func queryAccountStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {

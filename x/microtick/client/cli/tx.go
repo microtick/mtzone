@@ -1,10 +1,11 @@
-package client
+package cli
 
 import (
 	"bufio"
 	
 	"github.com/spf13/cobra"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,6 +15,27 @@ import (
 	mt "github.com/mjackson001/mtzone/x/microtick/types"
 	"github.com/mjackson001/mtzone/x/microtick/msg"
 )
+
+func GetTxCmd(cdc *codec.Codec) *cobra.Command {
+	mtTxCmd := &cobra.Command{
+		Use:   "microtick",
+		Short: "Microtick transactions subcommands",
+	}
+
+	mtTxCmd.AddCommand(flags.PostCommands(
+		GetCmdQuoteCancel(cdc),
+		GetCmdQuoteCreate(cdc),
+		GetCmdQuoteDeposit(cdc),
+		GetCmdQuoteUpdate(cdc),
+		GetCmdQuoteWithdraw(cdc),
+		GetCmdTradeMarket(cdc),
+		GetCmdTradeLimit(cdc),
+		GetCmdTradePick(cdc),
+		GetCmdTradeSettle(cdc),
+	)...)
+
+	return mtTxCmd
+}
 
 func GetCmdQuoteCancel(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{

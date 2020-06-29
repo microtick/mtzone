@@ -16,7 +16,8 @@ import (
 	_ "github.com/mjackson001/mtzone/x/microtick/types"
 	"github.com/mjackson001/mtzone/x/microtick/msg"
 	"github.com/mjackson001/mtzone/x/microtick/keeper"
-	"github.com/mjackson001/mtzone/x/microtick/client"
+	"github.com/mjackson001/mtzone/x/microtick/client/cli"
+	"github.com/mjackson001/mtzone/x/microtick/client/rest"
 )
 
 const (
@@ -61,17 +62,17 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, bz json.RawMessag
 
 // register rest routes
 func (AppModuleBasic) RegisterRESTRoutes(ctx context.CLIContext, rtr *mux.Router) {
-	client.RegisterRoutes(ctx, rtr)
+	rest.RegisterRoutes(ctx, rtr)
 }
 
 // get the root tx command of this module
 func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command { 
-	return client.GetTxCmd(cdc)
+	return cli.GetTxCmd(cdc)
 }
 
 // get the root query command of this module
 func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
-	return client.GetQueryCmd(ModuleName, cdc)
+	return cli.GetQueryCmd(ModuleName, cdc)
 }
 
 //___________________________
