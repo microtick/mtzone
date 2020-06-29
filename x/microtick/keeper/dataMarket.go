@@ -187,8 +187,6 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity mt.MicrotickQua
                 Cost: mt.NewMicrotickCoinFromDec(cost),
                 FinalFill: finalFill,
             })
-        //} else {
-            //fmt.Printf("Skipping quote %d\n", id)
         }
         index++
     }
@@ -255,8 +253,6 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit mt.MicrotickPremium, 
                 break
                 
             }
-        //} else {
-            //fmt.Printf("Skipping quote %d\n", id)
         }
         index++
     }

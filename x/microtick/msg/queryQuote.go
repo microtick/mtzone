@@ -58,7 +58,6 @@ CanModify: %s`,
 }
 
 func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
-    var id int
     id, err2 := strconv.Atoi(path[0])
     if err2 != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", id)
