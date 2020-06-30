@@ -96,6 +96,11 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, trade.Market)
     }
     
+    // ensure we have at least one quote past its "canModify" time
+    if !dataMarket.CanSettle(now) {
+        return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "unconfirmed consensus")
+    }
+    
     settlements := trade.CounterPartySettlements(dataMarket.Consensus)
     
     // Incentive 

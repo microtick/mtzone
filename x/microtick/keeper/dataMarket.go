@@ -1,6 +1,7 @@
 package keeper
 
 import (
+    "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -22,6 +23,8 @@ type DataMarket struct {
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumSpots sdk.Dec `json:"sumSpots"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
+    // Internal: quote list ordered by time of maturity
+    Quotes OrderedList `json:"quotes"`
 }
 
 func NewDataMarket(market mt.MicrotickMarket, description string, durs []string) DataMarket {
@@ -130,6 +133,7 @@ func (dm *DataMarket) AddQuote(quote DataActiveQuote) {
     orderBook.Calls.Insert(NewListItem(quote.Id, callValue))
     putValue := quote.Premium.Amount.Sub(quote.Spot.Amount.QuoInt64(2))
     orderBook.Puts.Insert(NewListItem(quote.Id, putValue))
+    dm.Quotes.Insert(NewListItem(quote.Id, sdk.NewDec(quote.CanModify.Unix())))
     dm.SetOrderBook(quote.DurationName, orderBook)
 }
 
@@ -137,7 +141,18 @@ func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
     orderBook := dm.GetOrderBook(quote.DurationName)
     orderBook.Calls.Delete(quote.Id)
     orderBook.Puts.Delete(quote.Id)
+    dm.Quotes.Delete(quote.Id)
     dm.SetOrderBook(quote.DurationName, orderBook)
+}
+
+func (dm * DataMarket) CanSettle(now time.Time) bool {
+    if len(dm.Quotes.Data) == 0 {
+        return false
+    }
+    if dm.Quotes.Data[0].Value.GT(sdk.NewDec(now.Unix())) {
+        return false
+    }
+    return true
 }
 
 func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity mt.MicrotickQuantity) {
