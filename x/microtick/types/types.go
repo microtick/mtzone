@@ -99,8 +99,8 @@ func NewMicrotickCoinFromExtCoinInt(b int64) MicrotickCoin {
 // "1.234IntTokenType" -> 1.234 IntTokenType
 // "1234000ExtTokenType" -> 1.234 ExtTokenType
 func NewMicrotickCoinFromString(str string) MicrotickCoin {
-    result, err2 := parseDecCoin(str)
-    if err2 != nil || (result.Denom != IntTokenType && result.Denom != ExtTokenType) {
+    result, err := parseDecCoin(str)
+    if err != nil || (result.Denom != IntTokenType && result.Denom != ExtTokenType) {
         panic(fmt.Sprintf("Invalid coin amount or token type: %s", str))
     }
     if result.Denom == ExtTokenType {
@@ -144,8 +144,8 @@ func NewMicrotickQuantityFromInt(q int64) MicrotickQuantity {
 }
 
 func NewMicrotickQuantityFromString(q string) MicrotickQuantity {
-    result, err2 := parseDecCoin(q)
-    if err2 != nil || result.Denom != "quantity" {
+    result, err := parseDecCoin(q)
+    if err != nil || result.Denom != "quantity" {
         panic(fmt.Sprintf("Invalid quantity: %s", q))
     }
     return result
@@ -166,8 +166,8 @@ func NewMicrotickSpotFromInt(s int64) MicrotickSpot {
 
 
 func NewMicrotickSpotFromString(s string) MicrotickSpot {
-    result, err2 := parseDecCoin(s)
-    if err2 != nil || result.Denom != "spot" {
+    result, err := parseDecCoin(s)
+    if err != nil || result.Denom != "spot" {
         panic(fmt.Sprintf("Invalid spot: %s", s))
     }
     return result
@@ -188,8 +188,8 @@ func NewMicrotickPremiumFromInt(p int64) MicrotickPremium {
 }
 
 func NewMicrotickPremiumFromString(p string) MicrotickPremium {
-    result, err2 := parseDecCoin(p)
-    if err2 != nil || result.Denom != "premium" {
+    result, err := parseDecCoin(p)
+    if err != nil || result.Denom != "premium" {
         panic(fmt.Sprintf("Invalid premium: %s", p))
     }
     //fmt.Println("NewMicrotickPremiumFromString: %s\n", result.String())

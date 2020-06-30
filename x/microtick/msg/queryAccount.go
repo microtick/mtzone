@@ -46,10 +46,10 @@ Settle Backing: %s`, ras.Account,
 func QueryAccountStatus(ctx sdk.Context, path []string, 
     req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     acct := path[0]
-    address, err2 := sdk.AccAddressFromBech32(acct)
+    address, err := sdk.AccAddressFromBech32(acct)
     balance := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
-    if err2 != nil {
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidAddress, acct)
     }
     activeQuotes := make([]mt.MicrotickId, len(data.ActiveQuotes.Data))
@@ -72,8 +72,8 @@ func QueryAccountStatus(ctx sdk.Context, path []string,
         SettleBacking: data.SettleBacking,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
-    if err2 != nil {
+    bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)
+    if err != nil {
         panic("Could not marshal result to JSON")
     }
     

@@ -109,8 +109,8 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     
     // DataMarket
     
-    dataMarket, err2 := mtKeeper.GetDataMarket(ctx, msg.Market)
-    if err2 != nil {
+    dataMarket, err := mtKeeper.GetDataMarket(ctx, msg.Market)
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
     dataMarket.AddQuote(dataActiveQuote)
@@ -124,15 +124,15 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     // Subtract coins from quote provider
     //fmt.Printf("Total: %s\n", total.String())
     
-    err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
-    if err2 != nil {
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
+    if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    err2 = mtKeeper.PoolCommission(ctx, msg.Provider, commission)
-    if err2 != nil {
-        return nil, err2
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Provider, commission)
+    if err != nil {
+        return nil, err
     }
     
     // Data
@@ -160,6 +160,10 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
         sdk.NewAttribute(fmt.Sprintf("quote.%d", id), "event.create"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create"),
         sdk.NewAttribute("mtm.MarketTick", msg.Market),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

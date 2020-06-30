@@ -58,8 +58,8 @@ func formatOrderBook(rob ResponseMarketOrderBookStatus) string {
 
 func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     market := path[0]
-    data, err2 := keeper.GetDataMarket(ctx, market)
-    if err2 != nil {
+    data, err := keeper.GetDataMarket(ctx, market)
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
@@ -87,8 +87,8 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
         SumWeight: data.SumWeight,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
-    if err2 != nil {
+    bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)
+    if err != nil {
         panic("Could not marshal result to JSON")
     }
     

@@ -91,8 +91,8 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "trade not expired")
     }
         
-    dataMarket, err2 := keeper.GetDataMarket(ctx, trade.Market)
-    if err2 != nil {
+    dataMarket, err := keeper.GetDataMarket(ctx, trade.Market)
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, trade.Market)
     }
     
@@ -104,8 +104,8 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     settlements := trade.CounterPartySettlements(dataMarket.Consensus)
     
     // Incentive 
-    err2 = keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
-    if err2 != nil {
+    err = keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "settle incentive")
     }
     //fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
@@ -119,7 +119,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     }
     
     //fmt.Printf("Settle Commission: %s\n", commission.String())
-    err = keeper.PoolCommission(ctx, msg.Requester, commission)
+    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission)
     if err != nil {
         return nil, err
     }
@@ -131,15 +131,15 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
             pair := settlements[i]
             
             // Long
-            err2 = keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
-            if err2 != nil {
+            err = keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
+            if err != nil {
                 return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "payout")
             }
             totalPaid = totalPaid.Add(pair.Settle.Amount)
             
             // Refund
-            err2 := keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
-            if err2 != nil {
+            err := keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
+            if err != nil {
                 return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "refund")
             }
             
@@ -190,6 +190,10 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         sdk.EventTypeMessage,
         sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     for i := 0; i < len(trade.CounterParties); i++ {

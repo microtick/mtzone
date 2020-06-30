@@ -64,8 +64,8 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
     }
     
     // Step 1 - Obtain the strike spot price and create trade struct
-    market, err2 := mtKeeper.GetDataMarket(ctx, quote.Market)
-    if err2 != nil {
+    market, err := mtKeeper.GetDataMarket(ctx, quote.Market)
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, quote.Market)
     }
     
@@ -111,22 +111,22 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
         //fmt.Printf("Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
         total := matcher.TotalCost.Add(trade.Commission).Add(settleIncentive)
-        err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
-        if err2 != nil {
+        err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        if err != nil {
             return nil, mt.ErrInsufficientFunds
         }
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
-        err2 = mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
-        if err2 != nil {
-            return nil, err2
+        reward, err := mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
+        if err != nil {
+            return nil, err
         }
     
         // Step 4 - Finalize trade 
         matcher.Trade.Id = mtKeeper.GetNextActiveTradeId(ctx)
         
-        err2 = matcher.AssignCounterparties(ctx, mtKeeper, &market)
-        if err2 != nil {
+        err = matcher.AssignCounterparties(ctx, mtKeeper, &market)
+        if err != nil {
             return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "counterparty assignment")
         }
         
@@ -162,6 +162,10 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
             sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
             sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Buyer), "trade.long"),
             sdk.NewAttribute("mtm.MarketTick", quote.Market),
+        ), sdk.NewEvent(
+            sdk.EventTypeMessage,
+            sdk.NewAttribute("commission", commission.String()),
+            sdk.NewAttribute("reward", reward.String()),
         ))
         
         for i := 0; i < len(matcher.FillInfo); i++ {

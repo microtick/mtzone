@@ -33,8 +33,8 @@ func QueryOrderBook(ctx sdk.Context, path []string,
     market := path[0]
     durName := path[1]
     
-    dataMarket, err2 := keeper.GetDataMarket(ctx, market)
-    if err2 != nil {
+    dataMarket, err := keeper.GetDataMarket(ctx, market)
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
@@ -55,8 +55,8 @@ func QueryOrderBook(ctx sdk.Context, path []string,
         Puts: puts,
     }
     
-    bz, err3 := codec.MarshalJSONIndent(keeper.Cdc, response)
-    if err3 != nil {
+    bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)
+    if err != nil {
         panic("Could not marshal result to JSON")
     }
     

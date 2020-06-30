@@ -87,13 +87,13 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Param
     
     // Add commission to pool
     //fmt.Printf("Deposit Commission: %s\n", commission.String())
-    err = keeper.PoolCommission(ctx, msg.Requester, commission)
+    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission)
     if err != nil {
         return nil, err
     }
     
-    dataMarket, err2 := keeper.GetDataMarket(ctx, quote.Market)
-    if err2 != nil {
+    dataMarket, err := keeper.GetDataMarket(ctx, quote.Market)
+    if err != nil {
         return nil, mt.ErrInvalidMarket
     }
     
@@ -140,6 +140,10 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Param
         sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.deposit"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit"),
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

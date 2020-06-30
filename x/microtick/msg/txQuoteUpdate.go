@@ -80,8 +80,8 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
     
-    dataMarket, err2 := keeper.GetDataMarket(ctx, quote.Market)
-    if err2 != nil {
+    dataMarket, err := keeper.GetDataMarket(ctx, quote.Market)
+    if err != nil {
         return nil, mt.ErrInvalidMarket
     }
     
@@ -117,7 +117,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    err = keeper.PoolCommission(ctx, msg.Requester, commission)
+    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission)
     if err != nil {
         return nil, err
     }
@@ -145,6 +145,10 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.update"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.update"),
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
+        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

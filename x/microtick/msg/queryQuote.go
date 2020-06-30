@@ -58,16 +58,16 @@ CanModify: %s`,
 }
 
 func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
-    id, err2 := strconv.Atoi(path[0])
-    if err2 != nil {
+    id, err := strconv.Atoi(path[0])
+    if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", id)
     }
-    data, err2 := keeper.GetActiveQuote(ctx, mt.MicrotickId(id))
-    if err2 != nil {
+    data, err := keeper.GetActiveQuote(ctx, mt.MicrotickId(id))
+    if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "fetching %d", id)
     }
-    dataMarket, err3 := keeper.GetDataMarket(ctx, data.Market)
-    if err3 != nil {
+    dataMarket, err := keeper.GetDataMarket(ctx, data.Market)
+    if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, data.Market)
     }
     
@@ -86,8 +86,8 @@ func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         CanModify: data.CanModify,
     }
     
-    bz, err2 := codec.MarshalJSONIndent(keeper.Cdc, response)
-    if err2 != nil {
+    bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)
+    if err != nil {
         panic("Could not marshal result to JSON")
     }
     
