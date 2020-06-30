@@ -117,7 +117,10 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, msg.Requester, commission)
+    err = keeper.PoolCommission(ctx, msg.Requester, commission)
+    if err != nil {
+        return nil, err
+    }
     
     // Data
     data := UpdateQuoteData {

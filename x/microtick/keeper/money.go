@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"os"
     sdk "github.com/cosmos/cosmos-sdk/types"
     auth "github.com/cosmos/cosmos-sdk/x/auth/types"
     mt "github.com/mjackson001/mtzone/x/microtick/types"
@@ -16,7 +17,7 @@ type CommissionPool struct {
 
 // Commissions
 
-func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) {
+func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) error {
 	params := k.GetParams(ctx)
     extCoins := mt.MicrotickCoinToExtCoin(amount)
     
@@ -37,12 +38,20 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
     mintCoins := sdk.Coins{
     	sdk.NewCoin(params.MintDenom, params.MintRatio.MulInt(extCoins.Amount).TruncateInt()),
     }
-    k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
-	k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
+    err := k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
+    if err != nil {
+    	return err
+    }
+    
+	err = k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
+	if err != nil {
+		return err
+	}
 	
     //fmt.Printf("Add Pool Commission: requested %s actual %s pool %s\n", amount.String(), extCoins.String(), pool.String())
-    
 	store.Set(key, k.Cdc.MustMarshalJSON(pool))
+	
+	return nil
 }
 
 func (k Keeper) Sweep(ctx sdk.Context) {
@@ -60,8 +69,11 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 	coin, _ := pool.Pool.TruncateDecimal()
 	
     //fmt.Printf("Sweep: %s %s\n", pool.String(), coin.String())
-    k.BankKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
+    err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
     	auth.FeeCollectorName, sdk.Coins{coin})
+    if err != nil {
+    	panic(fmt.Sprintf("Could not sweep fees: %s", coin.String()))
+    }
     	
     pool.Pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
     store.Set(key, k.Cdc.MustMarshalJSON(pool))
@@ -118,9 +130,18 @@ func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.Microti
 func (k Keeper) RefundBacking(ctx sdk.Context) {
     k.IterateAccountStatus(ctx, 
         func(acct DataAccountStatus) (stop bool) {
-        	k.DepositMicrotickCoin(ctx, acct.Account, acct.QuoteBacking)
-        	k.DepositMicrotickCoin(ctx, acct.Account, acct.TradeBacking)
-        	k.DepositMicrotickCoin(ctx, acct.Account, acct.SettleBacking)
+        	err := k.DepositMicrotickCoin(ctx, acct.Account, acct.QuoteBacking)
+        	if err != nil {
+        		fmt.Fprintf(os.Stderr, "Could not refund quote backing for account: %s\n", acct.Account.String())
+        	}
+        	err = k.DepositMicrotickCoin(ctx, acct.Account, acct.TradeBacking)
+        	if err != nil {
+        		fmt.Fprintf(os.Stderr, "Could not refund trade backing for account: %s\n", acct.Account.String())
+        	}
+        	err = k.DepositMicrotickCoin(ctx, acct.Account, acct.SettleBacking)
+        	if err != nil {
+        		fmt.Fprintf(os.Stderr, "Could not refund settle backing for account: %s\n", acct.Account.String())
+        	}
             return false
         },
     )

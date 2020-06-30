@@ -125,12 +125,15 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     //fmt.Printf("Total: %s\n", total.String())
     
     err2 = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Provider, total)
-    if err2!= nil {
+    if err2 != nil {
         return nil, mt.ErrInsufficientFunds
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    mtKeeper.PoolCommission(ctx, msg.Provider, commission)
+    err2 = mtKeeper.PoolCommission(ctx, msg.Provider, commission)
+    if err2 != nil {
+        return nil, err2
+    }
     
     // Data
     data := CreateQuoteData {

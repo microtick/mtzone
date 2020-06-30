@@ -112,7 +112,10 @@ func HandleTxLimitTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Param
         }
         //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
         //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
-        mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
+        err2 = mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
+        if err2 != nil {
+            return nil, err2
+        }
     
         // Step 4 - Finalize trade 
         matcher.Trade.Id = mtKeeper.GetNextActiveTradeId(ctx)

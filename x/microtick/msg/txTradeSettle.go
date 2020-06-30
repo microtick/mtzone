@@ -114,7 +114,10 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     }
     
     //fmt.Printf("Settle Commission: %s\n", commission.String())
-    keeper.PoolCommission(ctx, msg.Requester, commission)
+    err = keeper.PoolCommission(ctx, msg.Requester, commission)
+    if err != nil {
+        return nil, err
+    }
     
     if params.EuropeanOptions {
         
