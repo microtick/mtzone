@@ -70,12 +70,14 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 	}
 	coin, _ := pool.Pool.TruncateDecimal()
 	
-    //fmt.Printf("Sweep: %s %s\n", pool.String(), coin.String())
-    err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
-    	auth.FeeCollectorName, sdk.Coins{coin})
-    if err != nil {
-    	panic(fmt.Sprintf("Could not sweep fees: %s", coin.String()))
-    }
+	if coin.Amount.IsPositive() {
+        //fmt.Printf("Sweep: %s %s\n", pool.String(), coin.String())
+        err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, MTModuleAccount, 
+    	    auth.FeeCollectorName, sdk.Coins{coin})
+        if err != nil {
+    	    panic(fmt.Sprintf("Could not sweep fees: %s", coin.String()))
+        }
+	}
     	
     pool.Pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
     store.Set(key, k.Cdc.MustMarshalJSON(pool))
