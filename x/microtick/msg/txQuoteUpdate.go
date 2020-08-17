@@ -16,16 +16,18 @@ type TxUpdateQuote struct {
     Id mt.MicrotickId
     Requester mt.MicrotickAccount
     NewSpot mt.MicrotickSpot
-    NewPremium mt.MicrotickPremium
+    NewAsk mt.MicrotickPremium
+    NewBid mt.MicrotickPremium
 }
 
 func NewTxUpdateQuote(id mt.MicrotickId, requester sdk.AccAddress, 
-    newSpot mt.MicrotickSpot, newPremium mt.MicrotickPremium) TxUpdateQuote {
+    newSpot mt.MicrotickSpot, newAsk mt.MicrotickPremium, newBid mt.MicrotickPremium) TxUpdateQuote {
     return TxUpdateQuote {
         Id: id,
         Requester: requester,
         NewSpot: newSpot,
-        NewPremium: newPremium,
+        NewAsk: newAsk,
+        NewBid: newBid,
     }
 }
 
@@ -35,7 +37,8 @@ type UpdateQuoteData struct {
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
     Spot mt.MicrotickSpot `json:"spot"`
-    Premium mt.MicrotickPremium `json:"premium"`
+    Ask mt.MicrotickPremium `json:"ask"`
+    Bid mt.MicrotickPremium `json:"bid"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Commission mt.MicrotickCoin `json:"commission"`
@@ -48,6 +51,9 @@ func (msg TxUpdateQuote) Type() string { return "quote_update" }
 func (msg TxUpdateQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
         return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
+    }
+    if msg.NewBid.Amount.GT(msg.NewAsk.Amount) {
+        return sdkerrors.Wrap(mt.ErrInvalidQuote, "bid > ask")
     }
     return nil
 }
@@ -95,10 +101,14 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         quote.Freeze(now, params)
     }
     
-    if msg.NewPremium.Amount.IsPositive() {
-        quote.Premium = msg.NewPremium
+    if msg.NewAsk.Amount.IsPositive() {
+        quote.Ask = msg.NewAsk
         quote.ComputeQuantity()
         quote.Freeze(now, params)
+    }
+    
+    if msg.NewBid.Amount.GTE(sdk.ZeroDec()) {
+        quote.Bid = msg.NewBid
     }
     
     dataMarket.AddQuote(quote)
@@ -129,7 +139,8 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
       Market: quote.Market,
       Duration: quote.DurationName,
       Spot: quote.Spot,
-      Premium: quote.Premium,
+      Ask: quote.Ask,
+      Bid: quote.Bid,
       Consensus: dataMarket.Consensus,
       Time: now,
       Commission: commission,

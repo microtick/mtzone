@@ -16,15 +16,19 @@ import (
 type ResponseOrderBook struct {
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
-    Calls []mt.MicrotickId `json:"calls"`
-    Puts []mt.MicrotickId `json:"puts"`
+    CallAsks []mt.MicrotickId `json:"callasks"`
+    CallBids []mt.MicrotickId `json:"callbids"`
+    PutAsks []mt.MicrotickId `json:"putasks"`
+    PutBids []mt.MicrotickId `json:"putbids"`
 }
 
 func (rma ResponseOrderBook) String() string {
     return strings.TrimSpace(fmt.Sprintf(`Sum Backing: %s
 SumWeight: %s
-Calls: %v
-Puts: %v`, rma.SumBacking, rma.SumWeight, rma.Calls, rma.Puts))
+CallAsks: %v
+CallBids: %v
+PutAsks: %v
+PutBids: %v`, rma.SumBacking, rma.SumWeight, rma.CallAsks, rma.CallBids, rma.PutAsks, rma.PutBids))
 }
 
 func QueryOrderBook(ctx sdk.Context, path []string, 
@@ -40,19 +44,29 @@ func QueryOrderBook(ctx sdk.Context, path []string,
     
     orderBook := dataMarket.GetOrderBook(durName)
     
-    calls := make([]mt.MicrotickId, len(orderBook.Calls.Data))
-    puts := make([]mt.MicrotickId, len(orderBook.Puts.Data))
-    for i := 0; i < len(orderBook.Calls.Data); i++ {
-        calls[i] = orderBook.Calls.Data[i].Id
+    callasks := make([]mt.MicrotickId, len(orderBook.CallAsks.Data))
+    callbids := make([]mt.MicrotickId, len(orderBook.CallBids.Data))
+    putasks := make([]mt.MicrotickId, len(orderBook.PutAsks.Data))
+    putbids := make([]mt.MicrotickId, len(orderBook.PutBids.Data))
+    for i := 0; i < len(orderBook.CallAsks.Data); i++ {
+        callasks[i] = orderBook.CallAsks.Data[i].Id
     }
-    for i := 0; i < len(orderBook.Puts.Data); i++ {
-        puts[i] = orderBook.Puts.Data[i].Id
+    for i := 0; i < len(orderBook.CallAsks.Data); i++ {
+        callbids[i] = orderBook.CallBids.Data[i].Id
+    }
+    for i := 0; i < len(orderBook.PutAsks.Data); i++ {
+        putasks[i] = orderBook.PutAsks.Data[i].Id
+    }
+    for i := 0; i < len(orderBook.PutAsks.Data); i++ {
+        putbids[i] = orderBook.PutBids.Data[i].Id
     }
     response := ResponseOrderBook {
         SumBacking: orderBook.SumBacking,
         SumWeight: orderBook.SumWeight,
-        Calls: calls,
-        Puts: puts,
+        CallAsks: callasks,
+        CallBids: callbids,
+        PutAsks: putasks,
+        PutBids: putbids,
     }
     
     bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)

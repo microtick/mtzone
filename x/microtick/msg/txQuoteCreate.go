@@ -18,18 +18,20 @@ type TxCreateQuote struct {
     Provider mt.MicrotickAccount
     Backing mt.MicrotickCoin
     Spot mt.MicrotickSpot
-    Premium mt.MicrotickPremium
+    Ask mt.MicrotickPremium
+    Bid mt.MicrotickPremium
 }
 
 func NewTxCreateQuote(market mt.MicrotickMarket, dur mt.MicrotickDurationName, provider mt.MicrotickAccount, 
-    backing mt.MicrotickCoin, spot mt.MicrotickSpot, premium mt.MicrotickPremium) TxCreateQuote {
+    backing mt.MicrotickCoin, spot mt.MicrotickSpot, ask mt.MicrotickPremium, bid mt.MicrotickPremium) TxCreateQuote {
     return TxCreateQuote {
         Market: market,
         Duration: dur,
         Provider: provider,
         Backing: backing,
         Spot: spot,
-        Premium: premium,
+        Ask: ask,
+        Bid: bid,
     }
 }
 
@@ -39,7 +41,8 @@ type CreateQuoteData struct {
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
     Spot mt.MicrotickSpot `json:"spot"`
-    Premium mt.MicrotickPremium `json:"premium"`
+    Ask mt.MicrotickPremium `json:"ask"`
+    Bid mt.MicrotickPremium `json:"bid"`
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Backing mt.MicrotickCoin `json:"backing"`
@@ -59,6 +62,9 @@ func (msg TxCreateQuote) ValidateBasic() error {
     }
     if !msg.Backing.IsPositive() {
         return mt.ErrQuoteBacking
+    }
+    if msg.Bid.Amount.GT(msg.Ask.Amount) {
+        return sdkerrors.Wrap(mt.ErrInvalidQuote, "bid > ask")
     }
     return nil
 }
@@ -95,7 +101,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     now := ctx.BlockHeader().Time
     dataActiveQuote := keeper.NewDataActiveQuote(now, id, msg.Market, 
         mtKeeper.DurationFromName(ctx, msg.Duration), msg.Duration, msg.Provider,
-        msg.Backing, msg.Spot, msg.Premium)
+        msg.Backing, msg.Spot, msg.Ask, msg.Bid)
     dataActiveQuote.ComputeQuantity()
     dataActiveQuote.Freeze(now, params)
     mtKeeper.SetActiveQuote(ctx, dataActiveQuote)
@@ -142,7 +148,8 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
       Market: msg.Market,
       Duration: msg.Duration,
       Spot: msg.Spot,
-      Premium: msg.Premium,
+      Ask: msg.Ask,
+      Bid: msg.Bid,
       Consensus: dataMarket.Consensus,
       Time: now,
       Backing: msg.Backing,

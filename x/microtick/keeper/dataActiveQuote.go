@@ -19,15 +19,15 @@ type DataActiveQuote struct {
     Modified time.Time `json:"modified"`
     CanModify time.Time `json:"canModify"`
     Backing mt.MicrotickCoin `json:"backing"`
-    Commission mt.MicrotickCoin `json:"commission"`
-    Premium mt.MicrotickPremium `json:"premium"`
+    Ask mt.MicrotickPremium `json:"ask"`
+    Bid mt.MicrotickPremium `json:"bid"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
     Spot mt.MicrotickSpot `json:"spot"`
 }
 
 func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMarket, dur mt.MicrotickDuration, 
     durName mt.MicrotickDurationName, provider mt.MicrotickAccount, backing mt.MicrotickCoin, spot mt.MicrotickSpot, 
-    premium mt.MicrotickPremium) DataActiveQuote {
+    ask mt.MicrotickPremium, bid mt.MicrotickPremium) DataActiveQuote {
         
     return DataActiveQuote {
         Id: id,
@@ -37,19 +37,19 @@ func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMar
         Provider: provider,
         Backing: backing,
         Spot: spot,
-        Premium: premium,
+        Ask: ask,
+        Bid: bid,
         
         Modified: now,
         CanModify: now,
-        Commission: mt.NewMicrotickCoinFromExtCoinInt(0),
     }
 }
 
 func (daq *DataActiveQuote) ComputeQuantity() {
-    premiumLeverage := daq.Premium.Amount.Mul(sdk.NewDec(mt.Leverage))
+    actualLeverage := daq.Ask.Amount.Mul(sdk.NewDec(mt.Leverage))
     daq.Quantity = mt.MicrotickQuantity{
         Denom: "quantity",
-        Amount: daq.Backing.Amount.Quo(premiumLeverage),
+        Amount: daq.Backing.Amount.Quo(actualLeverage),
     }
 }
 
@@ -81,22 +81,42 @@ func (daq DataActiveQuote) Stale(now time.Time) bool {
     return false
 }
 
-func (daq DataActiveQuote) PremiumAsCall(strike mt.MicrotickSpot) mt.MicrotickPremium {
-    premium := daq.Premium.Amount
+func (daq DataActiveQuote) CallAsk(strike mt.MicrotickSpot) mt.MicrotickPremium {
+    ask := daq.Ask.Amount
     delta := strike.Amount.Sub(daq.Spot.Amount)
     delta = delta.QuoInt64(2)
-    if premium.LT(delta) {
+    if ask.LT(delta) {
         return mt.NewMicrotickPremiumFromInt(0)
     }
-    return mt.NewMicrotickPremiumFromDec(premium.Sub(delta))
+    return mt.NewMicrotickPremiumFromDec(ask.Sub(delta))
 }
 
-func (daq DataActiveQuote) PremiumAsPut(strike mt.MicrotickSpot) mt.MicrotickPremium {
-    premium := daq.Premium.Amount
+func (daq DataActiveQuote) PutAsk(strike mt.MicrotickSpot) mt.MicrotickPremium {
+    ask := daq.Ask.Amount
     delta := daq.Spot.Amount.Sub(strike.Amount)
     delta = delta.QuoInt64(2)
-    if premium.LT(delta) {
+    if ask.LT(delta) {
         return mt.NewMicrotickPremiumFromInt(0)
     }
-    return mt.NewMicrotickPremiumFromDec(premium.Sub(delta))
+    return mt.NewMicrotickPremiumFromDec(ask.Sub(delta))
+}
+
+func (daq DataActiveQuote) CallBid(strike mt.MicrotickSpot) mt.MicrotickPremium {
+    bid := daq.Bid.Amount
+    delta := strike.Amount.Sub(daq.Spot.Amount)
+    delta = delta.QuoInt64(2)
+    if bid.LT(delta) {
+        return mt.NewMicrotickPremiumFromInt(0)
+    }
+    return mt.NewMicrotickPremiumFromDec(bid.Sub(delta))
+}
+
+func (daq DataActiveQuote) PutBid(strike mt.MicrotickSpot) mt.MicrotickPremium {
+    bid := daq.Bid.Amount
+    delta := daq.Spot.Amount.Sub(strike.Amount)
+    delta = delta.QuoInt64(2)
+    if bid.LT(delta) {
+        return mt.NewMicrotickPremiumFromInt(0)
+    }
+    return mt.NewMicrotickPremiumFromDec(bid.Sub(delta))
 }

@@ -41,7 +41,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         // and we use them for historical and accounting purposes
         params := NewDataQuoteParams(
             thisQuote.Id,
-            thisQuote.Premium,
+            thisQuote.Ask,
             thisQuote.Quantity,
             thisQuote.Spot,
         )

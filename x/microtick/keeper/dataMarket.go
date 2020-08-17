@@ -9,8 +9,10 @@ import (
 
 type DataOrderBook struct {
     Name string `json:"name"`
-    Calls OrderedList `json:"calls"`
-    Puts OrderedList `json:"puts"`
+    CallAsks OrderedList `json:"callasks"`
+    CallBids OrderedList `json:"callbids"`
+    PutAsks OrderedList `json:"putasks"`
+    PutBids OrderedList `json:"putbids"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
 }
@@ -46,8 +48,8 @@ func NewDataMarket(market mt.MicrotickMarket, description string, durs []string)
 func newOrderBook(name string) DataOrderBook {
     return DataOrderBook {
         Name: name,
-        Calls: NewOrderedList(),
-        Puts: NewOrderedList(),
+        CallAsks: NewOrderedList(),
+        PutAsks: NewOrderedList(),
         SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }
@@ -94,17 +96,17 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
         // A quote cannot be placed or updated that will be a free call or put on the 
         // resulting order book (spot more than 2x premium from resulting consensus)
         // Purpose: protects market maker from damaging quotes
-        if quote.Spot.Amount.Sub(quote.Premium.Amount.MulInt64(2)).GT(dm.Consensus.Amount) {
+        if quote.Spot.Amount.Sub(quote.Ask.Amount.MulInt64(2)).GT(dm.Consensus.Amount) {
             //fmt.Printf("Failed Spot Invariant (1): %d\n", quote.Id)
             return false
         }
-        if quote.Spot.Amount.Add(quote.Premium.Amount.MulInt64(2)).LT(dm.Consensus.Amount) {
+        if quote.Spot.Amount.Add(quote.Ask.Amount.MulInt64(2)).LT(dm.Consensus.Amount) {
             //fmt.Printf("Failed Spot Invariant (2): %d\n", quote.Id)
             return false
         }
         // Premium must be less than 1/2 spot, otherwise if consensus moves less than spot,
         // it would be possible for the premium to reach negative price territory
-        if quote.Spot.Amount.QuoInt64(2).LT(quote.Premium.Amount) {
+        if quote.Spot.Amount.QuoInt64(2).LT(quote.Ask.Amount) {
             return false
         }
     }
@@ -134,19 +136,28 @@ func (dm *DataMarket) FactorOut(quote DataActiveQuote) {
 
 func (dm *DataMarket) AddQuote(quote DataActiveQuote) {
     orderBook := dm.GetOrderBook(quote.DurationName)
-    callValue := quote.Premium.Amount.Add(quote.Spot.Amount.QuoInt64(2))
-    orderBook.Calls.Insert(NewListItem(quote.Id, callValue))
-    putValue := quote.Premium.Amount.Sub(quote.Spot.Amount.QuoInt64(2))
-    orderBook.Puts.Insert(NewListItem(quote.Id, putValue))
+    
+    spotDiv2 := quote.Spot.Amount.QuoInt64(2)
+    orderBook.CallAsks.Insert(NewListItem(quote.Id, quote.Ask.Amount.Add(spotDiv2)))
+    orderBook.CallBids.Insert(NewListItem(quote.Id, quote.Bid.Amount.Add(spotDiv2)))
+    orderBook.PutAsks.Insert(NewListItem(quote.Id, quote.Ask.Amount.Sub(spotDiv2)))
+    orderBook.PutBids.Insert(NewListItem(quote.Id, quote.Bid.Amount.Sub(spotDiv2)))
+    
     dm.Quotes.Insert(NewListItem(quote.Id, sdk.NewDec(quote.CanModify.Unix())))
+    
     dm.SetOrderBook(quote.DurationName, orderBook)
 }
 
 func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
     orderBook := dm.GetOrderBook(quote.DurationName)
-    orderBook.Calls.Delete(quote.Id)
-    orderBook.Puts.Delete(quote.Id)
+    
+    orderBook.CallAsks.Delete(quote.Id)
+    orderBook.CallBids.Delete(quote.Id)
+    orderBook.PutAsks.Delete(quote.Id)
+    orderBook.PutBids.Delete(quote.Id)
+    
     dm.Quotes.Delete(quote.Id)
+    
     dm.SetOrderBook(quote.DurationName, orderBook)
 }
 
@@ -166,10 +177,10 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity mt.MicrotickQua
     
     var list OrderedList
     if matcher.Trade.Type == mt.MicrotickCall {
-        list = orderBook.Calls
+        list = orderBook.CallAsks
     }
     if matcher.Trade.Type == mt.MicrotickPut {
-        list = orderBook.Puts
+        list = orderBook.PutAsks
     }
     
     index := 0
@@ -179,10 +190,10 @@ func (dm *DataMarket) MatchByQuantity(matcher *Matcher, quantity mt.MicrotickQua
         if !quote.Provider.Equals(matcher.Trade.Long) {
             var premium mt.MicrotickPremium
             if matcher.Trade.Type == mt.MicrotickCall {
-                premium = quote.PremiumAsCall(matcher.Trade.Strike)
+                premium = quote.CallAsk(matcher.Trade.Strike)
             }
             if matcher.Trade.Type == mt.MicrotickPut {
-                premium = quote.PremiumAsPut(matcher.Trade.Strike)
+                premium = quote.PutAsk(matcher.Trade.Strike)
             }
             
             var boughtQuantity sdk.Dec
@@ -217,10 +228,10 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit mt.MicrotickPremium, 
     
     var list OrderedList
     if matcher.Trade.Type == mt.MicrotickCall {
-        list = orderBook.Calls
+        list = orderBook.CallAsks
     }
     if matcher.Trade.Type == mt.MicrotickPut {
-        list = orderBook.Puts
+        list = orderBook.PutAsks
     }
     
     index := 0
@@ -230,10 +241,10 @@ func (dm *DataMarket) MatchByLimit(matcher *Matcher, limit mt.MicrotickPremium, 
         if !quote.Provider.Equals(matcher.Trade.Long) {
             var premium mt.MicrotickPremium
             if matcher.Trade.Type == mt.MicrotickCall {
-                premium = quote.PremiumAsCall(matcher.Trade.Strike)
+                premium = quote.CallAsk(matcher.Trade.Strike)
             }
             if matcher.Trade.Type == mt.MicrotickPut {
-                premium = quote.PremiumAsPut(matcher.Trade.Strike)
+                premium = quote.PutAsk(matcher.Trade.Strike)
             }
             
             if premium.Amount.LTE(limit.Amount) {

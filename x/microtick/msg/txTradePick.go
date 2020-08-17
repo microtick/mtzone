@@ -85,10 +85,10 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
     // Step 2 - Compute premium and cost
     var premium mt.MicrotickPremium
     if msg.TradeType == mt.MicrotickCall {
-        premium = quote.PremiumAsCall(market.Consensus)
+        premium = quote.CallAsk(market.Consensus)
     }
     if msg.TradeType == mt.MicrotickPut {
-        premium = quote.PremiumAsPut(market.Consensus)
+        premium = quote.PutAsk(market.Consensus)
     }
         
     cost := mt.NewMicrotickCoinFromDec(premium.Amount.Mul(quote.Quantity.Amount))

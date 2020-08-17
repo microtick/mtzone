@@ -62,7 +62,7 @@ func GetCmdQuoteCancel(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdQuoteCreate(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "quote-create [market] [duration] [backing] [spot] [premium]",
+		Use:   "quote-create [market] [duration] [backing] [spot] [ask] [bid]",
 		Short: "Create a new quote",
 		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -74,10 +74,11 @@ func GetCmdQuoteCreate(cdc *codec.Codec) *cobra.Command {
 			dur := args[1]
 			coins := mt.NewMicrotickCoinFromString(args[2])
 			spot := mt.NewMicrotickSpotFromString(args[3])
-			premium := mt.NewMicrotickPremiumFromString(args[4])
+			ask := mt.NewMicrotickPremiumFromString(args[4])
+			bid := mt.NewMicrotickPremiumFromString(args[5])
 
 			msg := msg.NewTxCreateQuote(market, dur, cliCtx.GetFromAddress(), coins,
-				spot, premium)
+				spot, ask, bid)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
@@ -114,7 +115,7 @@ func GetCmdQuoteDeposit(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdQuoteUpdate(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "quote-update [id] [newspot] [newpremium]",
+		Use:   "quote-update [id] [newspot] [newask] [newbid]",
 		Short: "Update a quote",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -124,9 +125,10 @@ func GetCmdQuoteUpdate(cdc *codec.Codec) *cobra.Command {
 
 			id := mt.NewMicrotickIdFromString(args[0])
 			newspot := mt.NewMicrotickSpotFromString(args[1])
-			newpremium := mt.NewMicrotickPremiumFromString(args[2])
+			newask := mt.NewMicrotickPremiumFromString(args[2])
+			newbid := mt.NewMicrotickPremiumFromString(args[3])
 
-			txmsg := msg.NewTxUpdateQuote(id, cliCtx.GetFromAddress(), newspot, newpremium)
+			txmsg := msg.NewTxUpdateQuote(id, cliCtx.GetFromAddress(), newspot, newask, newbid)
 			err := txmsg.ValidateBasic()
 			if err != nil {
 				return err

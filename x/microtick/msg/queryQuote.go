@@ -22,10 +22,13 @@ type ResponseQuoteStatus struct {
     Provider mt.MicrotickAccount `json:"provider"`
     Backing mt.MicrotickCoin `json:"backing"`
     Spot mt.MicrotickSpot `json:"spot"`
-    Premium mt.MicrotickPremium `json:"premium"`
+    Ask mt.MicrotickPremium `json:"ask"`
+    Bid mt.MicrotickPremium `json:"bid"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
-    PremiumAsCall mt.MicrotickPremium `json:"premiumAsCall"`
-    PremiumAsPut mt.MicrotickPremium `json:"premiumAsPut"`
+    CallBid mt.MicrotickPremium `json:"callBid"`
+    CallAsk mt.MicrotickPremium `json:"callAsk"`
+    PutBid mt.MicrotickPremium `json:"putBid"`
+    PutAsk mt.MicrotickPremium `json:"putAsk"`
     Modified time.Time `json:"modified"`
     CanModify time.Time `json:"canModify"`
 }
@@ -37,10 +40,13 @@ Market: %s
 Duration: %s
 Backing: %s
 Spot: %s
-Premium: %s
+Ask: %s
+Bid: %s
 Quantity: %s
-PremiumAsCall: %s
-PremiumAsPut: %s
+CallAsk: %s
+CallBid: %s
+PutAsk: %s
+PutBid: %s
 Modified: %s
 CanModify: %s`, 
     rqs.Id, 
@@ -49,10 +55,13 @@ CanModify: %s`,
     rqs.Duration,
     rqs.Backing.String(), 
     rqs.Spot.String(),
-    rqs.Premium.String(),
+    rqs.Ask.String(),
+    rqs.Bid.String(),
     rqs.Quantity.String(),
-    rqs.PremiumAsCall.String(),
-    rqs.PremiumAsPut.String(),
+    rqs.CallAsk.String(),
+    rqs.CallBid.String(),
+    rqs.PutAsk.String(),
+    rqs.PutBid.String(),
     rqs.Modified.String(),
     rqs.CanModify.String()))
 }
@@ -78,10 +87,13 @@ func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Provider: data.Provider,
         Backing: data.Backing,
         Spot: data.Spot,
-        Premium: data.Premium,
+        Ask: data.Ask,
+        Bid: data.Bid,
         Quantity: data.Quantity,
-        PremiumAsCall: data.PremiumAsCall(dataMarket.Consensus),
-        PremiumAsPut: data.PremiumAsPut(dataMarket.Consensus),
+        CallBid: data.CallBid(dataMarket.Consensus),
+        CallAsk: data.CallAsk(dataMarket.Consensus),
+        PutBid: data.PutBid(dataMarket.Consensus),
+        PutAsk: data.PutAsk(dataMarket.Consensus),
         Modified: data.Modified,
         CanModify: data.CanModify,
     }
