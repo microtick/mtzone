@@ -51,14 +51,16 @@ func QueryOrderBook(ctx sdk.Context, path []string,
     for i := 0; i < len(orderBook.CallAsks.Data); i++ {
         callasks[i] = orderBook.CallAsks.Data[i].Id
     }
-    for i := 0; i < len(orderBook.CallAsks.Data); i++ {
-        callbids[i] = orderBook.CallBids.Data[i].Id
+    for i := 0; i < len(orderBook.CallBids.Data); i++ {
+        j := len(orderBook.CallBids.Data) - i - 1
+        callbids[i] = orderBook.CallBids.Data[j].Id
     }
     for i := 0; i < len(orderBook.PutAsks.Data); i++ {
         putasks[i] = orderBook.PutAsks.Data[i].Id
     }
-    for i := 0; i < len(orderBook.PutAsks.Data); i++ {
-        putbids[i] = orderBook.PutBids.Data[i].Id
+    for i := 0; i < len(orderBook.PutBids.Data); i++ {
+        j := len(orderBook.PutBids.Data) - i - 1
+        putbids[i] = orderBook.PutBids.Data[j].Id
     }
     response := ResponseOrderBook {
         SumBacking: orderBook.SumBacking,

@@ -28,6 +28,15 @@ func NewOrderedList() OrderedList {
     }
 }
 
+func (ol *OrderedList) First() ListItem {
+    return ol.Data[0]
+}
+
+func (ol *OrderedList) Last() ListItem {
+    listLen := len(ol.Data)
+    return ol.Data[listLen-1]
+}
+
 func (ol *OrderedList) Search(li ListItem) int {
     var lo, hi int
     lo = 0

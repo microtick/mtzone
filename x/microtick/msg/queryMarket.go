@@ -17,8 +17,10 @@ type ResponseMarketOrderBookStatus struct {
     Name string `json:"name"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
-    InsideCall mt.MicrotickPremium `json:"insideCall"`
-    InsidePut mt.MicrotickPremium `json:"insidePut"`
+    InsideCallAsk mt.MicrotickPremium `json:"insideCallAsk"`
+    InsideCallBid mt.MicrotickPremium `json:"insideCallBid"`
+    InsidePutAsk mt.MicrotickPremium `json:"insidePutAsk"`
+    InsidePutBid mt.MicrotickPremium `json:"insidePutBid"`
 }
 
 type ResponseMarketStatus struct {
@@ -49,11 +51,14 @@ func formatOrderBook(rob ResponseMarketOrderBookStatus) string {
   %s:
     Sum Backing: %s
     Sum Weight: %s
-    Inside Call: %s
-    Inside Put: %s`, 
+    Inside Call Ask: %s
+    Inside Call Bid: %s
+    Inside Put Ask: %s
+    Inside Put Bid: %s`, 
         rob.Name,
         rob.SumBacking.String(), rob.SumWeight.String(),
-        rob.InsideCall.String(), rob.InsidePut.String())
+        rob.InsideCallAsk.String(), rob.InsideCallBid.String(),
+        rob.InsidePutAsk.String(), rob.InsidePutBid.String())
 }
 
 func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
@@ -66,14 +71,18 @@ func QueryMarketStatus(ctx sdk.Context, path []string, req abci.RequestQuery, ke
     var orderbookStatus []ResponseMarketOrderBookStatus
     for k := 0; k < len(data.OrderBooks); k++ {
         if data.OrderBooks[k].SumBacking.Amount.GT(sdk.ZeroDec()) {
-            callask, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].CallAsks.Data[0].Id)
-            putask, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].PutAsks.Data[0].Id)
+            callask, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].CallAsks.First().Id)
+            callbid, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].CallBids.Last().Id)
+            putask, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].PutAsks.First().Id)
+            putbid, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].PutBids.Last().Id)
             orderbookStatus = append(orderbookStatus, ResponseMarketOrderBookStatus {
                 Name: data.OrderBooks[k].Name,
                 SumBacking: data.OrderBooks[k].SumBacking,
                 SumWeight: data.OrderBooks[k].SumWeight,
-                InsideCall: callask.CallAsk(data.Consensus),
-                InsidePut: putask.PutAsk(data.Consensus),
+                InsideCallAsk: callask.CallAsk(data.Consensus),
+                InsideCallBid: callbid.CallBid(data.Consensus),
+                InsidePutAsk: putask.PutAsk(data.Consensus),
+                InsidePutBid: putbid.PutBid(data.Consensus),
             })
         }
     }

@@ -62,9 +62,9 @@ func GetCmdQuoteCancel(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdQuoteCreate(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "quote-create [market] [duration] [backing] [spot] [ask] [bid]",
+		Use:   "quote-create [market] [duration] [backing] [spot] [ask_premium] [bid_premium]",
 		Short: "Create a new quote",
-		Args:  cobra.ExactArgs(5),
+		Args:  cobra.ExactArgs(6),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
@@ -115,9 +115,9 @@ func GetCmdQuoteDeposit(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdQuoteUpdate(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "quote-update [id] [newspot] [newask] [newbid]",
+		Use:   "quote-update [id] [newspot] [new_ask_premium] [new_bid_premium]",
 		Short: "Update a quote",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
