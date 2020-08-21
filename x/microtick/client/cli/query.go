@@ -22,6 +22,7 @@ func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {
 		GetCmdMarketStatus(moduleName, cdc),
 		GetCmdMarketConsensus(moduleName, cdc),
 		GetCmdOrderBook(moduleName, cdc),
+		GetCmdSyntheticBook(moduleName, cdc),
 		GetCmdActiveQuote(moduleName, cdc),
 		GetCmdActiveTrade(moduleName, cdc),
 	)...)
@@ -130,6 +131,35 @@ func GetCmdOrderBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
 			}
 
 			var out msg.ResponseOrderBook
+			cdc.MustUnmarshalJSON(res, &out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
+		},
+	}
+}
+
+func GetCmdSyntheticBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "synthetic [market] [dur]",
+		Short: "Query market synthetic orderbook",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			market := args[0]
+			dur := args[1]
+
+			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/synthetic/%s/%s", queryRoute, market, dur))
+			if err != nil {
+				fmt.Printf("No such orderbook: %s %s\n", market, dur)
+				return nil
+			}
+
+			var out msg.ResponseSyntheticBook
 			cdc.MustUnmarshalJSON(res, &out)
 			
 			if cliCtx.OutputFormat == "text" {

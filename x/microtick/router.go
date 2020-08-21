@@ -22,6 +22,8 @@ func NewQuerier(keeper keeper.Keeper) sdk.Querier {
             return msg.QueryMarketConsensus(ctx, path[1:], req, keeper)
         case "orderbook":
             return msg.QueryOrderBook(ctx, path[1:], req, keeper)
+        case "synthetic":
+            return msg.QuerySyntheticBook(ctx, path[1:], req, keeper)
         case "quote":
             return msg.QueryQuoteStatus(ctx, path[1:], req, keeper)
         case "trade":
