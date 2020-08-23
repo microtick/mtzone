@@ -22,6 +22,7 @@ var (
     ErrQuoteParams             = sdkerrors.Register(ModuleName, 13, "quote params out of range")
     ErrNotOwner                = sdkerrors.Register(ModuleName, 14, "not owner")
     ErrTradeSettlement         = sdkerrors.Register(ModuleName, 15, "trade settlement")
+    ErrInvalidOrderType        = sdkerrors.Register(ModuleName, 16, "invalid order type")
     
     ErrGeneral                 = sdkerrors.Register(ModuleName, 999, "general")
 )

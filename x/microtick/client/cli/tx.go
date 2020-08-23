@@ -29,7 +29,6 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 		GetCmdQuoteUpdate(cdc),
 		GetCmdQuoteWithdraw(cdc),
 		GetCmdTradeMarket(cdc),
-		GetCmdTradeLimit(cdc),
 		GetCmdTradePick(cdc),
 		GetCmdTradeSettle(cdc),
 	)...)
@@ -165,9 +164,9 @@ func GetCmdQuoteWithdraw(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdTradeMarket(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "trade-market [market] [duration] [call/put] [quantity]",
+		Use:   "trade-market [market] [duration] [buy/sell] [call/put] [quantity]",
 		Short: "Create a new market trade",
-		Args:  cobra.ExactArgs(4),
+		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
@@ -175,8 +174,8 @@ func GetCmdTradeMarket(cdc *codec.Codec) *cobra.Command {
 
 			market := args[0]
 			dur := args[1]
-			ttype := mt.MicrotickTradeTypeFromName(args[2])
-			quantity := mt.NewMicrotickQuantityFromString(args[3])
+			ttype := args[2] + "-" + args[3]
+			quantity := mt.NewMicrotickQuantityFromString(args[4])
 			
 			txmsg := msg.NewTxMarketTrade(market, dur, cliCtx.GetFromAddress(), ttype,
 				quantity)
@@ -190,46 +189,18 @@ func GetCmdTradeMarket(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdTradeLimit(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "trade-limit [market] [duration] [call/put] [limit] [maxcost]",
-		Short: "Create a new limit trade",
-		Args:  cobra.ExactArgs(5),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			market := args[0]
-			dur := args[1]
-			ttype := mt.MicrotickTradeTypeFromName(args[2])
-			limit := mt.NewMicrotickPremiumFromString(args[3])
-			maxcost := mt.NewMicrotickCoinFromString(args[4])
-			
-			txmsg := msg.NewTxLimitTrade(market, dur, cliCtx.GetFromAddress(), ttype,
-				limit, maxcost)
-			err := txmsg.ValidateBasic()
-			if err != nil {
-				return err
-			}
-
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
-		},
-	}
-}
-
 func GetCmdTradePick(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "trade-pick [id] [call/put]",
+		Use:   "trade-pick [id] [buy/sell] [call/put]",
 		Short: "Create a new trade against specific quote id",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			id := mt.NewMicrotickIdFromString(args[0])
-			ttype := mt.MicrotickTradeTypeFromName(args[1])
+			ttype := args[1] + "-" + args[2]
 			
 			txmsg := msg.NewTxPickTrade(cliCtx.GetFromAddress(), id, ttype)
 			err := txmsg.ValidateBasic()

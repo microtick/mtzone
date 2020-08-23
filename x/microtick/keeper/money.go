@@ -47,8 +47,8 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	if err != nil {
 		return nil, err
 	}
-    k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
-	k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
+	
+	// Remove duplicate minter call - extra lines were left in after adding error checking per code audit
 	
     //fmt.Printf("Add Pool Commission: requested %s actual %s pool %s\n", amount.String(), extCoins.String(), pool.String())
 	store.Set(key, k.Cdc.MustMarshalJSON(pool))
@@ -125,10 +125,11 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	return nil
 }
 
-func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) mt.MicrotickCoin {
-	coins := k.BankKeeper.GetBalance(ctx, addr, mt.ExtTokenType)
-    balance := mt.ExtCoinToMicrotickCoin(coins)
-    return balance
+func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) (sdk.Dec, sdk.Dec) {
+	params := k.GetParams(ctx)
+	udai := k.BankKeeper.GetBalance(ctx, addr, mt.ExtTokenType)
+	utick := k.BankKeeper.GetBalance(ctx, addr, params.MintDenom)
+    return sdk.NewDecFromInt(udai.Amount).QuoInt64(1000000), sdk.NewDecFromInt(utick.Amount).QuoInt64(1000000)
 }
 
 func (k Keeper) RefundBacking(ctx sdk.Context) {

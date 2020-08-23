@@ -15,7 +15,8 @@ import (
 
 type ResponseAccountStatus struct {
     Account string `json:"account"`
-    Balance mt.MicrotickCoin `json:"balance"`
+    Dai sdk.Dec `json:"dai"`
+    Tick sdk.Dec `json:"tick"`
     NumQuotes uint32 `json:"numQuotes"`
     NumTrades uint32 `json:"numTrades"`
     ActiveQuotes []mt.MicrotickId `json:"activeQuotes"`
@@ -26,6 +27,7 @@ type ResponseAccountStatus struct {
 }
 
 func (ras ResponseAccountStatus) String() string {
+    balanceStr := fmt.Sprintf("%sdai %stick", ras.Dai.String(), ras.Tick.String())
     return strings.TrimSpace(fmt.Sprintf(`Account: %s
 Balance: %s
 Num Quotes: %d
@@ -35,7 +37,7 @@ Active Trades: %v
 Quote Backing: %s
 Trade Backing: %s
 Settle Backing: %s`, ras.Account, 
-    ras.Balance.String(),
+    balanceStr,
     ras.NumQuotes, 
     ras.NumTrades, 
     ras.ActiveQuotes, ras.ActiveTrades,
@@ -47,7 +49,7 @@ func QueryAccountStatus(ctx sdk.Context, path []string,
     req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
     acct := path[0]
     address, err := sdk.AccAddressFromBech32(acct)
-    balance := keeper.GetTotalBalance(ctx, address)
+    dai, tick := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidAddress, acct)
@@ -62,7 +64,8 @@ func QueryAccountStatus(ctx sdk.Context, path []string,
     }
     response := ResponseAccountStatus {
         Account: acct,
-        Balance: balance,
+        Dai: dai,
+        Tick: tick,
         NumQuotes: data.NumQuotes,
         NumTrades: data.NumTrades,
         ActiveQuotes: activeQuotes,

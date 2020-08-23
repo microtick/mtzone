@@ -22,6 +22,8 @@ type ResponseQuoteStatus struct {
     Provider mt.MicrotickAccount `json:"provider"`
     Backing mt.MicrotickCoin `json:"backing"`
     Spot mt.MicrotickSpot `json:"spot"`
+    Consensus mt.MicrotickSpot `json:"consensus"`
+    Delta sdk.Dec `json:"delta"`
     Ask mt.MicrotickPremium `json:"ask"`
     Bid mt.MicrotickPremium `json:"bid"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
@@ -39,10 +41,12 @@ Provider: %s
 Market: %s
 Duration: %s
 Backing: %s
+Quantity: %s
 Spot: %s
+Consensus: %s
 Ask: %s
 Bid: %s
-Quantity: %s
+Delta/2: %spremium
 CallAsk: %s
 CallBid: %s
 PutAsk: %s
@@ -54,10 +58,12 @@ CanModify: %s`,
     rqs.Market, 
     rqs.Duration,
     rqs.Backing.String(), 
+    rqs.Quantity.String(),
     rqs.Spot.String(),
+    rqs.Consensus.String(),
     rqs.Ask.String(),
     rqs.Bid.String(),
-    rqs.Quantity.String(),
+    rqs.Delta.String(),
     rqs.CallAsk.String(),
     rqs.CallBid.String(),
     rqs.PutAsk.String(),
@@ -87,6 +93,8 @@ func QueryQuoteStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Provider: data.Provider,
         Backing: data.Backing,
         Spot: data.Spot,
+        Consensus: dataMarket.Consensus,
+        Delta: data.Spot.Amount.Sub(dataMarket.Consensus.Amount).QuoInt64(2),
         Ask: data.Ask,
         Bid: data.Bid,
         Quantity: data.Quantity,

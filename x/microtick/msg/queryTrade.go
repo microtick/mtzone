@@ -19,76 +19,73 @@ type ResponseTradeStatus struct {
     Id mt.MicrotickId `json:"id"`
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
-    Type mt.MicrotickTradeTypeName `json:"type"`
-    CounterParties []keeper.DataCounterParty `json:"counterparties"`
-    Long mt.MicrotickAccount `json:"long"`
-    Backing mt.MicrotickCoin `json:"backing"`
-    Cost mt.MicrotickCoin `json:"premium"` 
-    FilledQuantity mt.MicrotickQuantity `json:"quantity"`
+    Order mt.MicrotickOrderTypeName `json:"order"`
+    Taker mt.MicrotickAccount `json:"taker"`
+    Legs []keeper.DataTradeLeg `json:"legs"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
     Strike mt.MicrotickSpot `json:"strike"`
     CurrentSpot mt.MicrotickSpot `json:"currentSpot"`
-    CurrentValue mt.MicrotickCoin `json:"currentValue"`
+    CurrentValue sdk.Dec `json:"currentValue"`
     Commission mt.MicrotickCoin `json:"commission"`
     SettleIncentive mt.MicrotickCoin `json:"settleIncentive"`
 }
 
 func (rts ResponseTradeStatus) String() string {
-    cpStrings := make([]string, len(rts.CounterParties))
-    for i := 0; i < len(rts.CounterParties); i++ {
-        cpStrings[i] = formatCounterParty(rts.CounterParties[i])
+    legStrings := make([]string, len(rts.Legs))
+    for i := 0; i < len(rts.Legs); i++ {
+        legStrings[i] = formatTradeLeg(rts.Legs[i])
     }
     return strings.TrimSpace(fmt.Sprintf(`Trade Id: %d
-Long: %s
 Market: %s
 Duration: %s
-Type: %s
+Order: %s
 Start: %s
 Expiration: %s
-Filled Quantity: %s
-Backing: %s
-Cost: %s
 Commission: %s
 Settle Incentive: %s
-Counterparties: %s
+Taker: %s
+Legs: %s
 Strike: %s 
 Current Spot: %s
-Current Value: %s`,
+Current Value (Taker): %sdai`,
     rts.Id, 
-    rts.Long, 
     rts.Market, 
     rts.Duration,
-    rts.Type,
+    rts.Order,
     rts.Start.String(),
     rts.Expiration.String(),
-    rts.FilledQuantity.String(),
-    rts.Backing.String(), 
-    rts.Cost.String(),
     rts.Commission.String(),
     rts.SettleIncentive.String(),
-    cpStrings,
+    rts.Taker.String(),
+    legStrings,
     rts.Strike.String(),
     rts.CurrentSpot.String(),
     rts.CurrentValue.String()))
 }
 
-func formatCounterParty(cpData keeper.DataCounterParty) string {
+func formatTradeLeg(leg keeper.DataTradeLeg) string {
     return fmt.Sprintf(`
-    Short: %s
-        Quoted: %s
+    Leg: %d
+        Type: %s
+        Long: %s
+        Short: %s
+        Quantity: %s
         Backing: %s
         Cost: %s
-        Filled Quantity: %s`,
-        cpData.Short.String(),
-        formatQuoteParams(cpData.Quoted),
-        cpData.Backing.String(),
-        cpData.Cost.String(),
-        cpData.FilledQuantity.String(),
+        Quoted: %s`,
+        leg.LegId,
+        mt.MicrotickLegNameFromType(leg.Type),
+        leg.Long.String(),
+        leg.Short.String(),
+        leg.Quantity.String(),
+        leg.Backing.String(),
+        leg.Cost.String(),
+        formatQuoteParams(leg.Quoted),
     )
 }
 
-func formatQuoteParams(params keeper.DataQuoteParams) string {
+func formatQuoteParams(params keeper.DataQuotedParams) string {
     return fmt.Sprintf(`
             Id: %d 
             Premium: %s 
@@ -119,17 +116,14 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         Id: data.Id,
         Market: data.Market,
         Duration: data.DurationName,
-        Type: mt.MicrotickTradeNameFromType(data.Type),
-        CounterParties: data.CounterParties,
-        Long: data.Long,
-        Backing: data.Backing,
-        Cost: data.Cost,
-        FilledQuantity: data.FilledQuantity,
+        Order: mt.MicrotickOrderNameFromType(data.Order),
+        Taker: data.Taker,
+        Legs: data.Legs,
         Start: data.Start,
         Expiration: data.Expiration,
         Strike: data.Strike,
         CurrentSpot: dataMarket.Consensus,
-        CurrentValue: data.CurrentValue(dataMarket.Consensus),
+        CurrentValue: data.CurrentValue(data.Taker, dataMarket.Consensus),
         Commission: data.Commission,
         SettleIncentive: data.SettleIncentive,
     }

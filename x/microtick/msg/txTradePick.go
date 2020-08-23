@@ -13,16 +13,16 @@ import (
 )
 
 type TxPickTrade struct {
-    Buyer mt.MicrotickAccount
+    Taker mt.MicrotickAccount
     Id mt.MicrotickId
-    TradeType mt.MicrotickTradeTypeName
+    OrderType mt.MicrotickOrderType
 }
 
-func NewTxPickTrade(buyer sdk.AccAddress, id mt.MicrotickId, tradeType mt.MicrotickTradeType) TxPickTrade {
+func NewTxPickTrade(taker sdk.AccAddress, id mt.MicrotickId, orderType mt.MicrotickOrderType) TxPickTrade {
     return TxPickTrade {
-        Buyer: buyer,
+        Taker: taker,
         Id: id,
-        TradeType: tradeType,
+        OrderType: orderType,
     }
 }
 
@@ -39,8 +39,14 @@ func (msg TxPickTrade) Route() string { return "microtick" }
 func (msg TxPickTrade) Type() string { return "trade_pick" }
 
 func (msg TxPickTrade) ValidateBasic() error {
-    if msg.Buyer.Empty() {
-        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Buyer.String())
+    if msg.OrderType != mt.MicrotickOrderBuyCall &&
+        msg.OrderType != mt.MicrotickOrderSellCall &&
+        msg.OrderType != mt.MicrotickOrderBuyPut &&
+        msg.OrderType != mt.MicrotickOrderSellPut {
+        return sdkerrors.Wrap(mt.ErrInvalidOrderType, msg.OrderType)
+    }
+    if msg.Taker.Empty() {
+        return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Taker.String())
     }
     return nil
 }
@@ -50,7 +56,7 @@ func (msg TxPickTrade) GetSignBytes() []byte {
 }
 
 func (msg TxPickTrade) GetSigners() []sdk.AccAddress {
-    return []sdk.AccAddress{ msg.Buyer }
+    return []sdk.AccAddress{ msg.Taker }
 }
 
 // Handler
@@ -69,7 +75,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, quote.Market)
     }
     
-    if quote.Provider.Equals(msg.Buyer) {
+    if quote.Provider.Equals(msg.Taker) {
         return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "already owner")
     }
     
@@ -78,46 +84,22 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
     now := ctx.BlockHeader().Time
     durName := mtKeeper.NameFromDuration(ctx, quote.Duration)
     trade := keeper.NewDataActiveTrade(now, quote.Market, durName, mtKeeper.DurationFromName(ctx, durName),
-        msg.TradeType, msg.Buyer, market.Consensus, commission, settleIncentive)
+        msg.OrderType, msg.Taker, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, nil)
-        
+    
     // Step 2 - Compute premium and cost
-    var premium mt.MicrotickPremium
-    if msg.TradeType == mt.MicrotickCall {
-        premium = quote.CallAsk(market.Consensus)
-    }
-    if msg.TradeType == mt.MicrotickPut {
-        premium = quote.PutAsk(market.Consensus)
-    }
+    matcher.MatchQuote(quote)
+    
+    if matcher.HasQuantity {
         
-    cost := mt.NewMicrotickCoinFromDec(premium.Amount.Mul(quote.Quantity.Amount))
-    
-    matcher.TotalQuantity = quote.Quantity.Amount
-    matcher.TotalCost = cost
-    
-    matcher.FillInfo = append(matcher.FillInfo, keeper.QuoteFillInfo {
-        Quote: quote,
-        BoughtQuantity: quote.Quantity.Amount,
-        Cost: cost,
-        FinalFill: true,
-    })
-    
-    if matcher.HasQuantity() {
-        
-        // Step 3 - Deduct premium from buyer account and add it to provider account
-        // We do this first because if the funds aren't there we abort
-        //fmt.Printf("TotalCost: %s\n", matcher.TotalCost.String())
-        //fmt.Printf("Commission: %s\n", trade.Commission.String())
-        //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
-        total := matcher.TotalCost.Add(trade.Commission).Add(settleIncentive)
-        err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Buyer, total)
+        // Deduct commission and settle incentive
+        total := trade.Commission.Add(settleIncentive)
+        err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Taker, total)
         if err != nil {
             return nil, mt.ErrInsufficientFunds
         }
-        //fmt.Printf("Trade Commission: %s\n", trade.Commission.String())
-        //fmt.Printf("Settle Incentive: %s\n", settleIncentive.String())
-        reward, err := mtKeeper.PoolCommission(ctx, msg.Buyer, trade.Commission)
+        reward, err := mtKeeper.PoolCommission(ctx, msg.Taker, trade.Commission)
         if err != nil {
             return nil, err
         }
@@ -130,16 +112,13 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
             return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "counterparty assignment")
         }
         
-        // Update the account status for the buyer
-        accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Buyer)
-        accountStatus.ActiveTrades.Insert(keeper.NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
+        accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Taker)
         accountStatus.SettleBacking = accountStatus.SettleBacking.Add(settleIncentive)
         accountStatus.NumTrades++
+        mtKeeper.SetAccountStatus(ctx, msg.Taker, accountStatus)
         
-        // Commit changes
-        mtKeeper.SetAccountStatus(ctx, msg.Buyer, accountStatus)
+        // Save
         mtKeeper.SetDataMarket(ctx, market)
-        
         mtKeeper.SetActiveTrade(ctx, matcher.Trade)
         
         // Data
@@ -160,7 +139,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
             sdk.EventTypeMessage,
             sdk.NewAttribute("mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id)),
             sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Buyer), "trade.long"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Taker), "trade.start"),
             sdk.NewAttribute("mtm.MarketTick", quote.Market),
         ), sdk.NewEvent(
             sdk.EventTypeMessage,
@@ -179,7 +158,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
             
             events = append(events, sdk.NewEvent(
                 sdk.EventTypeMessage,
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.short"),
+                sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.start"),
                 sdk.NewAttribute(quoteKey, matchType),
             ))
         }

@@ -43,24 +43,54 @@ type MicrotickMarket = string
 type MicrotickDuration = uint32
 type MicrotickDurationName = string
 
-// Type
+// Types
 
-type MicrotickTradeType = string
-type MicrotickTradeTypeName = string
+type MicrotickOrderType = string
+type MicrotickOrderTypeName = string
 
 const (
-    MicrotickCall = "call"
-    MicrotickPut = "put"
+    MicrotickOrderBuyCall = "buy-call"
+    MicrotickOrderSellCall = "sell-call"
+    MicrotickOrderBuyPut = "buy-put"
+    MicrotickOrderSellPut = "sell-put"
+    MicrotickOrderSynthLong = "long"
+    MicrotickOrderSynthShort = "short"
 )
 
-func MicrotickTradeTypeFromName(str string) MicrotickTradeType {
-    if str == "call" { return MicrotickCall }
-    if str == "put" { return MicrotickPut }
-    panic(fmt.Sprintf("Invalid trade type: %s", str))
+func MicrotickOrderTypeFromName(str string) MicrotickOrderType {
+    if str == "buy-call" { return MicrotickOrderBuyCall }
+    if str == "sell-call" { return MicrotickOrderSellCall }
+    if str == "buy-put" { return MicrotickOrderBuyPut }
+    if str == "sell-put" { return MicrotickOrderSellPut }
+    if str == "long" { return MicrotickOrderSynthLong }
+    if str == "short" { return MicrotickOrderSynthShort }
+    panic(fmt.Sprintf("Invalid order type: %s", str))
 }
 
-func MicrotickTradeNameFromType(mtt MicrotickTradeType) MicrotickTradeTypeName {
-    return mtt
+func MicrotickOrderNameFromType(mot MicrotickOrderType) MicrotickOrderTypeName {
+    return mot
+}
+
+type MicrotickLegType = bool
+type MicrotickLegTypeName = string
+
+const (
+    MicrotickLegCall = true
+    MicrotickLegPut = false
+)
+
+func MicrotickLegTypeFromName(str string) MicrotickLegType {
+    if str == "call" { return MicrotickLegCall }
+    if str == "put" { return MicrotickLegPut }
+    panic(fmt.Sprintf("Invalid trade leg type: %s", str))
+}
+
+func MicrotickLegNameFromType(mlt MicrotickLegType) MicrotickLegTypeName {
+    if mlt {
+        return "call"
+    } else {
+        return "put"
+    }
 }
 
 // Backing
@@ -70,8 +100,14 @@ type ExtCoin = sdk.Coin
 
 var reDecCoin = regexp.MustCompile(fmt.Sprintf(`^(%s)%s(%s)$`, `(?:[[:digit:]]*[.])?[[:digit:]]+`, `[[:space:]]*`, `[a-z][a-z0-9]{2,15}`))
 
-func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
+func parseDecCoin(coinStr string, allowNegativeValue bool) (coin sdk.DecCoin, err error) {
 	coinStr = strings.TrimSpace(coinStr)
+	
+	isNegative := false
+	if allowNegativeValue && strings.HasPrefix(coinStr, "-") {
+	    isNegative = true
+	    coinStr = coinStr[1:]
+	}
 
 	matches := reDecCoin.FindStringSubmatch(coinStr)
 	if matches == nil {
@@ -83,6 +119,10 @@ func parseDecCoin(coinStr string) (coin sdk.DecCoin, err error) {
 	amount, err := sdk.NewDecFromStr(amountStr)
 	if err != nil {
 		return sdk.DecCoin{}, errors.Wrap(err, fmt.Sprintf("Failed to parse decimal coin amount: %s", amountStr))
+	}
+	
+	if isNegative {
+	    amount = amount.Neg()
 	}
 
 	return sdk.NewDecCoinFromDec(denomStr, amount), nil
@@ -99,7 +139,7 @@ func NewMicrotickCoinFromExtCoinInt(b int64) MicrotickCoin {
 // "1.234IntTokenType" -> 1.234 IntTokenType
 // "1234000ExtTokenType" -> 1.234 ExtTokenType
 func NewMicrotickCoinFromString(str string) MicrotickCoin {
-    result, err := parseDecCoin(str)
+    result, err := parseDecCoin(str, false)
     if err != nil || (result.Denom != IntTokenType && result.Denom != ExtTokenType) {
         panic(fmt.Sprintf("Invalid coin amount or token type: %s", str))
     }
@@ -144,7 +184,7 @@ func NewMicrotickQuantityFromInt(q int64) MicrotickQuantity {
 }
 
 func NewMicrotickQuantityFromString(q string) MicrotickQuantity {
-    result, err := parseDecCoin(q)
+    result, err := parseDecCoin(q, false)
     if err != nil || result.Denom != "quantity" {
         panic(fmt.Sprintf("Invalid quantity: %s", q))
     }
@@ -166,7 +206,7 @@ func NewMicrotickSpotFromInt(s int64) MicrotickSpot {
 
 
 func NewMicrotickSpotFromString(s string) MicrotickSpot {
-    result, err := parseDecCoin(s)
+    result, err := parseDecCoin(s, false)
     if err != nil || result.Denom != "spot" {
         panic(fmt.Sprintf("Invalid spot: %s", s))
     }
@@ -188,7 +228,7 @@ func NewMicrotickPremiumFromInt(p int64) MicrotickPremium {
 }
 
 func NewMicrotickPremiumFromString(p string) MicrotickPremium {
-    result, err := parseDecCoin(p)
+    result, err := parseDecCoin(p, false)
     if err != nil || result.Denom != "premium" {
         panic(fmt.Sprintf("Invalid premium: %s", p))
     }

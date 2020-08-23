@@ -53,8 +53,6 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 			return msg.HandleTxWithdrawQuote(ctx, keeper, params, tmp)
 		case msg.TxMarketTrade:
 			return msg.HandleTxMarketTrade(ctx, keeper, params, tmp)
-		case msg.TxLimitTrade:
-			return msg.HandleTxLimitTrade(ctx, keeper, params, tmp)
 		case msg.TxPickTrade:
 		    return msg.HandleTxPickTrade(ctx, keeper, params, tmp)
 		case msg.TxSettleTrade:

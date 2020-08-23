@@ -15,12 +15,12 @@ import (
 // The rules for settling a trade are as follows:
 // If European mode is set, (mode TBD)
 //     If expiration time is now or in the past
-//         Anyone can call settle-trade, value is paid out and difference refunded
+//         Anyone can settle-trade, value is paid out and difference refunded
 // If American mode is set, (TBD)
-//     If expiration time is in the futuer
+//     If expiration time is in the future
 //         Only the buyer can settle trade (must be signed and verified)
 //     Else
-//         Anyone can call settle trade
+//         Anyone can settle trade
 
 type TxSettleTrade struct {
     Id mt.MicrotickId
@@ -35,7 +35,7 @@ func NewTxSettleTrade(id mt.MicrotickId, requester sdk.AccAddress) TxSettleTrade
 }
 
 type SettlementData struct {
-    Short mt.MicrotickAccount `json:"short"`
+    LegId mt.MicrotickId `json:"leg_id"`
     Settle mt.MicrotickCoin `json:"settle"`
     Refund mt.MicrotickCoin `json:"refund"`
 }
@@ -44,9 +44,7 @@ type TradeSettlementData struct {
     Id mt.MicrotickId `json:"id"`
     Time time.Time `json:"time"`
     Final mt.MicrotickSpot `json:"final"`
-    Long mt.MicrotickAccount `json:"long"`
-    Settle mt.MicrotickCoin `json:"settle"`
-    CounterParties []SettlementData `json:"counterparties"`
+    Settlements []SettlementData `json:"settlements"`
     Incentive mt.MicrotickCoin `json:"incentive"`
     Commission mt.MicrotickCoin `json:"commission"`
     Settler mt.MicrotickAccount `json:"settler"`
@@ -82,11 +80,9 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     }
     
     var settleData []SettlementData
-    totalPaid := sdk.NewDec(0)
     
-    now := ctx.BlockHeader().Time
-        
     // check if trade has expired
+    now := ctx.BlockHeader().Time
     if now.Before(trade.Expiration) {
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "trade not expired")
     }
@@ -96,29 +92,27 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, trade.Market)
     }
     
-    // ensure we have at least one quote past its "canModify" time
+    // ensure we have at least one quote past its "canModify" time - this check is
+    // to prevent manipulation by requiring quotes to have aged before settling a
+    // trade.
     if !dataMarket.CanSettle(now) {
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "unconfirmed consensus")
     }
     
-    settlements := trade.CounterPartySettlements(dataMarket.Consensus)
+    settlements := trade.CalculateLegSettlements(dataMarket.Consensus)
     
-    // Incentive 
+    // Reward settle incentive 
     err = keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "settle incentive")
     }
-    //fmt.Printf("Settle Incentive: %s\n", trade.SettleIncentive.String())
     
     // Commission
     commission := mt.NewMicrotickCoinFromDec(params.CommissionSettleFixed)
-     
     err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
-    
-    //fmt.Printf("Settle Commission: %s\n", commission.String())
     reward, err := keeper.PoolCommission(ctx, msg.Requester, commission)
     if err != nil {
         return nil, err
@@ -127,15 +121,13 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     if params.EuropeanOptions {
         
         // Payout and refunds
-        for i := 0; i < len(settlements); i++ {
-            pair := settlements[i]
+        for _, pair := range settlements {
             
             // Long
-            err = keeper.DepositMicrotickCoin(ctx, trade.Long, pair.Settle)
+            err = keeper.DepositMicrotickCoin(ctx, pair.SettleAddress, pair.Settle)
             if err != nil {
                 return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "payout")
             }
-            totalPaid = totalPaid.Add(pair.Settle.Amount)
             
             // Refund
             err := keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
@@ -149,17 +141,20 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
             accountStatus.TradeBacking = accountStatus.TradeBacking.Sub(pair.Backing)
             keeper.SetAccountStatus(ctx, pair.RefundAddress, accountStatus)
             
+            accountStatus = keeper.GetAccountStatus(ctx, pair.SettleAddress)
+            accountStatus.ActiveTrades.Delete(trade.Id)
+            keeper.SetAccountStatus(ctx, pair.SettleAddress, accountStatus)
+            
             settleData = append(settleData, SettlementData {
-                Short: pair.RefundAddress,
+                LegId: pair.LegId,
                 Settle: pair.Settle,
                 Refund: pair.Refund,
             })
         }
         
-        accountStatusLong := keeper.GetAccountStatus(ctx, trade.Long)
-        accountStatusLong.ActiveTrades.Delete(trade.Id)
-        accountStatusLong.SettleBacking = accountStatusLong.SettleBacking.Sub(trade.SettleIncentive)
-        keeper.SetAccountStatus(ctx, trade.Long, accountStatusLong)
+        accountStatusTaker := keeper.GetAccountStatus(ctx, trade.Taker)
+        accountStatusTaker.SettleBacking = accountStatusTaker.SettleBacking.Sub(trade.SettleIncentive)
+        keeper.SetAccountStatus(ctx, trade.Taker, accountStatusTaker)
         keeper.DeleteActiveTrade(ctx, trade.Id)
         
     } else {
@@ -173,9 +168,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         Id: trade.Id,
         Time: now,
         Final: dataMarket.Consensus,
-        Long: trade.Long,
-        Settle: mt.NewMicrotickCoinFromDec(totalPaid),
-        CounterParties: settleData,
+        Settlements: settleData,
         Incentive: trade.SettleIncentive,
         Commission: commission,
         Settler: msg.Requester,
@@ -189,19 +182,17 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     ), sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", trade.Long), "settle.long"),
     ), sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute("commission", commission.String()),
         sdk.NewAttribute("reward", reward.String()),
     ))
     
-    for i := 0; i < len(trade.CounterParties); i++ {
-        cp := trade.CounterParties[i]
-        
+    for _, leg := range trade.Legs {
         events = append(events, sdk.NewEvent(
             sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", cp.Short), "settle.short"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", leg.Long), "trade.end"),
+            sdk.NewAttribute(fmt.Sprintf("acct.%s", leg.Short), "trade.end"),
         ))
     }
     
