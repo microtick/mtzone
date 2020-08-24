@@ -42,7 +42,7 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 		case msg.TxCreateQuote:
 			return msg.HandleTxCreateQuote(ctx, keeper, params, tmp)
 		case msg.TxCancelQuote:
-			return msg.HandleTxCancelQuote(ctx, keeper, tmp)
+			return msg.HandleTxCancelQuote(ctx, keeper, params, tmp)
 		case msg.TxUpdateQuote:
 			return msg.HandleTxUpdateQuote(ctx, keeper, params, tmp)
 		case msg.TxDepositQuote:

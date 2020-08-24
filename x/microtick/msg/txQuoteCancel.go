@@ -32,6 +32,8 @@ type CancelQuoteData struct {
     Consensus mt.MicrotickSpot `json:"consensus"`
     Time time.Time `json:"time"`
     Refund mt.MicrotickCoin `json:"refund"`
+    Slash mt.MicrotickCoin `json:"slash"`
+    Commission mt.MicrotickCoin `json:"commission"`
 }
 
 func (msg TxCancelQuote) Route() string { return "microtick" }
@@ -55,48 +57,70 @@ func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuote) (*sdk.Result, error) {
-    quote, err := keeper.GetActiveQuote(ctx, msg.Id)
+func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+    msg TxCancelQuote) (*sdk.Result, error) {
+        
+    quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
-    }
-    
-    // Time 2x invariant:
-    // If a quote has not been updated within 2x the time duration of the quote, the
-    // backing is forfeited.
-    // Purpose: keeps market makers out of short-term orderbooks if they do not intend
-    // to keep the quotes timely.
-    if quote.Provider.String() != msg.Requester.String() {
-        if !quote.Stale(ctx.BlockHeader().Time) {
-            return nil, mt.ErrQuoteNotStale
-        }
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
         return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
     }
     
-    // Everything ok, let's refund the backing and delete the quote
-    err = keeper.DepositMicrotickCoin(ctx, msg.Requester, quote.Backing)
+    // Commission
+    commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionCancelPercent))
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    if err != nil {
+        return nil, mt.ErrInsufficientFunds
+    }
+    _, err = mtKeeper.PoolCommission(ctx, msg.Requester, commission, false)
+    if err != nil {
+        return nil, err
+    }
+    
+    // Time 2x invariant:
+    // If a quote has not been updated within 2x the time duration of the quote, the
+    // backing is slashed and awarded to the canceler
+    // Purpose: keeps market makers out of short-term orderbooks if they do not intend
+    // to keep the quotes timely.
+    slash := sdk.ZeroDec()
+    // Save original quote backing
+    backing := quote.Backing
+    if quote.Provider.String() != msg.Requester.String() {
+        if !quote.Stale(ctx.BlockHeader().Time) {
+            return nil, mt.ErrQuoteNotStale
+        }
+        slash := quote.Backing.Amount.Mul(params.CancelSlashRate)
+        backing.Amount = backing.Amount.Sub(slash)
+        err = mtKeeper.DepositMicrotickCoin(ctx, msg.Requester, mt.NewMicrotickCoinFromDec(slash))
+        if err != nil {
+            return nil, sdkerrors.Wrap(mt.ErrQuoteBacking, "slash deposit")
+        }
+    }
+    
+    // Everything ok, let's refund the (remainder of the) backing and delete the quote
+    err = mtKeeper.DepositMicrotickCoin(ctx, quote.Provider, backing)
     if err != nil {
         return nil, mt.ErrQuoteBacking
     }
     
-    dataMarket, err := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
         return nil, mt.ErrInvalidMarket
     }
     
     dataMarket.FactorOut(quote)
     dataMarket.DeleteQuote(quote)
-    keeper.SetDataMarket(ctx, dataMarket)
+    mtKeeper.SetDataMarket(ctx, dataMarket)
     
-    keeper.DeleteActiveQuote(ctx, quote.Id)
+    mtKeeper.DeleteActiveQuote(ctx, quote.Id)
     
-    accountStatus := keeper.GetAccountStatus(ctx, quote.Provider)
+    accountStatus := mtKeeper.GetAccountStatus(ctx, quote.Provider)
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(quote.Backing)
     accountStatus.ActiveQuotes.Delete(quote.Id)
-    keeper.SetAccountStatus(ctx, quote.Provider, accountStatus)
+    mtKeeper.SetAccountStatus(ctx, quote.Provider, accountStatus)
     
     // Data
     data := CancelQuoteData {
@@ -107,6 +131,8 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
       Consensus: dataMarket.Consensus,
       Time: ctx.BlockHeader().Time,
       Refund: quote.Backing,
+      Slash: mt.NewMicrotickCoinFromDec(slash),
+      Commission: commission,
     }
     bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
     
@@ -119,6 +145,9 @@ func HandleTxCancelQuote(ctx sdk.Context, keeper keeper.Keeper, msg TxCancelQuot
         sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.cancel"),
         sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel"),
         sdk.NewAttribute("mtm.MarketTick", quote.Market),
+    ), sdk.NewEvent(
+        sdk.EventTypeMessage,
+        sdk.NewAttribute("commission", commission.String()),
     ))
     
     if quote.Provider.String() != msg.Requester.String() {
