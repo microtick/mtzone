@@ -23,26 +23,28 @@ type ResponseSyntheticBook struct {
 type ResponseSyntheticQuote struct {
     Spot sdk.Dec `json:"spot"`
     Quantity sdk.Dec `json:"quantity"`
+    Cost sdk.Dec `json:"cost"`
 }
 
-func (rma ResponseSyntheticBook) String() string {
+func (rsb ResponseSyntheticBook) String() string {
     var i int
     var a, b string
-    for i = 0; i < len(rma.Asks); i++ {
-        a += formatSyntheticQuote(rma.Asks[i]) + "\n"
+    for i = 0; i < len(rsb.Asks); i++ {
+        a += formatSyntheticQuote(rsb.Asks[i]) + "\n"
     }
-    for i = 0; i < len(rma.Bids); i++ {
-        b += formatSyntheticQuote(rma.Bids[i]) + "\n"
+    for i = 0; i < len(rsb.Bids); i++ {
+        b += formatSyntheticQuote(rsb.Bids[i]) + "\n"
     }
     return strings.TrimSpace(fmt.Sprintf(`Consensus: %s
 Weight: %s
 Asks: 
 %sBids: 
-%s`, rma.Consensus, rma.Weight, a, b))
+%s`, rsb.Consensus, rsb.Weight, a, b))
 }
 
 func formatSyntheticQuote(robq ResponseSyntheticQuote) string {
-    return fmt.Sprintf(`  spot: %s quantity: %s`, robq.Spot.String(), robq.Quantity.String())
+    return fmt.Sprintf(`  quantity: %s cost: %s spot: %s`, 
+        robq.Quantity.String(), robq.Cost.String(), robq.Spot.String())
 }
 
 func QuerySyntheticBook(ctx sdk.Context, path []string, 
@@ -64,12 +66,14 @@ func QuerySyntheticBook(ctx sdk.Context, path []string,
         asks[i] = ResponseSyntheticQuote {
             Spot: syntheticBook.Asks[i].Spot.Amount,
             Quantity: syntheticBook.Asks[i].Quantity.Amount,
+            Cost: syntheticBook.Asks[i].Spot.Amount.Sub(dataMarket.Consensus.Amount),
         }
     }
     for i := 0; i < len(syntheticBook.Bids); i++ {
         bids[i] = ResponseSyntheticQuote {
             Spot: syntheticBook.Bids[i].Spot.Amount,
             Quantity: syntheticBook.Bids[i].Quantity.Amount,
+            Cost: dataMarket.Consensus.Amount.Sub(syntheticBook.Bids[i].Spot.Amount),
         }
     }
     response := ResponseSyntheticBook {

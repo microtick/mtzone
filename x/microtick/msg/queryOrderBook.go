@@ -14,12 +14,13 @@ import (
 )
 
 type ResponseOrderBook struct {
+    Consensus mt.MicrotickSpot `json:"consensus"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
     SumWeight mt.MicrotickQuantity `json:"sumWeight"`
-    CallAsks []ResponseOrderBookQuote `json:"callasks"`
-    CallBids []ResponseOrderBookQuote `json:"callbids"`
-    PutAsks []ResponseOrderBookQuote `json:"putasks"`
-    PutBids []ResponseOrderBookQuote `json:"putbids"`
+    CallAsks []ResponseOrderBookQuote `json:"callAsks"`
+    CallBids []ResponseOrderBookQuote `json:"callBids"`
+    PutAsks []ResponseOrderBookQuote `json:"putAsks"`
+    PutBids []ResponseOrderBookQuote `json:"putBids"`
 }
 
 type ResponseOrderBookQuote struct {
@@ -28,28 +29,29 @@ type ResponseOrderBookQuote struct {
     Quantity sdk.Dec `json:"quantity"`
 }
 
-func (rma ResponseOrderBook) String() string {
+func (rob ResponseOrderBook) String() string {
     var i int
     var ca, cb, pa, pb string
-    for i = 0; i < len(rma.CallAsks); i++ {
-        ca += formatQuote(rma.CallAsks[i]) + "\n"
+    for i = 0; i < len(rob.CallAsks); i++ {
+        ca += formatQuote(rob.CallAsks[i]) + "\n"
     }
-    for i = 0; i < len(rma.CallBids); i++ {
-        cb += formatQuote(rma.CallBids[i]) + "\n"
+    for i = 0; i < len(rob.CallBids); i++ {
+        cb += formatQuote(rob.CallBids[i]) + "\n"
     }
-    for i = 0; i < len(rma.PutAsks); i++ {
-        pa += formatQuote(rma.PutAsks[i]) + "\n"
+    for i = 0; i < len(rob.PutAsks); i++ {
+        pa += formatQuote(rob.PutAsks[i]) + "\n"
     }
-    for i = 0; i < len(rma.PutBids); i++ {
-        pb += formatQuote(rma.PutBids[i]) + "\n"
+    for i = 0; i < len(rob.PutBids); i++ {
+        pb += formatQuote(rob.PutBids[i]) + "\n"
     }
-    return strings.TrimSpace(fmt.Sprintf(`Sum Backing: %s
+    return strings.TrimSpace(fmt.Sprintf(`Consensus: %s
+Sum Backing: %s
 SumWeight: %s
 CallAsks: 
 %sCallBids: 
 %sPutAsks: 
 %sPutBids: 
-%s`, rma.SumBacking, rma.SumWeight, ca, cb, pa, pb))
+%s`, rob.Consensus, rob.SumBacking, rob.SumWeight, ca, cb, pa, pb))
 }
 
 func formatQuote(robq ResponseOrderBookQuote) string {
@@ -108,6 +110,7 @@ func QueryOrderBook(ctx sdk.Context, path []string,
         }
     }
     response := ResponseOrderBook {
+        Consensus: dataMarket.Consensus,
         SumBacking: orderBook.SumBacking,
         SumWeight: orderBook.SumWeight,
         CallAsks: callasks,

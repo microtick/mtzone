@@ -123,7 +123,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
         
         err = matcher.AssignCounterparties(ctx, mtKeeper, &market)
         if err != nil {
-            return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "counterparty assignment")
+            return nil, err
         }
         
         accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Taker)
@@ -132,6 +132,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
         mtKeeper.SetAccountStatus(ctx, msg.Taker, accountStatus)
         
         // Save
+        mtKeeper.CommitTradeId(ctx, matcher.Trade.Id)
         mtKeeper.SetDataMarket(ctx, market)
         mtKeeper.SetActiveTrade(ctx, matcher.Trade)
         

@@ -21,7 +21,7 @@ type ResponseTradeStatus struct {
     Duration mt.MicrotickDurationName `json:"duration"`
     Order mt.MicrotickOrderTypeName `json:"order"`
     Taker mt.MicrotickAccount `json:"taker"`
-    Legs []keeper.DataTradeLeg `json:"legs"`
+    Legs []ResponseTradeLeg `json:"legs"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
     Strike mt.MicrotickSpot `json:"strike"`
@@ -29,6 +29,19 @@ type ResponseTradeStatus struct {
     CurrentValue sdk.Dec `json:"currentValue"`
     Commission mt.MicrotickCoin `json:"commission"`
     SettleIncentive mt.MicrotickCoin `json:"settleIncentive"`
+}
+
+type ResponseTradeLeg struct {
+    LegId mt.MicrotickId `json:"leg_id"`
+    Type mt.MicrotickLegType `json:"type"`
+    Backing mt.MicrotickCoin `json:"backing"`
+    Cost mt.MicrotickCoin `json:"premium"`
+    Quantity mt.MicrotickQuantity `json:"quantity"`
+    FinalFill bool `json:"final"`
+    Long mt.MicrotickAccount `json:"long"`
+    Short mt.MicrotickAccount `json:"short"`
+    Quoted keeper.DataQuotedParams `json:"quoted"`
+    CurrentValue sdk.Dec `json:"currentValue"`
 }
 
 func (rts ResponseTradeStatus) String() string {
@@ -64,7 +77,7 @@ Current Value (Taker): %sdai`,
     rts.CurrentValue.String()))
 }
 
-func formatTradeLeg(leg keeper.DataTradeLeg) string {
+func formatTradeLeg(leg ResponseTradeLeg) string {
     return fmt.Sprintf(`
     Leg: %d
         Type: %s
@@ -73,7 +86,8 @@ func formatTradeLeg(leg keeper.DataTradeLeg) string {
         Quantity: %s
         Backing: %s
         Cost: %s
-        Quoted: %s`,
+        Quoted: %s
+        CurrentValue: %s`,
         leg.LegId,
         mt.MicrotickLegNameFromType(leg.Type),
         leg.Long.String(),
@@ -82,6 +96,7 @@ func formatTradeLeg(leg keeper.DataTradeLeg) string {
         leg.Backing.String(),
         leg.Cost.String(),
         formatQuoteParams(leg.Quoted),
+        leg.CurrentValue.String(),
     )
 }
 
@@ -112,13 +127,29 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, data.Market)
     }
     
+    var legs []ResponseTradeLeg
+    for _, leg := range data.Legs {
+        legs = append(legs, ResponseTradeLeg{
+            LegId: leg.LegId,
+            Type: leg.Type,
+            Backing: leg.Backing,
+            Cost: leg.Cost,
+            Quantity: leg.Quantity,
+            FinalFill: leg.FinalFill,
+            Long: leg.Long,
+            Short: leg.Short,
+            Quoted: leg.Quoted,
+            CurrentValue: leg.CalculateValue(dataMarket.Consensus.Amount, data.Strike.Amount),
+        })
+    }
+    
     response := ResponseTradeStatus {
         Id: data.Id,
         Market: data.Market,
         Duration: data.DurationName,
         Order: mt.MicrotickOrderNameFromType(data.Order),
         Taker: data.Taker,
-        Legs: data.Legs,
+        Legs: legs,
         Start: data.Start,
         Expiration: data.Expiration,
         Strike: data.Strike,

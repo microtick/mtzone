@@ -246,18 +246,22 @@ func (k Keeper) GetNextActiveQuoteId(ctx sdk.Context) mt.MicrotickId {
 	store := ctx.KVStore(k.activeQuotesKey)
 	key := []byte("nextQuoteId")
 	var id mt.MicrotickId
-	var val []byte
 	if !store.Has(key) {
-		val = make([]byte, 4)
 		id = 1
 	} else {
-		val = store.Get(key)
+		val := store.Get(key)
 		id = binary.LittleEndian.Uint32(val)
 		id++
 	}
+	return id
+}
+
+func (k Keeper) CommitQuoteId(ctx sdk.Context, id mt.MicrotickId) {
+	store := ctx.KVStore(k.activeQuotesKey)
+	key := []byte("nextQuoteId")
+	val := make([]byte, 4)
 	binary.LittleEndian.PutUint32(val, id)
 	store.Set(key, val)
-	return id
 }
 
 func (k Keeper) GetActiveQuote(ctx sdk.Context, id mt.MicrotickId) (DataActiveQuote, error) {
@@ -290,21 +294,25 @@ func (k Keeper) DeleteActiveQuote(ctx sdk.Context, id mt.MicrotickId) {
 // DataActiveTrade
 
 func (k Keeper) GetNextActiveTradeId(ctx sdk.Context) mt.MicrotickId {
-	store := ctx.KVStore(k.activeQuotesKey)
+	store := ctx.KVStore(k.activeTradesKey)
 	key := []byte("nextTradeId")
 	var id mt.MicrotickId
-	var val []byte
 	if !store.Has(key) {
-		val = make([]byte, 4)
 		id = 1
 	} else {
-		val = store.Get(key)
+		val := store.Get(key)
 		id = binary.LittleEndian.Uint32(val)
 		id++
 	}
+	return id
+}
+
+func (k Keeper) CommitTradeId(ctx sdk.Context, id mt.MicrotickId) {
+	store := ctx.KVStore(k.activeTradesKey)
+	key := []byte("nextTradeId")
+	val := make([]byte, 4)
 	binary.LittleEndian.PutUint32(val, id)
 	store.Set(key, val)
-	return id
 }
 
 func (k Keeper) GetActiveTrade(ctx sdk.Context, id mt.MicrotickId) (DataActiveTrade, error) {

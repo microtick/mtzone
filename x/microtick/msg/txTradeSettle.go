@@ -36,7 +36,9 @@ func NewTxSettleTrade(id mt.MicrotickId, requester sdk.AccAddress) TxSettleTrade
 
 type SettlementData struct {
     LegId mt.MicrotickId `json:"leg_id"`
+    SettleAccount mt.MicrotickAccount `json:"settle_account"`
     Settle mt.MicrotickCoin `json:"settle"`
+    RefundAccount mt.MicrotickAccount `json:"refund_account"`
     Refund mt.MicrotickCoin `json:"refund"`
 }
 
@@ -124,30 +126,32 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
         for _, pair := range settlements {
             
             // Long
-            err = keeper.DepositMicrotickCoin(ctx, pair.SettleAddress, pair.Settle)
+            err = keeper.DepositMicrotickCoin(ctx, pair.SettleAccount, pair.Settle)
             if err != nil {
                 return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "payout")
             }
             
             // Refund
-            err := keeper.DepositMicrotickCoin(ctx, pair.RefundAddress, pair.Refund)
+            err := keeper.DepositMicrotickCoin(ctx, pair.RefundAccount, pair.Refund)
             if err != nil {
                 return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "refund")
             }
             
             // Adjust trade backing
-            accountStatus := keeper.GetAccountStatus(ctx, pair.RefundAddress)
+            accountStatus := keeper.GetAccountStatus(ctx, pair.RefundAccount)
             accountStatus.ActiveTrades.Delete(trade.Id)
             accountStatus.TradeBacking = accountStatus.TradeBacking.Sub(pair.Backing)
-            keeper.SetAccountStatus(ctx, pair.RefundAddress, accountStatus)
+            keeper.SetAccountStatus(ctx, pair.RefundAccount, accountStatus)
             
-            accountStatus = keeper.GetAccountStatus(ctx, pair.SettleAddress)
+            accountStatus = keeper.GetAccountStatus(ctx, pair.SettleAccount)
             accountStatus.ActiveTrades.Delete(trade.Id)
-            keeper.SetAccountStatus(ctx, pair.SettleAddress, accountStatus)
+            keeper.SetAccountStatus(ctx, pair.SettleAccount, accountStatus)
             
             settleData = append(settleData, SettlementData {
                 LegId: pair.LegId,
+                SettleAccount: pair.SettleAccount,
                 Settle: pair.Settle,
+                RefundAccount: pair.RefundAccount,
                 Refund: pair.Refund,
             })
         }

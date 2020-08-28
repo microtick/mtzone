@@ -127,8 +127,8 @@ type TradeLegSettlement struct {
     LegId mt.MicrotickId
     Settle mt.MicrotickCoin
     Refund mt.MicrotickCoin
-    SettleAddress mt.MicrotickAccount
-    RefundAddress mt.MicrotickAccount
+    SettleAccount mt.MicrotickAccount
+    RefundAccount mt.MicrotickAccount
     Backing mt.MicrotickCoin
 }
 
@@ -142,8 +142,8 @@ func (dat DataActiveTrade) CalculateLegSettlements(current mt.MicrotickSpot) []T
             LegId: leg.LegId,
             Settle: settle,
             Refund: refund,
-            SettleAddress: leg.Long,
-            RefundAddress: leg.Short,
+            SettleAccount: leg.Long,
+            RefundAccount: leg.Short,
             Backing: leg.Backing,
         })
     }

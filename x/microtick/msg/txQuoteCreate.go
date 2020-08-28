@@ -124,6 +124,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
         return nil, mt.ErrQuoteParams
     }
     
+    mtKeeper.CommitQuoteId(ctx, id)
     mtKeeper.SetAccountStatus(ctx, msg.Provider, accountStatus)
     mtKeeper.SetDataMarket(ctx, dataMarket)
     

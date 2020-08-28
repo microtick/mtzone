@@ -58,13 +58,13 @@ func GenerateTx(ctx sdk.Context, txType string, path []string,
     case "markettrade":
         market := path[1]
         duration := path[2]
-        tradetype := path[3]
+        ordertype := path[3]
         quantity := mt.NewMicrotickQuantityFromString(path[4])
-        txmsg = NewTxMarketTrade(market, duration, accAddr, tradetype, quantity)
+        txmsg = NewTxMarketTrade(market, duration, accAddr, ordertype, quantity)
     case "picktrade":
         id := mt.NewMicrotickIdFromString(path[1])
-        tradetype := path[2]
-        txmsg = NewTxPickTrade(accAddr, id, tradetype)
+        ordertype := path[2]
+        txmsg = NewTxPickTrade(accAddr, id, ordertype)
     case "settletrade":
         id := mt.NewMicrotickIdFromString(path[1])
         txmsg = NewTxSettleTrade(id, accAddr)
