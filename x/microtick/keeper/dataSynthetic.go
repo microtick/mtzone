@@ -5,6 +5,13 @@ import (
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
+type LookupData struct {
+    CallAsk sdk.Dec
+    CallBid sdk.Dec
+    PutAsk sdk.Dec
+    PutBid sdk.Dec
+}
+
 type DataSyntheticQuote struct {
     Spot mt.MicrotickSpot `json:"spot"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
@@ -23,95 +30,106 @@ func (k Keeper) GetSyntheticBook(ctx sdk.Context, dm DataMarket, name string) Da
             // found
             orderBook := dm.OrderBooks[i]
             
-            // calculate asks
-            quotes := make(map[mt.MicrotickId]DataActiveQuote)
+            // create lookup tables
+            lookup := make(map[mt.MicrotickId]LookupData)
+            askQuantities := make(map[mt.MicrotickId]sdk.Dec)
+            bidQuantities := make(map[mt.MicrotickId]sdk.Dec)
             for i := 0; i < len(orderBook.CallAsks.Data); i++ {
             	id := orderBook.CallAsks.Data[i].Id
-                quotes[id], _ = k.GetActiveQuote(ctx, id)
+                q, _ := k.GetActiveQuote(ctx, id)
+                lookup[id] = LookupData {
+                    CallAsk: q.CallAsk(dm.Consensus).Amount,
+                    CallBid: q.CallBid(dm.Consensus).Amount,
+                    PutAsk: q.PutAsk(dm.Consensus).Amount,
+                    PutBid: q.PutBid(dm.Consensus).Amount,
+                }
+                askQuantities[id] = q.Quantity.Amount
+                bidQuantities[id] = q.Quantity.Amount
             }
+            
+            // calculate asks
             asks := make([]DataSyntheticQuote, 0)
-            qty := sdk.NewDec(0)
             askIndex := 0
             bidIndex := len(orderBook.PutBids.Data) - 1
-            for askIndex < len(orderBook.CallAsks.Data) {
-                askData := orderBook.CallAsks.Data[askIndex]
-                askQuote := quotes[askData.Id]
-                bidData := orderBook.PutBids.Data[bidIndex]
-                bidQuote := quotes[bidData.Id]
-                var fillAmount sdk.Dec
-                spot := dm.Consensus.Amount.Add(askQuote.CallAsk(dm.Consensus).Amount).Sub(bidQuote.PutBid(dm.Consensus).Amount)
-                if askQuote.Quantity.Amount.Equal(bidQuote.Quantity.Amount) {
-                    if askData.Id == bidData.Id {
-                        fillAmount = askQuote.Quantity.Amount.QuoInt64(2)
+            for askIndex < len(orderBook.CallAsks.Data) && bidIndex >= 0 {
+                askId := orderBook.CallAsks.Data[askIndex].Id
+                bidId := orderBook.PutBids.Data[bidIndex].Id
+                if askQuantities[askId].IsPositive() {
+                    if askQuantities[bidId].IsPositive() {
+                        var fillAmount sdk.Dec
+                        
+                        if askId == bidId {
+                            fillAmount = askQuantities[askId].QuoInt64(2)
+                            askIndex++
+                            bidIndex--
+                        } else if askQuantities[askId].GT(askQuantities[bidId]) {
+                            fillAmount = askQuantities[bidId]
+                            askQuantities[askId] = askQuantities[askId].Sub(fillAmount)
+                            askQuantities[bidId] = sdk.ZeroDec()
+                            bidIndex--
+                        } else {
+                            fillAmount = askQuantities[askId]
+                            askQuantities[bidId] = askQuantities[bidId].Sub(fillAmount)
+                            askQuantities[askId] = sdk.ZeroDec()
+                            askIndex++
+                        }
+                        
+                        spot := dm.Consensus.Amount.Add(lookup[askId].CallAsk).Sub(lookup[bidId].PutBid)
+                        asks = append(asks, DataSyntheticQuote {
+                            Spot: mt.NewMicrotickSpotFromDec(spot), 
+                            Quantity: mt.NewMicrotickQuantityFromDec(fillAmount),
+                        })
                     } else {
-                        fillAmount = askQuote.Quantity.Amount
+                        bidIndex--
                     }
-                    askIndex++
-                    bidIndex--
-                } else if askQuote.Quantity.Amount.GT(bidQuote.Quantity.Amount) {
-                    fillAmount = bidQuote.Quantity.Amount
-                    askQuote.Quantity = mt.NewMicrotickQuantityFromDec(askQuote.Quantity.Amount.Sub(bidQuote.Quantity.Amount))
-                    quotes[askQuote.Id] = askQuote
-                    bidIndex--
                 } else {
-                    fillAmount = askQuote.Quantity.Amount
-                    bidQuote.Quantity = mt.NewMicrotickQuantityFromDec(bidQuote.Quantity.Amount.Sub(askQuote.Quantity.Amount))
-                    quotes[bidQuote.Id] = bidQuote
                     askIndex++
                 }
-                qty = qty.Add(fillAmount)
-                asks = append(asks, DataSyntheticQuote {
-                    Spot: mt.NewMicrotickSpotFromDec(spot), 
-                    Quantity: mt.NewMicrotickQuantityFromDec(fillAmount),
-                })
             }
             
             // calculate bids
-            quotes = make(map[mt.MicrotickId]DataActiveQuote)
-            for i := 0; i < len(orderBook.PutAsks.Data); i++ {
-            	id := orderBook.PutAsks.Data[i].Id
-                quotes[id], _ = k.GetActiveQuote(ctx, id)
-            }
             bids := make([]DataSyntheticQuote, 0)
-            qty = sdk.NewDec(0)
             askIndex = 0
             bidIndex = len(orderBook.CallBids.Data) - 1
             for askIndex < len(orderBook.PutAsks.Data) && bidIndex >= 0 {
-                askData := orderBook.PutAsks.Data[askIndex]
-                askQuote := quotes[askData.Id]
-                bidData := orderBook.CallBids.Data[bidIndex]
-                bidQuote := quotes[bidData.Id]
-                var fillAmount sdk.Dec
-                spot := dm.Consensus.Amount.Sub(askQuote.PutAsk(dm.Consensus).Amount).Add(bidQuote.CallBid(dm.Consensus).Amount)
-                if askQuote.Quantity.Amount.Equal(bidQuote.Quantity.Amount) {
-                    if askData.Id == bidData.Id {
-                        fillAmount = askQuote.Quantity.Amount.QuoInt64(2)
+                askId := orderBook.PutAsks.Data[askIndex].Id
+                bidId := orderBook.CallBids.Data[bidIndex].Id
+                if bidQuantities[askId].IsPositive() {
+                    if bidQuantities[bidId].IsPositive() {
+                        var fillAmount sdk.Dec
+                        
+                        if askId == bidId {
+                            fillAmount = bidQuantities[askId].QuoInt64(2)
+                            askIndex++
+                            bidIndex--
+                        } else if bidQuantities[askId].GT(bidQuantities[bidId]) {
+                            fillAmount = bidQuantities[bidId]
+                            bidQuantities[askId] = bidQuantities[askId].Sub(fillAmount)
+                            bidQuantities[bidId] = sdk.ZeroDec()
+                            bidIndex--
+                        } else {
+                            fillAmount = bidQuantities[askId]
+                            bidQuantities[bidId] = bidQuantities[bidId].Sub(fillAmount)
+                            bidQuantities[askId] = sdk.ZeroDec()
+                            askIndex++
+                        }
+                        
+                        spot := dm.Consensus.Amount.Sub(lookup[askId].PutAsk).Add(lookup[bidId].CallBid)
+                        bids = append(bids, DataSyntheticQuote {
+                            Spot: mt.NewMicrotickSpotFromDec(spot), 
+                            Quantity: mt.NewMicrotickQuantityFromDec(fillAmount),
+                        })
                     } else {
-                        fillAmount = askQuote.Quantity.Amount
+                        bidIndex--
                     }
-                    askIndex++
-                    bidIndex--
-                } else if askQuote.Quantity.Amount.GT(bidQuote.Quantity.Amount) {
-                    fillAmount = bidQuote.Quantity.Amount
-                    askQuote.Quantity = mt.NewMicrotickQuantityFromDec(askQuote.Quantity.Amount.Sub(bidQuote.Quantity.Amount))
-                    quotes[askQuote.Id] = askQuote
-                    bidIndex--
                 } else {
-                    fillAmount = askQuote.Quantity.Amount
-                    bidQuote.Quantity = mt.NewMicrotickQuantityFromDec(bidQuote.Quantity.Amount.Sub(askQuote.Quantity.Amount))
-                    quotes[bidQuote.Id] = bidQuote
                     askIndex++
                 }
-                qty = qty.Add(fillAmount)
-                bids = append(bids, DataSyntheticQuote {
-                    Spot: mt.NewMicrotickSpotFromDec(spot), 
-                    Quantity: mt.NewMicrotickQuantityFromDec(fillAmount),
-                })
             }
             
             return DataSyntheticBook {
                 Name: name,
-                Weight: mt.NewMicrotickQuantityFromDec(qty),
+                Weight: mt.NewMicrotickQuantityFromDec(orderBook.SumWeight.Amount.QuoInt64(2)),
                 Asks: asks,
                 Bids: bids,
             }

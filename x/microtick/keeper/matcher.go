@@ -64,13 +64,13 @@ func (matcher *Matcher) MatchByQuantity(dm *DataMarket, totalQuantity mt.Microti
     if matcher.Trade.Order == mt.MicrotickOrderSellCall {
         for i := 0; i < len(orderBook.CallBids.Data); i++ {
             j := len(orderBook.CallBids.Data) - i - 1
-            list = append([]mt.MicrotickId{orderBook.CallBids.Data[j].Id}, list...)
+            list = append(list, orderBook.CallBids.Data[j].Id)
         }
     }
     if matcher.Trade.Order == mt.MicrotickOrderSellPut {
         for i := 0; i < len(orderBook.PutBids.Data); i++ {
             j := len(orderBook.PutBids.Data) - i - 1
-            list = append([]mt.MicrotickId{orderBook.PutBids.Data[j].Id}, list...)
+            list = append(list, orderBook.CallBids.Data[j].Id)
         }
     }
     
