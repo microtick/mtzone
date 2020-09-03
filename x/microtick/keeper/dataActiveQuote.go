@@ -46,7 +46,8 @@ func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMar
 }
 
 func (daq *DataActiveQuote) ComputeQuantity() {
-    actualLeverage := daq.Ask.Amount.Mul(sdk.NewDec(mt.Leverage))
+    averagePremium := daq.Ask.Amount.Add(daq.Bid.Amount).QuoInt64(2)
+    actualLeverage := averagePremium.Mul(sdk.NewDec(mt.Leverage))
     daq.Quantity = mt.MicrotickQuantity{
         Denom: "quantity",
         Amount: daq.Backing.Amount.Quo(actualLeverage),

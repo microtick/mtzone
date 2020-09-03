@@ -1,31 +1,36 @@
 package keeper
 
 import (
+    "fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
+   	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
 type QuoteFillInfo struct {
-    Quote DataActiveQuote
+    QuoteId mt.MicrotickId
     BuySell bool
     LegType mt.MicrotickLegType
-    Quantity sdk.Dec
+    Quantity mt.MicrotickQuantity
+    Premium mt.MicrotickPremium
     Cost mt.MicrotickCoin
     Backing mt.MicrotickCoin
-    FinalFill bool
+    Refund mt.MicrotickCoin
 }
 
-func NewQuoteFillInfo(quote DataActiveQuote, buySell bool, legType mt.MicrotickLegType, 
-    quantity sdk.Dec, cost mt.MicrotickCoin, backing mt.MicrotickCoin, finalFill bool) QuoteFillInfo {
+func NewQuoteFillInfo(quoteId mt.MicrotickId, buySell bool, legType mt.MicrotickLegType, 
+    quantity mt.MicrotickQuantity, premium mt.MicrotickPremium, cost mt.MicrotickCoin, 
+    backing mt.MicrotickCoin, refund mt.MicrotickCoin) QuoteFillInfo {
     return QuoteFillInfo {
-        Quote: quote,
+        QuoteId: quoteId,
         BuySell: buySell,
         LegType: legType,
         Quantity: quantity,
+        Premium: premium,
         Cost: cost,
         Backing: backing,
-        FinalFill: finalFill,
+        Refund: refund,
     }
 }
 
@@ -46,28 +51,50 @@ func NewMatcher(trade DataActiveTrade, fetchQuoteFunc FetchQuoteFunc) Matcher {
     }
 }
 
-func (matcher *Matcher) MatchByQuantity(dm *DataMarket, totalQuantity mt.MicrotickQuantity) {
+func (matcher *Matcher) DebugMatcherFillInfo() {
+    for i, fi := range matcher.FillInfo {
+        if i > 0 {
+            fmt.Println()
+        }
+        var bs string
+        if fi.BuySell {
+            bs = "Buy"
+        } else {
+            bs = "Sell"
+        }
+        fmt.Printf("Fill %d\n", i)
+        fmt.Printf("  Quote ID: %d\n", fi.QuoteId)
+        fmt.Printf("  %s %s\n", bs, mt.MicrotickLegNameFromType(fi.LegType))
+        fmt.Printf("  Quantity: %s\n", fi.Quantity.String())
+        fmt.Printf("  Premium: %s\n", fi.Premium.String())
+        fmt.Printf("  Cost: %s\n", fi.Cost.String())
+        fmt.Printf("  Backing: %s\n", fi.Backing.String())
+        fmt.Printf("  Refund: %s\n", fi.Refund.String())
+    }
+}
+
+func (matcher *Matcher) MatchByQuantity(dm *DataMarket, order mt.MicrotickOrderType, totalQuantity mt.MicrotickQuantity) error {
     orderBook := dm.GetOrderBook(matcher.Trade.DurationName)
     quantityToMatch := totalQuantity.Amount
     
     var list []mt.MicrotickId
-    if matcher.Trade.Order == mt.MicrotickOrderBuyCall {
+    if order == mt.MicrotickOrderBuyCall {
         for i := 0; i < len(orderBook.CallAsks.Data); i++ {
             list = append(list, orderBook.CallAsks.Data[i].Id)
         }
     }
-    if matcher.Trade.Order == mt.MicrotickOrderBuyPut {
+    if order == mt.MicrotickOrderBuyPut {
         for i := 0; i < len(orderBook.PutAsks.Data); i++ {
             list = append(list, orderBook.PutAsks.Data[i].Id)
         }
     }
-    if matcher.Trade.Order == mt.MicrotickOrderSellCall {
+    if order == mt.MicrotickOrderSellCall {
         for i := 0; i < len(orderBook.CallBids.Data); i++ {
             j := len(orderBook.CallBids.Data) - i - 1
             list = append(list, orderBook.CallBids.Data[j].Id)
         }
     }
-    if matcher.Trade.Order == mt.MicrotickOrderSellPut {
+    if order == mt.MicrotickOrderSellPut {
         for i := 0; i < len(orderBook.PutBids.Data); i++ {
             j := len(orderBook.PutBids.Data) - i - 1
             list = append(list, orderBook.CallBids.Data[j].Id)
@@ -82,40 +109,44 @@ func (matcher *Matcher) MatchByQuantity(dm *DataMarket, totalQuantity mt.Microti
             var premium mt.MicrotickPremium
             var buysell bool
             var legType mt.MicrotickLegType
-            if matcher.Trade.Order == mt.MicrotickOrderBuyCall {
+            if order == mt.MicrotickOrderBuyCall {
                 buysell = true
                 legType = mt.MicrotickLegCall
                 premium = quote.CallAsk(matcher.Trade.Strike)
             }
-            if matcher.Trade.Order == mt.MicrotickOrderBuyPut {
+            if order == mt.MicrotickOrderBuyPut {
                 buysell = true
                 legType = mt.MicrotickLegPut
                 premium = quote.PutAsk(matcher.Trade.Strike)
             }
-            if matcher.Trade.Order == mt.MicrotickOrderSellCall {
+            if order == mt.MicrotickOrderSellCall {
                 buysell = false
                 legType = mt.MicrotickLegCall
                 premium = quote.CallBid(matcher.Trade.Strike)
             }
-            if matcher.Trade.Order == mt.MicrotickOrderSellPut {
+            if order == mt.MicrotickOrderSellPut {
                 buysell = false
                 legType = mt.MicrotickLegPut
                 premium = quote.PutBid(matcher.Trade.Strike)
             }
             
             var quantity sdk.Dec
-            finalFill := false
-            
-            if quote.Quantity.Amount.GTE(quantityToMatch) {
+            var finalFill bool
+            if quote.Quantity.Amount.GT(quantityToMatch) {
                 quantity = quantityToMatch
                 quantityToMatch = sdk.ZeroDec()
+                finalFill = false
             } else {
                 quantity = quote.Quantity.Amount
                 quantityToMatch = quantityToMatch.Sub(quote.Quantity.Amount)
                 finalFill = true
             }
             
+            matcher.HasQuantity = true
+            cost := premium.Amount.Mul(quantity)
+            
             var backing mt.MicrotickCoin
+            var refund mt.MicrotickCoin
             if finalFill {
                 backing = quote.Backing
             } else {
@@ -123,71 +154,157 @@ func (matcher *Matcher) MatchByQuantity(dm *DataMarket, totalQuantity mt.Microti
                 // the quantity purchased.
                 backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(quantity.Quo(quote.Quantity.Amount)))
             }
+            refund = backing
             
-            matcher.HasQuantity = true
-            cost := premium.Amount.Mul(quantity)
-            
-            matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quote, buysell, legType, quantity,
-                mt.NewMicrotickCoinFromDec(cost), backing, finalFill))
+            matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quote.Id, buysell, legType, 
+                mt.NewMicrotickQuantityFromDec(quantity), premium, mt.NewMicrotickCoinFromDec(cost), 
+                backing, refund))
         }
         index++
     }
+    return nil
 }
 
-func (matcher *Matcher) MatchQuote(quote DataActiveQuote) {
+func (matcher *Matcher) MatchSynthetic(sob *DataSyntheticBook, dm *DataMarket, totalQuantity mt.MicrotickQuantity) error {
+    if totalQuantity.Amount.GT(sob.Weight.Amount) {
+        return sdkerrors.Wrap(mt.ErrTradeMatch, "insufficient quantity")
+    }
+    quantityToMatch := totalQuantity.Amount
+    
+    var list []DataSyntheticQuote
+    var buysell bool
+    if matcher.Trade.Order == mt.MicrotickOrderBuySyn {
+        list = sob.Asks
+        buysell = true
+    }
+    if matcher.Trade.Order == mt.MicrotickOrderSellSyn {
+        list = sob.Bids
+        buysell = false
+    }
+    
+    index := 0
+    for index < len(list) && quantityToMatch.GT(sdk.ZeroDec()) {
+        li := list[index]
+        
+        // verify both quotes have enough quantity
+        quoteAsk := matcher.FetchQuote(li.AskId)
+        quoteBid := matcher.FetchQuote(li.BidId)
+        
+        var quantity sdk.Dec
+        var synthFill bool
+        if li.Quantity.Amount.GT(quantityToMatch) {
+            quantity = quantityToMatch
+            quantityToMatch = sdk.ZeroDec()
+            synthFill = false
+        } else {
+            quantity = li.Quantity.Amount
+            quantityToMatch = quantityToMatch.Sub(li.Quantity.Amount)
+            synthFill = true
+        }
+        
+        var legType mt.MicrotickLegType
+        var premium mt.MicrotickPremium
+        var backing mt.MicrotickCoin
+        var refund mt.MicrotickCoin
+        if buysell {
+            premium = quoteAsk.CallAsk(matcher.Trade.Strike)
+            legType = mt.MicrotickLegCall
+        } else {
+            premium = quoteAsk.PutAsk(matcher.Trade.Strike)
+            legType = mt.MicrotickLegPut
+        }
+        cost := premium.Amount.Mul(quantity)
+        backing = mt.NewMicrotickCoinFromDec(quoteAsk.Backing.Amount.Mul(quantity.Quo(quoteAsk.Quantity.Amount)))
+        if synthFill && li.AskFill && !li.BidFill {
+            refund = quoteAsk.Backing
+        } else {
+            refund = backing
+        }
+        
+        // Append ask
+        matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quoteAsk.Id, true, legType, 
+            mt.NewMicrotickQuantityFromDec(quantity),
+            premium, mt.NewMicrotickCoinFromDec(cost), backing, refund))
+            
+        if buysell {
+            premium = quoteBid.PutBid(matcher.Trade.Strike)
+            legType = mt.MicrotickLegPut
+        } else {
+            premium = quoteBid.CallBid(matcher.Trade.Strike)
+            legType = mt.MicrotickLegCall
+        }
+        cost = premium.Amount.Mul(quantity)
+        if synthFill && li.BidFill {
+            backing = quoteBid.Backing
+        } else {
+            backing = mt.NewMicrotickCoinFromDec(quoteBid.Backing.Amount.Mul(quantity.Quo(quoteBid.Quantity.Amount)))
+        }
+        refund = backing
+        
+        // Append bid
+        matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quoteBid.Id, false, legType, 
+            mt.NewMicrotickQuantityFromDec(quantity),
+            premium, mt.NewMicrotickCoinFromDec(cost), backing, refund))
+        
+        // At least one time through - we have liquidity
+        matcher.HasQuantity = true
+        index++
+    }
+    //matcher.DebugMatcherFillInfo()
+    return nil
+}
+
+func (matcher *Matcher) MatchQuote(order mt.MicrotickOrderType, quote DataActiveQuote) {
     var premium mt.MicrotickPremium
     var buysell bool
     var legType mt.MicrotickLegType
-    if matcher.Trade.Order == mt.MicrotickOrderBuyCall {
+    if order == mt.MicrotickOrderBuyCall {
         buysell = true
         legType = mt.MicrotickLegCall
         premium = quote.CallAsk(matcher.Trade.Strike)
     }
-    if matcher.Trade.Order == mt.MicrotickOrderBuyPut {
+    if order == mt.MicrotickOrderBuyPut {
         buysell = true
         legType = mt.MicrotickLegPut
         premium = quote.PutAsk(matcher.Trade.Strike)
     }
-    if matcher.Trade.Order == mt.MicrotickOrderSellCall {
+    if order == mt.MicrotickOrderSellCall {
         buysell = false
         legType = mt.MicrotickLegCall
         premium = quote.CallBid(matcher.Trade.Strike)
     }
-    if matcher.Trade.Order == mt.MicrotickOrderSellPut {
+    if order == mt.MicrotickOrderSellPut {
         buysell = false
         legType = mt.MicrotickLegPut
         premium = quote.PutBid(matcher.Trade.Strike)
     }
         
-    cost := mt.NewMicrotickCoinFromDec(premium.Amount.Mul(quote.Quantity.Amount))
+    cost := premium.Amount.Mul(quote.Quantity.Amount)
     
-    matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quote, buysell, legType,
-        quote.Quantity.Amount, cost, quote.Backing, true))
+    backing := quote.Backing
+    refund := backing
+    
+    matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quote.Id, buysell, legType,
+        quote.Quantity, premium, mt.NewMicrotickCoinFromDec(cost), backing, refund))
 }
 
 func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, market *DataMarket) error {
     for i, thisFill := range matcher.FillInfo {
-        thisQuote := thisFill.Quote
+        thisQuote, err := keeper.GetActiveQuote(ctx, thisFill.QuoteId)
+        if err != nil {
+            return err
+        }
         
         var long mt.MicrotickAccount
         var short mt.MicrotickAccount
-        var premium mt.MicrotickPremium
         if thisFill.BuySell {
             long = matcher.Trade.Taker
             short = thisQuote.Provider
-            premium = thisQuote.Ask
         } else {
             long = thisQuote.Provider
             short = matcher.Trade.Taker
-            premium = thisQuote.Bid
         }
         
-        quotedParams := NewDataQuotedParams(
-            thisQuote.Id,
-            premium,
-            thisQuote.Quantity,
-            thisQuote.Spot,
-        )
         
         longAccountStatus := keeper.GetAccountStatus(ctx, long)
         shortAccountStatus := keeper.GetAccountStatus(ctx, short)
@@ -199,17 +316,19 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         }
         
         // Pay premium
-        err := keeper.WithdrawMicrotickCoin(ctx, long, thisFill.Cost)
-        if err != nil {
-            return err
-        }
-        err = keeper.DepositMicrotickCoin(ctx, short, thisFill.Cost)
-        if err != nil {
-            return err
+        if thisFill.Cost.Amount.GT(sdk.ZeroDec()) {
+            err = keeper.WithdrawMicrotickCoin(ctx, long, thisFill.Cost)
+            if err != nil {
+                return err
+            }
+            err = keeper.DepositMicrotickCoin(ctx, short, thisFill.Cost)
+            if err != nil {
+                return err
+            }
         }
         
         // Refund quote backing to quote provider
-        err = keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Backing)
+        err = keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Refund)
         if err != nil {
             return err
         }
@@ -224,17 +343,20 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         market.FactorOut(thisQuote)
         
         // Subtract out bought quantity and corresponding backing
-        thisQuote.Quantity = mt.NewMicrotickQuantityFromDec(thisQuote.Quantity.Amount.Sub(thisFill.Quantity))
-        thisQuote.Backing = thisQuote.Backing.Sub(thisFill.Backing)
+        thisQuote.Quantity = mt.NewMicrotickQuantityFromDec(thisQuote.Quantity.Amount.Sub(thisFill.Quantity.Amount))
+        thisQuote.Backing = thisQuote.Backing.Sub(thisFill.Refund)
         
-        if thisQuote.Quantity.Amount.IsZero() {
+        var finalFill bool
+        if thisQuote.Backing.Amount.IsZero() {
             // If no quantity is left, delete quote from market, active quote list, and
             // account active quote list
+            finalFill = true
             market.DeleteQuote(thisQuote)
             keeper.DeleteActiveQuote(ctx, thisQuote.Id)
             quoteProviderAccountStatus.ActiveQuotes.Delete(thisQuote.Id)
         } else {
             // else, factor quote back into market consensus
+            finalFill = false
             market.FactorIn(thisQuote, false)
             keeper.SetActiveQuote(ctx, thisQuote)
         }
@@ -246,17 +368,23 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         if !shortAccountStatus.ActiveTrades.Contains(matcher.Trade.Id) {
             shortAccountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
         }
-        quoteProviderAccountStatus.QuoteBacking = quoteProviderAccountStatus.QuoteBacking.Sub(thisFill.Backing)
+        quoteProviderAccountStatus.QuoteBacking = quoteProviderAccountStatus.QuoteBacking.Sub(thisFill.Refund)
         shortAccountStatus.TradeBacking = shortAccountStatus.TradeBacking.Add(thisFill.Backing)
         
         // Save the counterparty account status in the store
         keeper.SetAccountStatus(ctx, long, longAccountStatus)
         keeper.SetAccountStatus(ctx, short, shortAccountStatus)
         
+        quotedParams := NewDataQuotedParams(
+            thisQuote.Id,
+            finalFill,
+            thisFill.Premium,
+            thisQuote.Spot,
+        )
+        
         // Append this counter party fill to the trade counterparty list
         matcher.Trade.Legs = append(matcher.Trade.Legs, NewDataTradeLeg(mt.MicrotickId(i), thisFill.LegType, thisFill.Backing, 
-            thisFill.Cost, mt.NewMicrotickQuantityFromDec(thisFill.Quantity),
-            thisFill.FinalFill, long, short, quotedParams,
+            thisFill.Premium, thisFill.Cost, thisFill.Quantity, long, short, quotedParams,
         ))
     }
     return nil

@@ -15,6 +15,7 @@ type DataActiveTrade struct {
     DurationName mt.MicrotickDurationName `json:"duration"`
     Order mt.MicrotickOrderType `json:"order"`
     Taker mt.MicrotickAccount `json:"taker"`
+    Quantity mt.MicrotickQuantity `json:"quantity"`
     Legs []DataTradeLeg `json:"legs"`
     Start time.Time `json:"start"`
     Expiration time.Time `json:"expiration"`
@@ -25,7 +26,8 @@ type DataActiveTrade struct {
 
 func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, 
     dur mt.MicrotickDurationName, durSeconds mt.MicrotickDuration, 
-    otype mt.MicrotickOrderType, taker mt.MicrotickAccount, strike mt.MicrotickSpot,
+    otype mt.MicrotickOrderType, taker mt.MicrotickAccount, 
+    quantity mt.MicrotickQuantity, strike mt.MicrotickSpot,
     commission mt.MicrotickCoin, settleIncentive mt.MicrotickCoin) DataActiveTrade {
         
     expire, err := time.ParseDuration(fmt.Sprintf("%d", durSeconds) + "s")
@@ -38,6 +40,7 @@ func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket,
         DurationName: dur,
         Order: otype,
         Taker: taker,
+        Quantity: quantity,
         Start: now,
         Expiration: now.Add(expire),
         Strike: strike,
@@ -48,17 +51,16 @@ func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket,
 
 type DataQuotedParams struct {
     Id mt.MicrotickId `json:"id"`
+    Final bool `json:"final"`
     Premium mt.MicrotickPremium `json:"premium"`
-    Quantity mt.MicrotickQuantity `json:"quantity"`
     Spot mt.MicrotickSpot `json:"spot"`
 }
 
-func NewDataQuotedParams(id mt.MicrotickId, premium mt.MicrotickPremium, quantity mt.MicrotickQuantity,
-    spot mt.MicrotickSpot) DataQuotedParams {
+func NewDataQuotedParams(id mt.MicrotickId, final bool, premium mt.MicrotickPremium, spot mt.MicrotickSpot) DataQuotedParams {
     return DataQuotedParams {
         Id: id,
+        Final: final,
         Premium: premium,
-        Quantity: quantity,
         Spot: spot,
     }
 }
@@ -67,25 +69,31 @@ type DataTradeLeg struct {
     LegId mt.MicrotickId `json:"leg_id"`
     Type mt.MicrotickLegType `json:"type"`
     Backing mt.MicrotickCoin `json:"backing"`
-    Cost mt.MicrotickCoin `json:"premium"`
+    Premium mt.MicrotickPremium `json:"premium"`
+    Cost mt.MicrotickCoin `json:"cost"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
-    FinalFill bool `json:"final"`
     Long mt.MicrotickAccount `json:"long"`
     Short mt.MicrotickAccount `json:"short"`
     Quoted DataQuotedParams `json:"quoted"`
 }
 
-func NewDataTradeLeg(legId mt.MicrotickId, ttype mt.MicrotickLegType, backing mt.MicrotickCoin, cost mt.MicrotickCoin, 
-    quantity mt.MicrotickQuantity, finalFill bool, long mt.MicrotickAccount, short mt.MicrotickAccount, 
+func NewDataTradeLeg(legId mt.MicrotickId, 
+    ttype mt.MicrotickLegType, 
+    backing mt.MicrotickCoin, 
+    premium mt.MicrotickPremium,
+    cost mt.MicrotickCoin, 
+    quantity mt.MicrotickQuantity, 
+    long mt.MicrotickAccount, 
+    short mt.MicrotickAccount, 
     quoted DataQuotedParams) DataTradeLeg {
         
     return DataTradeLeg {
         LegId: legId,
         Type: ttype,
         Backing: backing,
+        Premium: premium,
         Cost: cost,
         Quantity: quantity,
-        FinalFill: finalFill,
         Long: long,
         Short: short,
         Quoted: quoted,

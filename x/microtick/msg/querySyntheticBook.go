@@ -21,9 +21,12 @@ type ResponseSyntheticBook struct {
 }
 
 type ResponseSyntheticQuote struct {
+    AskId mt.MicrotickId `json:"ask_id"`
+    AskFill bool `json:"ask_fill"`
+    BidId mt.MicrotickId `json:"bid_id"`
+    BidFill bool `json:"bid_fill"`
     Spot sdk.Dec `json:"spot"`
     Quantity sdk.Dec `json:"quantity"`
-    Cost sdk.Dec `json:"cost"`
 }
 
 func (rsb ResponseSyntheticBook) String() string {
@@ -43,8 +46,21 @@ Asks:
 }
 
 func formatSyntheticQuote(robq ResponseSyntheticQuote) string {
-    return fmt.Sprintf(`  quantity: %s cost: %s spot: %s`, 
-        robq.Quantity.String(), robq.Cost.String(), robq.Spot.String())
+    var askFill string
+    if robq.AskFill {
+        askFill = "(fill)"
+    } else {
+        askFill = "(partial)"
+    }
+    var bidFill string
+    if robq.BidFill {
+        bidFill = "(fill)"
+    } else {
+        bidFill = "(partial)"
+    }
+    return fmt.Sprintf(`  ask: %d %s bid: %d %s quantity: %s spot: %s`, 
+        robq.AskId, askFill, robq.BidId, bidFill,
+        robq.Quantity.String(), robq.Spot.String())
 }
 
 func QuerySyntheticBook(ctx sdk.Context, path []string, 
@@ -58,22 +74,28 @@ func QuerySyntheticBook(ctx sdk.Context, path []string,
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
-    syntheticBook := keeper.GetSyntheticBook(ctx, dataMarket, durName)
+    syntheticBook := keeper.GetSyntheticBook(ctx, &dataMarket, durName, nil)
     
     asks := make([]ResponseSyntheticQuote, len(syntheticBook.Asks))
     bids := make([]ResponseSyntheticQuote, len(syntheticBook.Bids))
     for i := 0; i < len(syntheticBook.Asks); i++ {
         asks[i] = ResponseSyntheticQuote {
+            AskId: syntheticBook.Asks[i].AskId,
+            AskFill: syntheticBook.Asks[i].AskFill,
+            BidId: syntheticBook.Asks[i].BidId,
+            BidFill: syntheticBook.Asks[i].BidFill,
             Spot: syntheticBook.Asks[i].Spot.Amount,
             Quantity: syntheticBook.Asks[i].Quantity.Amount,
-            Cost: syntheticBook.Asks[i].Spot.Amount.Sub(dataMarket.Consensus.Amount),
         }
     }
     for i := 0; i < len(syntheticBook.Bids); i++ {
         bids[i] = ResponseSyntheticQuote {
+            AskId: syntheticBook.Asks[i].AskId,
+            AskFill: syntheticBook.Asks[i].AskFill,
+            BidId: syntheticBook.Asks[i].BidId,
+            BidFill: syntheticBook.Asks[i].BidFill,
             Spot: syntheticBook.Bids[i].Spot.Amount,
             Quantity: syntheticBook.Bids[i].Quantity.Amount,
-            Cost: dataMarket.Consensus.Amount.Sub(syntheticBook.Bids[i].Spot.Amount),
         }
     }
     response := ResponseSyntheticBook {

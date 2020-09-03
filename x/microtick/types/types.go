@@ -53,8 +53,8 @@ const (
     MicrotickOrderSellCall = "sell-call"
     MicrotickOrderBuyPut = "buy-put"
     MicrotickOrderSellPut = "sell-put"
-    MicrotickOrderSynthLong = "long"
-    MicrotickOrderSynthShort = "short"
+    MicrotickOrderBuySyn = "buy-syn"
+    MicrotickOrderSellSyn = "sell-syn"
 )
 
 func MicrotickOrderTypeFromName(str string) MicrotickOrderType {
@@ -62,8 +62,8 @@ func MicrotickOrderTypeFromName(str string) MicrotickOrderType {
     if str == "sell-call" { return MicrotickOrderSellCall }
     if str == "buy-put" { return MicrotickOrderBuyPut }
     if str == "sell-put" { return MicrotickOrderSellPut }
-    if str == "long" { return MicrotickOrderSynthLong }
-    if str == "short" { return MicrotickOrderSynthShort }
+    if str == "buy-syn" { return MicrotickOrderBuySyn }
+    if str == "sell-syn" { return MicrotickOrderSellSyn }
     panic(fmt.Sprintf("Invalid order type: %s", str))
 }
 

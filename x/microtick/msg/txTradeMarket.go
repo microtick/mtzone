@@ -48,7 +48,9 @@ func (msg TxMarketTrade) ValidateBasic() error {
     if msg.OrderType != mt.MicrotickOrderBuyCall &&
         msg.OrderType != mt.MicrotickOrderSellCall &&
         msg.OrderType != mt.MicrotickOrderBuyPut &&
-        msg.OrderType != mt.MicrotickOrderSellPut {
+        msg.OrderType != mt.MicrotickOrderSellPut &&
+        msg.OrderType != mt.MicrotickOrderBuySyn &&
+        msg.OrderType != mt.MicrotickOrderSellSyn {
         return sdkerrors.Wrap(mt.ErrInvalidOrderType, msg.OrderType)
     }
     if msg.Market == "" {
@@ -91,7 +93,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     now := ctx.BlockHeader().Time
     seconds := mtKeeper.DurationFromName(ctx, msg.Duration)
     trade := keeper.NewDataActiveTrade(now, msg.Market, msg.Duration, seconds,
-        msg.OrderType, msg.Taker, market.Consensus, commission, settleIncentive)
+        msg.OrderType, msg.Taker, msg.Quantity, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, func (id mt.MicrotickId) keeper.DataActiveQuote {
         quote, err := mtKeeper.GetActiveQuote(ctx, id)
@@ -103,7 +105,20 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     })
         
     // Step 2 - Compute premium for quantity requested
-    matcher.MatchByQuantity(&market, msg.Quantity)
+    if msg.OrderType == mt.MicrotickOrderBuyCall || msg.OrderType == mt.MicrotickOrderSellCall ||
+        msg.OrderType == mt.MicrotickOrderBuyPut || msg.OrderType == mt.MicrotickOrderSellPut {
+            
+        err = matcher.MatchByQuantity(&market, msg.OrderType, msg.Quantity)
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        syntheticBook := mtKeeper.GetSyntheticBook(ctx, &market, msg.Duration, &msg.Taker)
+        err = matcher.MatchSynthetic(&syntheticBook, &market, msg.Quantity)
+        if err != nil {
+            return nil, err
+        }
+    }
     
     if matcher.HasQuantity {
         
@@ -162,18 +177,21 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
             sdk.NewAttribute("reward", reward.String()),
         ))
         
-        for i := 0; i < len(matcher.FillInfo); i++ {
-            thisFill := matcher.FillInfo[i]
-            
-            quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
+        for _, leg := range trade.Legs {
+            var maker mt.MicrotickAccount
+            if leg.Long.Equals(msg.Taker) {
+                maker = leg.Short
+            } else {
+                maker = leg.Long
+            }
+            quoteKey := fmt.Sprintf("quote.%d", leg.Quoted.Id)
             matchType := "event.match"
-            if thisFill.FinalFill {
+            if leg.Quoted.Final {
                 matchType = "event.final"
             }
-            
             events = append(events, sdk.NewEvent(
                 sdk.EventTypeMessage,
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.start"),
+                sdk.NewAttribute(fmt.Sprintf("acct.%s", maker), "trade.start"),
                 sdk.NewAttribute(quoteKey, matchType),
             ))
         }

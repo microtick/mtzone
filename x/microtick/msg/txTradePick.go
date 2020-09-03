@@ -84,12 +84,12 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
     now := ctx.BlockHeader().Time
     durName := mtKeeper.NameFromDuration(ctx, quote.Duration)
     trade := keeper.NewDataActiveTrade(now, quote.Market, durName, mtKeeper.DurationFromName(ctx, durName),
-        msg.OrderType, msg.Taker, market.Consensus, commission, settleIncentive)
+        msg.OrderType, msg.Taker, quote.Quantity, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, nil)
     
     // Step 2 - Compute premium and cost
-    matcher.MatchQuote(quote)
+    matcher.MatchQuote(msg.OrderType, quote)
     
     if matcher.HasQuantity {
         
@@ -148,18 +148,21 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
             sdk.NewAttribute("reward", reward.String()),
         ))
         
-        for i := 0; i < len(matcher.FillInfo); i++ {
-            thisFill := matcher.FillInfo[i]
-            
-            quoteKey := fmt.Sprintf("quote.%d", thisFill.Quote.Id)
+        for _, leg := range trade.Legs {
+            var maker mt.MicrotickAccount
+            if leg.Long.Equals(msg.Taker) {
+                maker = leg.Short
+            } else {
+                maker = leg.Long
+            }
+            quoteKey := fmt.Sprintf("quote.%d", leg.Quoted.Id)
             matchType := "event.match"
-            if thisFill.FinalFill {
+            if leg.Quoted.Final {
                 matchType = "event.final"
             }
-            
             events = append(events, sdk.NewEvent(
                 sdk.EventTypeMessage,
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", thisFill.Quote.Provider), "trade.start"),
+                sdk.NewAttribute(fmt.Sprintf("acct.%s", maker), "trade.start"),
                 sdk.NewAttribute(quoteKey, matchType),
             ))
         }

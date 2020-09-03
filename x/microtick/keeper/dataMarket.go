@@ -83,8 +83,7 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
     // of market action over time.  (quotes can go stale, etc)
 
     dm.SumBacking = dm.SumBacking.Add(quote.Backing)
-    dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(
-        quote.Quantity.Amount))
+    dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(quote.Quantity.Amount))
     dm.SumWeight = dm.SumWeight.Add(quote.Quantity)
     if dm.SumWeight.Amount.IsPositive() {
         dm.Consensus = mt.NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
@@ -121,8 +120,7 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
 
 func (dm *DataMarket) FactorOut(quote DataActiveQuote) {
     dm.SumBacking = dm.SumBacking.Sub(quote.Backing)
-    dm.SumSpots = dm.SumSpots.Sub(quote.Spot.Amount.Mul(
-        quote.Quantity.Amount))
+    dm.SumSpots = dm.SumSpots.Sub(quote.Spot.Amount.Mul(quote.Quantity.Amount))
     dm.SumWeight = dm.SumWeight.Sub(quote.Quantity)
     if dm.SumWeight.Amount.IsPositive() {
         dm.Consensus = mt.NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))

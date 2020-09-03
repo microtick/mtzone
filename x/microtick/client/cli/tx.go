@@ -164,7 +164,7 @@ func GetCmdQuoteWithdraw(cdc *codec.Codec) *cobra.Command {
 
 func GetCmdTradeMarket(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "trade-market [market] [duration] [buy/sell] [call/put] [quantity]",
+		Use:   "trade-market [market] [duration] [buy/sell] [call/put/syn] [quantity]",
 		Short: "Create a new market trade",
 		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -33,11 +33,11 @@ type ResponseTradeStatus struct {
 
 type ResponseTradeLeg struct {
     LegId mt.MicrotickId `json:"leg_id"`
-    Type mt.MicrotickLegType `json:"type"`
+    Type mt.MicrotickLegTypeName `json:"type"`
     Backing mt.MicrotickCoin `json:"backing"`
-    Cost mt.MicrotickCoin `json:"premium"`
+    Premium mt.MicrotickPremium `json:"premium"`
+    Cost mt.MicrotickCoin `json:"cost"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
-    FinalFill bool `json:"final"`
     Long mt.MicrotickAccount `json:"long"`
     Short mt.MicrotickAccount `json:"short"`
     Quoted keeper.DataQuotedParams `json:"quoted"`
@@ -85,15 +85,17 @@ func formatTradeLeg(leg ResponseTradeLeg) string {
         Short: %s
         Quantity: %s
         Backing: %s
+        Premium: %s
         Cost: %s
         Quoted: %s
         CurrentValue: %s`,
         leg.LegId,
-        mt.MicrotickLegNameFromType(leg.Type),
+        leg.Type,
         leg.Long.String(),
         leg.Short.String(),
         leg.Quantity.String(),
         leg.Backing.String(),
+        leg.Premium.String(),
         leg.Cost.String(),
         formatQuoteParams(leg.Quoted),
         leg.CurrentValue.String(),
@@ -101,14 +103,20 @@ func formatTradeLeg(leg ResponseTradeLeg) string {
 }
 
 func formatQuoteParams(params keeper.DataQuotedParams) string {
+    var final string
+    if params.Final {
+        final = "true"
+    } else {
+        final = "false"
+    }
     return fmt.Sprintf(`
             Id: %d 
+            Final: %s
             Premium: %s 
-            Quantity: %s 
             Spot: %s`,
         params.Id,
+        final,
         params.Premium.String(),
-        params.Quantity.String(),
         params.Spot.String(),
     )
 }
@@ -131,11 +139,11 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
     for _, leg := range data.Legs {
         legs = append(legs, ResponseTradeLeg{
             LegId: leg.LegId,
-            Type: leg.Type,
+            Type: mt.MicrotickLegNameFromType(leg.Type),
             Backing: leg.Backing,
+            Premium: leg.Premium,
             Cost: leg.Cost,
             Quantity: leg.Quantity,
-            FinalFill: leg.FinalFill,
             Long: leg.Long,
             Short: leg.Short,
             Quoted: leg.Quoted,
