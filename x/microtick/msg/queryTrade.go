@@ -103,19 +103,11 @@ func formatTradeLeg(leg ResponseTradeLeg) string {
 }
 
 func formatQuoteParams(params keeper.DataQuotedParams) string {
-    var final string
-    if params.Final {
-        final = "true"
-    } else {
-        final = "false"
-    }
     return fmt.Sprintf(`
             Id: %d 
-            Final: %s
             Premium: %s 
             Spot: %s`,
         params.Id,
-        final,
         params.Premium.String(),
         params.Spot.String(),
     )

@@ -17,20 +17,20 @@ import (
 
 type ResponseQuoteStatus struct {
     Id mt.MicrotickId `json:"id"`
+    Provider mt.MicrotickAccount `json:"provider"`
     Market mt.MicrotickMarket `json:"market"`
     Duration mt.MicrotickDurationName `json:"duration"`
-    Provider mt.MicrotickAccount `json:"provider"`
     Backing mt.MicrotickCoin `json:"backing"`
-    Spot mt.MicrotickSpot `json:"spot"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Delta sdk.Dec `json:"delta"`
     Ask mt.MicrotickPremium `json:"ask"`
     Bid mt.MicrotickPremium `json:"bid"`
     Quantity mt.MicrotickQuantity `json:"quantity"`
-    CallBid mt.MicrotickPremium `json:"callBid"`
+    Consensus mt.MicrotickSpot `json:"consensus"`
+    Spot mt.MicrotickSpot `json:"spot"`
+    Delta sdk.Dec `json:"delta"`
     CallAsk mt.MicrotickPremium `json:"callAsk"`
-    PutBid mt.MicrotickPremium `json:"putBid"`
+    CallBid mt.MicrotickPremium `json:"callBid"`
     PutAsk mt.MicrotickPremium `json:"putAsk"`
+    PutBid mt.MicrotickPremium `json:"putBid"`
     Modified time.Time `json:"modified"`
     CanModify time.Time `json:"canModify"`
 }
@@ -41,11 +41,11 @@ Provider: %s
 Market: %s
 Duration: %s
 Backing: %s
-Quantity: %s
-Spot: %s
-Consensus: %s
 Ask: %s
 Bid: %s
+Quantity: %s
+Current Consensus: %s
+Quoted Spot: %s
 Delta/2: %spremium
 CallAsk: %s
 CallBid: %s
@@ -58,11 +58,11 @@ CanModify: %s`,
     rqs.Market, 
     rqs.Duration,
     rqs.Backing.String(), 
-    rqs.Quantity.String(),
-    rqs.Spot.String(),
-    rqs.Consensus.String(),
     rqs.Ask.String(),
     rqs.Bid.String(),
+    rqs.Quantity.String(),
+    rqs.Consensus.String(),
+    rqs.Spot.String(),
     rqs.Delta.String(),
     rqs.CallAsk.String(),
     rqs.CallBid.String(),
