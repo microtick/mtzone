@@ -90,10 +90,10 @@ func QuerySyntheticBook(ctx sdk.Context, path []string,
     }
     for i := 0; i < len(syntheticBook.Bids); i++ {
         bids[i] = ResponseSyntheticQuote {
-            AskId: syntheticBook.Asks[i].AskId,
-            AskFill: syntheticBook.Asks[i].AskFill,
-            BidId: syntheticBook.Asks[i].BidId,
-            BidFill: syntheticBook.Asks[i].BidFill,
+            AskId: syntheticBook.Bids[i].AskId,
+            AskFill: syntheticBook.Bids[i].AskFill,
+            BidId: syntheticBook.Bids[i].BidId,
+            BidFill: syntheticBook.Bids[i].BidFill,
             Spot: syntheticBook.Bids[i].Spot.Amount,
             Quantity: syntheticBook.Bids[i].Quantity.Amount,
         }
