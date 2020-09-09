@@ -12,7 +12,6 @@ import (
 
 func NewQuerier(keeper keeper.Keeper) sdk.Querier {
     return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
-        keeper.GetParams(ctx)
         switch path[0] {
         case "account":
             return msg.QueryAccountStatus(ctx, path[1:], req, keeper)
@@ -30,6 +29,8 @@ func NewQuerier(keeper keeper.Keeper) sdk.Querier {
             return msg.QueryTradeStatus(ctx, path[1:], req, keeper)
         case "generate":
             return msg.GenerateTx(ctx, path[1], path[2:], req, keeper)
+        case "params":
+            return msg.QueryParams(ctx, path[1:], req, keeper)
         default:
             return nil, sdkerrors.Wrap(mt.ErrInvalidRequest, "query endpoint")
         }

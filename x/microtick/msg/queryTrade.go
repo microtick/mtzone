@@ -35,9 +35,9 @@ type ResponseTradeLeg struct {
     LegId mt.MicrotickId `json:"leg_id"`
     Type mt.MicrotickLegTypeName `json:"type"`
     Backing mt.MicrotickCoin `json:"backing"`
+    Quantity mt.MicrotickQuantity `json:"quantity"`
     Premium mt.MicrotickPremium `json:"premium"`
     Cost mt.MicrotickCoin `json:"cost"`
-    Quantity mt.MicrotickQuantity `json:"quantity"`
     Long mt.MicrotickAccount `json:"long"`
     Short mt.MicrotickAccount `json:"short"`
     Quoted keeper.DataQuotedParams `json:"quoted"`
@@ -83,8 +83,8 @@ func formatTradeLeg(leg ResponseTradeLeg) string {
         Type: %s
         Long: %s
         Short: %s
-        Quantity: %s
         Backing: %s
+        Quantity: %s
         Premium: %s
         Cost: %s
         Quoted: %s
@@ -93,8 +93,8 @@ func formatTradeLeg(leg ResponseTradeLeg) string {
         leg.Type,
         leg.Long.String(),
         leg.Short.String(),
-        leg.Quantity.String(),
         leg.Backing.String(),
+        leg.Quantity.String(),
         leg.Premium.String(),
         leg.Cost.String(),
         formatQuoteParams(leg.Quoted),

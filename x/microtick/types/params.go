@@ -194,7 +194,7 @@ func (p Params) String() string {
 	sb.WriteString(fmt.Sprintf("CommissionUpdatePercent: %t\n", p.CommissionUpdatePercent))
 	sb.WriteString(fmt.Sprintf("CommissionSettleFixed: %t\n", p.CommissionSettleFixed))
 	sb.WriteString(fmt.Sprintf("SettleIncentive: %t\n", p.SettleIncentive))
-	sb.WriteString(fmt.Sprintf("FreezeTime: %t\n", p.FreezeTime))
+	sb.WriteString(fmt.Sprintf("FreezeTime: %d\n", p.FreezeTime))
 	sb.WriteString(fmt.Sprintf("HaltTime: %s\n", p.HaltTime))
 	sb.WriteString(fmt.Sprintf("MintDenom: %s\n", p.MintDenom))
 	sb.WriteString(fmt.Sprintf("MintRatio: %t\n", p.MintRatio))

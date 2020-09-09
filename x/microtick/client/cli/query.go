@@ -9,6 +9,7 @@ import (
     "github.com/spf13/cobra"
     
     "github.com/mjackson001/mtzone/x/microtick/msg"
+    mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
 func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {
@@ -25,6 +26,7 @@ func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {
 		GetCmdSyntheticBook(moduleName, cdc),
 		GetCmdActiveQuote(moduleName, cdc),
 		GetCmdActiveTrade(moduleName, cdc),
+		GetCmdParams(moduleName, cdc),
 	)...)
 
 	return mtQueryCmd
@@ -216,6 +218,32 @@ func GetCmdActiveTrade(queryRoute string, cdc *codec.Codec) *cobra.Command {
 			}
 
 			var out msg.ResponseTradeStatus
+			cdc.MustUnmarshalJSON(res, &out)
+			
+			if cliCtx.OutputFormat == "text" {
+				fmt.Println(out.String())
+			} else {
+				cliCtx.PrintOutput(out)
+			}
+			return nil
+		},
+	}
+}
+
+func GetCmdParams(queryRoute string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "params",
+		Short: "Query Microtick params",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+
+			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/params", queryRoute))
+			if err != nil {
+				fmt.Printf("Could not query params\n")
+				return nil
+			}
+
+			var out mt.Params
 			cdc.MustUnmarshalJSON(res, &out)
 			
 			if cliCtx.OutputFormat == "text" {

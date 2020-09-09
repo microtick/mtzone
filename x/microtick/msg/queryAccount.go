@@ -30,8 +30,8 @@ func (ras ResponseAccountStatus) String() string {
     balanceStr := fmt.Sprintf("%sdai %stick", ras.Dai.String(), ras.Tick.String())
     return strings.TrimSpace(fmt.Sprintf(`Account: %s
 Balance: %s
-Num Quotes: %d
-Num Trades: %d
+Num Quotes (provider): %d
+Num Trades (taker): %d
 Active Quotes: %v
 Active Trades: %v
 Quote Backing: %s

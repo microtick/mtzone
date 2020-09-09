@@ -17,6 +17,7 @@ func registerQueryRoutes(cliCtx context.CLIContext, r *mux.Router) {
 		r.HandleFunc("/microtick/synthetic/{market}/{duration}", queryMarketSyntheticHandler(cliCtx)).Methods("GET")
 		r.HandleFunc("/microtick/quote/{id}", queryQuoteHandler(cliCtx)).Methods("GET")
 		r.HandleFunc("/microtick/trade/{id}", queryTradeHandler(cliCtx)).Methods("GET")
+		r.HandleFunc("/microtick/params", queryParams(cliCtx)).Methods("GET")
 }
 
 func queryAccountStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
@@ -168,3 +169,20 @@ func queryTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
+func queryParams(cliCtx context.CLIContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
+
+		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/params"))
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+    cliCtx = cliCtx.WithHeight(height)
+		rest.PostProcessResponse(w, cliCtx, res)
+	}
+}
