@@ -8,7 +8,7 @@ import (
 )
 
 type DataOrderBook struct {
-    Name string `json:"name"`
+    Name mt.MicrotickDurationName `json:"name"`
     Calls OrderedList `json:"calls"`
     Puts OrderedList `json:"puts"`
     SumBacking mt.MicrotickCoin `json:"sumBacking"`
@@ -27,7 +27,7 @@ type DataMarket struct {
     Quotes OrderedList `json:"quotes"`
 }
 
-func NewDataMarket(market mt.MicrotickMarket, description string, durs []string) DataMarket {
+func NewDataMarket(market mt.MicrotickMarket, description string, durs []mt.MicrotickDurationName) DataMarket {
     orderBooks := make([]DataOrderBook, len(durs))
     for i := 0; i < len(durs); i++ {
         orderBooks[i] = newOrderBook(durs[i])
@@ -43,7 +43,7 @@ func NewDataMarket(market mt.MicrotickMarket, description string, durs []string)
     }
 }
 
-func newOrderBook(name string) DataOrderBook {
+func newOrderBook(name mt.MicrotickDurationName) DataOrderBook {
     return DataOrderBook {
         Name: name,
         Calls: NewOrderedList(),
@@ -53,7 +53,7 @@ func newOrderBook(name string) DataOrderBook {
     }
 }
 
-func (dm *DataMarket) GetOrderBook(name string) DataOrderBook {
+func (dm *DataMarket) GetOrderBook(name mt.MicrotickDurationName) DataOrderBook {
     for i := 0; i < len(dm.OrderBooks); i++ {
         if dm.OrderBooks[i].Name == name {
             return dm.OrderBooks[i]
@@ -62,7 +62,7 @@ func (dm *DataMarket) GetOrderBook(name string) DataOrderBook {
     panic("Invalid duration name")
 }
 
-func (dm *DataMarket) SetOrderBook(name string, ob DataOrderBook) {
+func (dm *DataMarket) SetOrderBook(name mt.MicrotickDurationName, ob DataOrderBook) {
     for i := 0; i < len(dm.OrderBooks); i++ {
         if dm.OrderBooks[i].Name == name {
             dm.OrderBooks[i] = ob
@@ -150,7 +150,7 @@ func (dm *DataMarket) DeleteQuote(quote DataActiveQuote) {
     dm.SetOrderBook(quote.DurationName, orderBook)
 }
 
-func (dm * DataMarket) CanSettle(now time.Time) bool {
+func (dm *DataMarket) CanSettle(now time.Time) bool {
     if len(dm.Quotes.Data) == 0 {
         return false
     }
