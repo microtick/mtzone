@@ -115,7 +115,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission)
+    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true)
     if err != nil {
         return nil, err
     }

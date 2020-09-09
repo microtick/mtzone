@@ -137,7 +137,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    reward, err := mtKeeper.PoolCommission(ctx, msg.Provider, commission)
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Provider, commission, true)
     if err != nil {
         return nil, err
     }

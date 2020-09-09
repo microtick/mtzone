@@ -17,7 +17,7 @@ type CommissionPool struct {
 
 // Commissions
 
-func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin) (*sdk.Coin, error) {
+func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin, doRebate bool) (*sdk.Coin, error) {
 	params := k.GetParams(ctx)
     extCoins := mt.MicrotickCoinToExtCoin(amount)
     
@@ -33,27 +33,26 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 		k.Cdc.MustUnmarshalJSON(bz, &pool)
 	}
 	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
-	
-    // Mint stake and award to commission payer
-    rebate := sdk.NewCoin(params.MintDenom, params.MintRatio.MulInt(extCoins.Amount).TruncateInt())
-    mintCoins := sdk.Coins{ rebate }
-    
-    err := k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
-    if err != nil {
-    	return nil, err
-    }
-    
-	err = k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
-	if err != nil {
-		return nil, err
-	}
-	
-	// Remove duplicate minter call - extra lines were left in after adding error checking per code audit
-	
-    //fmt.Printf("Add Pool Commission: requested %s actual %s pool %s\n", amount.String(), extCoins.String(), pool.String())
 	store.Set(key, k.Cdc.MustMarshalJSON(pool))
 	
-	return &rebate, nil
+    // Mint stake and award to commission payer
+    if doRebate {
+        rebate := sdk.NewCoin(params.MintDenom, params.MintRatio.MulInt(extCoins.Amount).TruncateInt())
+        mintCoins := sdk.Coins{ rebate }
+    
+        err := k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
+        if err != nil {
+    	    return nil, err
+        }
+    
+	    err = k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
+	    if err != nil {
+		    return nil, err
+	    }
+	    
+	    return &rebate, nil
+    }
+	return nil, nil
 }
 
 func (k Keeper) Sweep(ctx sdk.Context) {

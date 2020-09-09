@@ -22,11 +22,13 @@ type Params struct {
   CommissionTradeFixed sdk.Dec `json:"commission_trade_fixed"`
   CommissionUpdatePercent sdk.Dec `json:"commission_update_percent"`
   CommissionSettleFixed sdk.Dec `json:"commission_settle_fixed"`
+  CommissionCancelPercent sdk.Dec `json:"commission_cancel_percent"`
   SettleIncentive sdk.Dec `json:"settle_incentive"`
   FreezeTime int8 `json:"freeze_time"`
   HaltTime string `json:"halt_time"`
   MintDenom string `json:"mint_denom"`
   MintRatio sdk.Dec `json:"mint_ratio"`
+  CancelSlashRate sdk.Dec `json:"cancel_slash_rate"`
 }
 
 // Default parameter values
@@ -37,9 +39,11 @@ var (
   DefaultCommissionUpdatePercent = sdk.MustNewDecFromStr("0.00005")
   DefaultSettleIncentive = sdk.MustNewDecFromStr("0.025")
   DefaultCommissionSettleFixed = sdk.MustNewDecFromStr("0.01")
+  DefaultCommissionCancelPercent = sdk.MustNewDecFromStr("0.001")
   DefaultFreezeTime = int8(30)
   DefaultMintDenom = "utick"
   DefaultMintRatio = sdk.MustNewDecFromStr("0.5")
+  DefaultCancelSlashRate = sdk.MustNewDecFromStr("0.01")
 )
 
 // Parameter keys
@@ -49,11 +53,13 @@ var (
   KeyCommissionTradeFixed = []byte("KeyCommissionTradeFixed")
   KeyCommissionUpdatePercent = []byte("KeyCommissionUpdatePercent")
   KeyCommissionSettleFixed = []byte("KeyCommissionSettleFixed")
+  KeyCommissionCancelPercent = []byte("KeyCommissionCancelPercent")
   KeySettleIncentive = []byte("KeySettleIncentive")
   KeyFreezeTime = []byte("KeyFreezeTime")
   KeyHaltTime = []byte("KeyHaltTime")
   KeyMintDenom = []byte("KeyMintDenom")
   KeyMintRatio = []byte("KeyMintRatio")
+  KeyCancelSlashRate = []byte("KeyCancelSlashRate")
 )
 
 // ParamKeyTable for microtick module
@@ -71,11 +77,13 @@ func (p *Params) ParamSetPairs() params.ParamSetPairs {
     {KeyCommissionTradeFixed, &p.CommissionTradeFixed, validateFixed},
     {KeyCommissionUpdatePercent, &p.CommissionUpdatePercent, validatePercent},
     {KeyCommissionSettleFixed, &p.CommissionSettleFixed, validateFixed},
+    {KeyCommissionCancelPercent, &p.CommissionCancelPercent, validatePercent},
     {KeySettleIncentive, &p.SettleIncentive, validateFixed},
     {KeyFreezeTime, &p.FreezeTime, validateFreezeTime},
     {KeyHaltTime, &p.HaltTime, validateTime},
     {KeyMintDenom, &p.MintDenom, validateMintDenom},
     {KeyMintRatio, &p.MintRatio, validateMintRatio},
+    {KeyCancelSlashRate, &p.CancelSlashRate, validateSlash},
 	}
 }
 
@@ -92,11 +100,17 @@ func (p Params) ValidateBasic() error {
   if p.CommissionSettleFixed.IsNegative() {
     return fmt.Errorf("invalid settle commission: %s", p.CommissionSettleFixed)
   }
+  if p.CommissionCancelPercent.IsNegative() {
+    return fmt.Errorf("invalid cancel commission: %s", p.CommissionCancelPercent)
+  }
   if p.SettleIncentive.IsNegative() {
     return fmt.Errorf("invalid settle incentive: %s", p.SettleIncentive)
   }
   if p.MintRatio.IsNegative() {
     return fmt.Errorf("invalid mint ratio: %s", p.MintRatio)
+  }
+  if p.CancelSlashRate.IsNegative() || p.CancelSlashRate.GT(sdk.OneDec()) {
+    return fmt.Errorf("invalid cancel slash rate: %s", p.CancelSlashRate)
   }
   return nil
 }
@@ -118,6 +132,14 @@ func validatePercent(i interface{}) error {
 }
 
 func validateFixed(i interface{}) error {
+	_, ok := i.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateSlash(i interface{}) error {
 	_, ok := i.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -176,11 +198,13 @@ func DefaultParams() Params {
     CommissionTradeFixed: DefaultCommissionTradeFixed,
     CommissionUpdatePercent: DefaultCommissionUpdatePercent,
     CommissionSettleFixed: DefaultCommissionSettleFixed,
+    CommissionCancelPercent: DefaultCommissionCancelPercent,
     SettleIncentive: DefaultSettleIncentive,
     FreezeTime: DefaultFreezeTime,
     HaltTime: defaultHaltTime.Format(TimeFormat),
     MintDenom: DefaultMintDenom,
     MintRatio: DefaultMintRatio,
+    CancelSlashRate: DefaultCancelSlashRate,
 	}
 }
 
@@ -193,10 +217,12 @@ func (p Params) String() string {
 	sb.WriteString(fmt.Sprintf("CommissionTradeFixed: %t\n", p.CommissionTradeFixed))
 	sb.WriteString(fmt.Sprintf("CommissionUpdatePercent: %t\n", p.CommissionUpdatePercent))
 	sb.WriteString(fmt.Sprintf("CommissionSettleFixed: %t\n", p.CommissionSettleFixed))
+	sb.WriteString(fmt.Sprintf("CommissionCancelPercent: %t\n", p.CommissionCancelPercent))
 	sb.WriteString(fmt.Sprintf("SettleIncentive: %t\n", p.SettleIncentive))
 	sb.WriteString(fmt.Sprintf("FreezeTime: %d\n", p.FreezeTime))
 	sb.WriteString(fmt.Sprintf("HaltTime: %s\n", p.HaltTime))
 	sb.WriteString(fmt.Sprintf("MintDenom: %s\n", p.MintDenom))
 	sb.WriteString(fmt.Sprintf("MintRatio: %t\n", p.MintRatio))
+	sb.WriteString(fmt.Sprintf("CancelSlashRate: %t\n", p.CancelSlashRate))
 	return sb.String()
 }
