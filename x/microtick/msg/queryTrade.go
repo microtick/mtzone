@@ -40,8 +40,14 @@ type ResponseTradeLeg struct {
     Cost mt.MicrotickCoin `json:"cost"`
     Long mt.MicrotickAccount `json:"long"`
     Short mt.MicrotickAccount `json:"short"`
-    Quoted keeper.DataQuotedParams `json:"quoted"`
+    Quoted ResponseQuotedParams `json:"quoted"`
     CurrentValue sdk.Dec `json:"currentValue"`
+}
+
+type ResponseQuotedParams struct {
+    Id mt.MicrotickId `json:"id"`
+    Premium mt.MicrotickPremium `json:"premium"`
+    Spot mt.MicrotickSpot `json:"spot"`
 }
 
 func (rts ResponseTradeStatus) String() string {
@@ -102,7 +108,7 @@ func formatTradeLeg(leg ResponseTradeLeg) string {
     )
 }
 
-func formatQuoteParams(params keeper.DataQuotedParams) string {
+func formatQuoteParams(params ResponseQuotedParams) string {
     return fmt.Sprintf(`
             Id: %d 
             Premium: %s 
@@ -138,7 +144,11 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
             Quantity: leg.Quantity,
             Long: leg.Long,
             Short: leg.Short,
-            Quoted: leg.Quoted,
+            Quoted: ResponseQuotedParams {
+                Id: leg.Quoted.Id,
+                Premium: leg.Quoted.Premium,
+                Spot: leg.Quoted.Spot,
+            },
             CurrentValue: leg.CalculateValue(dataMarket.Consensus.Amount, data.Strike.Amount),
         })
     }
