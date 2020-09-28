@@ -10,7 +10,7 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
 
   bool european_options = 1 [
-    (gogoproto.jsontag) = "european_options",
+    (gogoproto.jsontag) = "european_options"
   ];
   
   string commission_quote_percent = 2 [
