@@ -2,43 +2,13 @@ package msg
 
 import (
     "fmt"
-    "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
-
-type TxMarketTrade struct {
-    Market mt.MicrotickMarket
-    Duration mt.MicrotickDurationName
-    Taker mt.MicrotickAccount
-    OrderType mt.MicrotickOrderType
-    Quantity mt.MicrotickQuantity
-}
-
-func NewTxMarketTrade(market mt.MicrotickMarket, dur mt.MicrotickDurationName, taker sdk.AccAddress,
-    orderType mt.MicrotickOrderType, quantity mt.MicrotickQuantity) TxMarketTrade {
-        
-    return TxMarketTrade {
-        Market: market,
-        Duration: dur,
-        Taker: taker,
-        OrderType: orderType,
-        Quantity: quantity,
-    }
-}
-
-type MarketTradeData struct {
-    Market mt.MicrotickMarket `json:"market"`
-    Duration mt.MicrotickDurationName `json:"duration"`
-    Trade keeper.DataActiveTrade `json:"trade"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Time time.Time `json:"time"`
-}
 
 func (msg TxMarketTrade) Route() string { return "microtick" }
 
@@ -63,7 +33,7 @@ func (msg TxMarketTrade) ValidateBasic() error {
 }
 
 func (msg TxMarketTrade) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
@@ -72,7 +42,7 @@ func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
     msg TxMarketTrade) (*sdk.Result, error) {
      
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
@@ -143,7 +113,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
         
         accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Taker)
         accountStatus.SettleBacking = accountStatus.SettleBacking.Add(settleIncentive)
-        accountStatus.NumTrades++
+        accountStatus.PlacedTrades++
         mtKeeper.SetAccountStatus(ctx, msg.Taker, accountStatus)
         
         // Save
@@ -156,10 +126,10 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
             Market: msg.Market,
             Duration: msg.Duration,
             Consensus: market.Consensus,
-            Time: now,
+            Time: now.Unix(),
             Trade: matcher.Trade,
         }
-        bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+        bz := ModuleCdc.MustMarshalJSON(&data)
         
         var events []sdk.Event
         events = append(events, sdk.NewEvent(

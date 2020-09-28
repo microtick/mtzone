@@ -2,11 +2,18 @@ package msg
 
 import (
     "github.com/cosmos/cosmos-sdk/codec"
-    "github.com/cosmos/cosmos-sdk/codec/types"
+    sdk "github.com/cosmos/cosmos-sdk/types"
+    cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+)
+
+var (
+    ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
+	_, _, _, _ sdk.Msg = &TxCancelQuote{}, &TxCreateQuote{}, &TxUpdateQuote{}, &TxDepositQuote{}
+	_, _, _, _ sdk.Msg = &TxWithdrawQuote{}, &TxMarketTrade{}, &TxPickTrade{}, &TxSettleTrade{}
 )
 
 // Register concrete types on codec codec
-func RegisterCodec(cdc *codec.Codec) {
+func RegisterCodec(cdc *codec.LegacyAmino) {
     cdc.RegisterConcrete(TxCreateQuote{}, "microtick/QuoteCreate", nil)
     cdc.RegisterConcrete(TxCancelQuote{}, "microtick/QuoteCancel", nil)
     cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/QuoteUpdate", nil)
@@ -17,14 +24,9 @@ func RegisterCodec(cdc *codec.Codec) {
     cdc.RegisterConcrete(TxSettleTrade{}, "microtick/TradeSettle", nil)
 }
 
-// generic sealed codec to be used throughout this module
-var (
-    amino = codec.New()
-    ModuleCdc = codec.NewHybridCodec(amino, types.NewInterfaceRegistry())
-)
-
-func init() {
-    RegisterCodec(amino)
-    codec.RegisterCrypto(amino)
-    amino.Seal()
+func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+  registry.RegisterImplementations((*sdk.Msg)(nil),
+    &TxCancelQuote{},
+    &TxCreateQuote{},
+  )
 }

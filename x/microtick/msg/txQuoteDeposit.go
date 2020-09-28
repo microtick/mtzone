@@ -4,39 +4,12 @@ import (
     "fmt"
     "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
-
-type TxDepositQuote struct {
-    Id mt.MicrotickId
-    Requester mt.MicrotickAccount
-    Deposit mt.MicrotickCoin
-}
-
-func NewTxDepositQuote(id mt.MicrotickId, requester sdk.AccAddress, 
-    deposit mt.MicrotickCoin) TxDepositQuote {
-    return TxDepositQuote {
-        Id: id,
-        Requester: requester,
-        Deposit: deposit,
-    }
-}
-
-type DepositQuoteData struct {
-    Account string `json:"account"`
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Time time.Time `json:"time"`
-    Backing mt.MicrotickCoin `json:"backing"`
-    QuoteBacking mt.MicrotickCoin `json:"quoteBacking"`
-    Commission mt.MicrotickCoin `json:"commission"`
-}
 
 func (msg TxDepositQuote) Route() string { return "microtick" }
 
@@ -50,7 +23,7 @@ func (msg TxDepositQuote) ValidateBasic() error {
 }
 
 func (msg TxDepositQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
@@ -59,7 +32,7 @@ func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams, 
     msg TxDepositQuote) (*sdk.Result, error) {
         
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
@@ -72,7 +45,7 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Param
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
     commission := mt.NewMicrotickCoinFromDec(msg.Deposit.Amount.Mul(params.CommissionQuotePercent))
@@ -120,16 +93,16 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Param
     
     // Data
     data := DepositQuoteData {
-      Account: msg.Requester.String(),
+      Account: msg.Requester,
       Id: quote.Id,
       Market: dataMarket.Market,
       Consensus: dataMarket.Consensus,
-      Time: now,
+      Time: now.Unix(),
       Backing: msg.Deposit,
       QuoteBacking: quote.Backing,
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+    bz := ModuleCdc.MustMarshalJSON(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

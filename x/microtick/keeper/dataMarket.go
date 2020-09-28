@@ -7,28 +7,6 @@ import (
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
-type DataOrderBook struct {
-    Name mt.MicrotickDurationName `json:"name"`
-    CallAsks OrderedList `json:"callasks"`
-    CallBids OrderedList `json:"callbids"`
-    PutAsks OrderedList `json:"putasks"`
-    PutBids OrderedList `json:"putbids"`
-    SumBacking mt.MicrotickCoin `json:"sumBacking"`
-    SumWeight mt.MicrotickQuantity `json:"sumWeight"`
-}
-
-type DataMarket struct {
-    Market mt.MicrotickMarket `json:"market"`
-    Description string `json:"description"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    OrderBooks []DataOrderBook `json:"orderBooks"`
-    SumBacking mt.MicrotickCoin `json:"sumBacking"`
-    SumSpots sdk.Dec `json:"sumSpots"`
-    SumWeight mt.MicrotickQuantity `json:"sumWeight"`
-    // Internal: quote list ordered by time of maturity
-    Quotes OrderedList `json:"quotes"`
-}
-
 func NewDataMarket(market mt.MicrotickMarket, description string, durs []mt.MicrotickDurationName) DataMarket {
     orderBooks := make([]DataOrderBook, len(durs))
     for i := 0; i < len(durs); i++ {
@@ -39,9 +17,9 @@ func NewDataMarket(market mt.MicrotickMarket, description string, durs []mt.Micr
         Description: description,
         Consensus: mt.NewMicrotickSpotFromInt(0),
         OrderBooks: orderBooks,
-        SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
-        SumSpots: sdk.ZeroDec(),
-        SumWeight: mt.NewMicrotickQuantityFromInt(0),
+        TotalBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
+        TotalSpots: sdk.ZeroDec(),
+        TotalWeight: mt.NewMicrotickQuantityFromInt(0),
     }
 }
 
@@ -82,11 +60,11 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
     // the invariants apply only to creation or updates, not from the results
     // of market action over time.  (quotes can go stale, etc)
 
-    dm.SumBacking = dm.SumBacking.Add(quote.Backing)
-    dm.SumSpots = dm.SumSpots.Add(quote.Spot.Amount.Mul(quote.Quantity.Amount))
-    dm.SumWeight = dm.SumWeight.Add(quote.Quantity)
-    if dm.SumWeight.Amount.IsPositive() {
-        dm.Consensus = mt.NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
+    dm.TotalBacking = dm.TotalBacking.Add(quote.Backing)
+    dm.TotalSpots = dm.TotalSpots.Add(quote.Spot.Amount.Mul(quote.Quantity.Amount))
+    dm.TotalWeight = dm.TotalWeight.Add(quote.Quantity)
+    if dm.TotalWeight.Amount.IsPositive() {
+        dm.Consensus = mt.NewMicrotickSpotFromDec(dm.TotalSpots.Quo(dm.TotalWeight.Amount))
     }
     
     // Test quote invariant:
@@ -119,11 +97,11 @@ func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool 
 }
 
 func (dm *DataMarket) FactorOut(quote DataActiveQuote) {
-    dm.SumBacking = dm.SumBacking.Sub(quote.Backing)
-    dm.SumSpots = dm.SumSpots.Sub(quote.Spot.Amount.Mul(quote.Quantity.Amount))
-    dm.SumWeight = dm.SumWeight.Sub(quote.Quantity)
-    if dm.SumWeight.Amount.IsPositive() {
-        dm.Consensus = mt.NewMicrotickSpotFromDec(dm.SumSpots.Quo(dm.SumWeight.Amount))
+    dm.TotalBacking = dm.TotalBacking.Sub(quote.Backing)
+    dm.TotalSpots = dm.TotalSpots.Sub(quote.Spot.Amount.Mul(quote.Quantity.Amount))
+    dm.TotalWeight = dm.TotalWeight.Sub(quote.Quantity)
+    if dm.TotalWeight.Amount.IsPositive() {
+        dm.Consensus = mt.NewMicrotickSpotFromDec(dm.TotalSpots.Quo(dm.TotalWeight.Amount))
     }
     
     orderBook := dm.GetOrderBook(quote.DurationName)
@@ -141,7 +119,7 @@ func (dm *DataMarket) AddQuote(quote DataActiveQuote) {
     orderBook.PutAsks.Insert(NewListItem(quote.Id, quote.Ask.Amount.Sub(spotDiv2)))
     orderBook.PutBids.Insert(NewListItem(quote.Id, quote.Bid.Amount.Sub(spotDiv2)))
     
-    dm.Quotes.Insert(NewListItem(quote.Id, sdk.NewDec(quote.CanModify.Unix())))
+    dm.Quotes.Insert(NewListItem(quote.Id, sdk.NewDec(quote.CanModify)))
     
     dm.SetOrderBook(quote.DurationName, orderBook)
 }

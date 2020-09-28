@@ -2,37 +2,13 @@ package msg
 
 import (
     "fmt"
-    "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
-
-type TxPickTrade struct {
-    Taker mt.MicrotickAccount
-    Id mt.MicrotickId
-    OrderType mt.MicrotickOrderType
-}
-
-func NewTxPickTrade(taker sdk.AccAddress, id mt.MicrotickId, orderType mt.MicrotickOrderType) TxPickTrade {
-    return TxPickTrade {
-        Taker: taker,
-        Id: id,
-        OrderType: orderType,
-    }
-}
-
-type PickTradeData struct {
-    Market mt.MicrotickMarket `json:"market"`
-    Duration mt.MicrotickDurationName `json:"duration"`
-    Trade keeper.DataActiveTrade `json:"trade"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Time time.Time `json:"time"`
-}
 
 func (msg TxPickTrade) Route() string { return "microtick" }
 
@@ -52,7 +28,7 @@ func (msg TxPickTrade) ValidateBasic() error {
 }
 
 func (msg TxPickTrade) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxPickTrade) GetSigners() []sdk.AccAddress {
@@ -61,7 +37,7 @@ func (msg TxPickTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
     msg TxPickTrade) (*sdk.Result, error) {
     
     quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
@@ -114,7 +90,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
         
         accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Taker)
         accountStatus.SettleBacking = accountStatus.SettleBacking.Add(settleIncentive)
-        accountStatus.NumTrades++
+        accountStatus.PlacedTrades++
         mtKeeper.SetAccountStatus(ctx, msg.Taker, accountStatus)
         
         // Save
@@ -127,10 +103,10 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params
             Market: quote.Market,
             Duration: quote.DurationName,
             Consensus: market.Consensus,
-            Time: now,
+            Time: now.Unix(),
             Trade: matcher.Trade,
         }
-        bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+        bz := ModuleCdc.MustMarshalJSON(&data)
         
         var events []sdk.Event
         events = append(events, sdk.NewEvent(

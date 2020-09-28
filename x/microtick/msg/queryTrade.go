@@ -1,134 +1,22 @@
 package msg 
 
 import (
-    "fmt"
-    "strconv"
-    "strings"
-    "time"
+    "context"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-    abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
-    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-type ResponseTradeStatus struct {
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    Duration mt.MicrotickDurationName `json:"duration"`
-    Order mt.MicrotickOrderTypeName `json:"order"`
-    Taker mt.MicrotickAccount `json:"taker"`
-    Legs []ResponseTradeLeg `json:"legs"`
-    Start time.Time `json:"start"`
-    Expiration time.Time `json:"expiration"`
-    Strike mt.MicrotickSpot `json:"strike"`
-    CurrentSpot mt.MicrotickSpot `json:"currentSpot"`
-    CurrentValue sdk.Dec `json:"currentValue"`
-    Commission mt.MicrotickCoin `json:"commission"`
-    SettleIncentive mt.MicrotickCoin `json:"settleIncentive"`
-}
-
-type ResponseTradeLeg struct {
-    LegId mt.MicrotickId `json:"leg_id"`
-    Type mt.MicrotickLegTypeName `json:"type"`
-    Backing mt.MicrotickCoin `json:"backing"`
-    Quantity mt.MicrotickQuantity `json:"quantity"`
-    Premium mt.MicrotickPremium `json:"premium"`
-    Cost mt.MicrotickCoin `json:"cost"`
-    Long mt.MicrotickAccount `json:"long"`
-    Short mt.MicrotickAccount `json:"short"`
-    Quoted ResponseQuotedParams `json:"quoted"`
-    CurrentValue sdk.Dec `json:"currentValue"`
-}
-
-type ResponseQuotedParams struct {
-    Id mt.MicrotickId `json:"id"`
-    Premium mt.MicrotickPremium `json:"premium"`
-    Spot mt.MicrotickSpot `json:"spot"`
-}
-
-func (rts ResponseTradeStatus) String() string {
-    legStrings := make([]string, len(rts.Legs))
-    for i := 0; i < len(rts.Legs); i++ {
-        legStrings[i] = formatTradeLeg(rts.Legs[i])
-    }
-    return strings.TrimSpace(fmt.Sprintf(`Trade Id: %d
-Market: %s
-Duration: %s
-Order: %s
-Start: %s
-Expiration: %s
-Commission: %s
-Settle Incentive: %s
-Taker: %s
-Legs: %s
-Strike: %s 
-Current Spot: %s
-Current Value (Taker): %sdai`,
-    rts.Id, 
-    rts.Market, 
-    rts.Duration,
-    rts.Order,
-    rts.Start.String(),
-    rts.Expiration.String(),
-    rts.Commission.String(),
-    rts.SettleIncentive.String(),
-    rts.Taker.String(),
-    legStrings,
-    rts.Strike.String(),
-    rts.CurrentSpot.String(),
-    rts.CurrentValue.String()))
-}
-
-func formatTradeLeg(leg ResponseTradeLeg) string {
-    return fmt.Sprintf(`
-    Leg: %d
-        Type: %s
-        Long: %s
-        Short: %s
-        Backing: %s
-        Quantity: %s
-        Premium: %s
-        Cost: %s
-        Quoted: %s
-        CurrentValue: %s`,
-        leg.LegId,
-        leg.Type,
-        leg.Long.String(),
-        leg.Short.String(),
-        leg.Backing.String(),
-        leg.Quantity.String(),
-        leg.Premium.String(),
-        leg.Cost.String(),
-        formatQuoteParams(leg.Quoted),
-        leg.CurrentValue.String(),
-    )
-}
-
-func formatQuoteParams(params ResponseQuotedParams) string {
-    return fmt.Sprintf(`
-            Id: %d 
-            Premium: %s 
-            Spot: %s`,
-        params.Id,
-        params.Premium.String(),
-        params.Spot.String(),
-    )
-}
-
-func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
-    id, err := strconv.Atoi(path[0])
-    if err != nil {
-        return nil, sdkerrors.Wrapf(mt.ErrInvalidTrade, "%d", id)
-    }
-    data, err := keeper.GetActiveTrade(ctx, mt.MicrotickId(id))
+func (querier Querier) Trade(c context.Context, req *QueryTradeRequest) (*QueryTradeResponse, error) {
+    ctx := sdk.UnwrapSDKContext(c)
+    id := req.Id
+    data, err := querier.Keeper.GetActiveTrade(ctx, mt.MicrotickId(id))
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidTrade, "fetching %d", id)
     }
-    dataMarket, err := keeper.GetDataMarket(ctx, data.Market)
+    dataMarket, err := querier.Keeper.GetDataMarket(ctx, data.Market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, data.Market)
     }
@@ -153,26 +41,22 @@ func QueryTradeStatus(ctx sdk.Context, path []string, req abci.RequestQuery, kee
         })
     }
     
-    response := ResponseTradeStatus {
+    response := QueryTradeResponse {
         Id: data.Id,
         Market: data.Market,
-        Duration: data.DurationName,
+        Duration: data.Duration,
         Order: mt.MicrotickOrderNameFromType(data.Order),
         Taker: data.Taker,
+        Quantity: data.Quantity,
         Legs: legs,
         Start: data.Start,
         Expiration: data.Expiration,
         Strike: data.Strike,
-        CurrentSpot: dataMarket.Consensus,
-        CurrentValue: data.CurrentValue(data.Taker, dataMarket.Consensus),
         Commission: data.Commission,
         SettleIncentive: data.SettleIncentive,
+        Consensus: dataMarket.Consensus,
+        CurrentValue: data.CurrentValue(data.Taker, dataMarket.Consensus),
     }
     
-    bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)
-    if err != nil {
-        panic("Could not marshal result to JSON")
-    }
-    
-    return bz, nil
+    return &response, nil
 }

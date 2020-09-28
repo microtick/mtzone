@@ -1,0 +1,85 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message TxSettleTrade {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  bytes requester = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "requester"
+  ];
+   
+}
+
+message SettlementData {
+  
+  uint32 leg_id = 1 [
+    (gogoproto.jsontag) = "leg_id"
+  ];
+  
+  bytes settle_account = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "settle_account"
+  ];
+   
+  cosmos.base.v1beta1.DecCoin settle = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "settle"
+  ];
+  
+  bytes refund_account = 4 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "refund_account"
+  ];
+   
+  cosmos.base.v1beta1.DecCoin refund = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "refund"
+  ];
+  
+}
+
+message TradeSettlementData {
+
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];  
+  
+  int64 time = 2 [
+    (gogoproto.jsontag) = "time"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin final = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "final"
+  ];
+  
+  repeated SettlementData settlements = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "settlements"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin incentive = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "incentive"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin commission = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "commission"
+  ];
+  
+  bytes settler = 7 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "settler"
+  ];
+   
+}

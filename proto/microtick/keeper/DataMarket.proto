@@ -1,0 +1,89 @@
+syntax = "proto3";
+package microtick.keeper;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "microtick/keeper/OrderedList.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/keeper";
+
+message DataOrderBook {
+  
+  string name = 1 [
+    (gogoproto.jsontag) = "name"
+  ];
+  
+  OrderedList call_asks = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "call_asks"
+  ];
+  
+  OrderedList call_bids = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "call_bids"
+  ];
+  
+  OrderedList put_asks = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "put_asks"
+  ];
+  
+  OrderedList put_bids = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "put_bids"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin sum_backing = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sum_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin sum_weight = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sum_weight"
+  ];
+  
+}
+
+message DataMarket {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string description = 2 [
+    (gogoproto.jsontag) = "description"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  repeated DataOrderBook order_books = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "order_books"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin total_backing = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "total_backing"
+  ];
+  
+  string total_spots = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "total_spots"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin total_weight = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "total_weight"
+  ];
+  
+  OrderedList quotes = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quotes"
+  ];
+  
+}

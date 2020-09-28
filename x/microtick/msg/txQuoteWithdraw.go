@@ -4,39 +4,12 @@ import (
     "fmt"
     "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
-
-type TxWithdrawQuote struct {
-    Id mt.MicrotickId
-    Requester mt.MicrotickAccount
-    Withdraw mt.MicrotickCoin
-}
-
-func NewTxWithdrawQuote(id mt.MicrotickId, requester sdk.AccAddress, 
-    withdraw mt.MicrotickCoin) TxWithdrawQuote {
-    return TxWithdrawQuote {
-        Id: id,
-        Requester: requester,
-        Withdraw: withdraw,
-    }
-}
-
-type WithdrawQuoteData struct {
-    Account string `json:"account"`
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Time time.Time `json:"time"`
-    Backing mt.MicrotickCoin `json:"backing"`
-    QuoteBacking mt.MicrotickCoin `json:"quoteBacking"`
-    Commission mt.MicrotickCoin `json:"commission"`
-}
 
 func (msg TxWithdrawQuote) Route() string { return "microtick" }
 
@@ -50,7 +23,7 @@ func (msg TxWithdrawQuote) ValidateBasic() error {
 }
 
 func (msg TxWithdrawQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxWithdrawQuote) GetSigners() []sdk.AccAddress {
@@ -59,7 +32,7 @@ func (msg TxWithdrawQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams, 
     msg TxWithdrawQuote) (*sdk.Result, error) {
         
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
@@ -72,7 +45,7 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Para
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
     // Withdraw amount must be strictly less than quote backing (to withdraw the full amount, use CancelQUote)
@@ -124,16 +97,16 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Para
     
     // Data
     data := WithdrawQuoteData {
-      Account: msg.Requester.String(),
+      Account: msg.Requester,
       Id: quote.Id,
       Market: dataMarket.Market,
       Consensus: dataMarket.Consensus,
-      Time: now,
+      Time: now.Unix(),
       Backing: msg.Withdraw,
       QuoteBacking: quote.Backing,
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+    bz := ModuleCdc.MustMarshalJSON(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

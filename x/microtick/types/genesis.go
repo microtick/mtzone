@@ -1,30 +1,12 @@
 package types
 
-type GenesisAccount struct {
-    Account MicrotickAccount `json:"account"`
-    NumQuotes uint32 `json:"numQuotes"`
-    NumTrades uint32 `json:"numTrades"`
-}
-
-type GenesisMarket struct {
-    Name MicrotickMarket `json:"name"`
-    Description string `json:"description"`
-}
-
-type GenesisDuration struct {
-    Name MicrotickDurationName `json:"name"`
-    Seconds MicrotickDuration `json:"seconds"`
-}
-
-type GenesisState struct {
-    Params Params `json:"params"`
-    Accounts []GenesisAccount `json:"accounts"`
-    Markets []GenesisMarket `json:"markets"`
-    Durations []GenesisDuration `json:"durations"`
-}
-
-func NewGenesisState(params Params, accounts []GenesisAccount, markets []GenesisMarket, durations []GenesisDuration) GenesisState {
-    return GenesisState {
+func NewGenesisState(
+    params MicrotickParams, 
+    accounts []GenesisAccount, 
+    markets []GenesisMarket, 
+    durations []GenesisDuration) GenesisMicrotick {
+        
+    return GenesisMicrotick {
         Params: params,
         Accounts: accounts,
         Markets: markets,
@@ -32,11 +14,11 @@ func NewGenesisState(params Params, accounts []GenesisAccount, markets []Genesis
     }
 }
 
-func DefaultGenesisState() GenesisState {
+func DefaultGenesisState() GenesisMicrotick {
     return NewGenesisState(DefaultParams(), nil, nil, nil)
 }
 
-func ValidateGenesis(gs GenesisState) error {
+func ValidateGenesis(gs GenesisMicrotick) error {
   if err := gs.Params.ValidateBasic(); err != nil {
     return err
   }

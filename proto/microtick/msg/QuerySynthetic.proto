@@ -1,0 +1,71 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QuerySyntheticRequest {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string duration = 2 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+}
+
+message SyntheticQuote {
+  
+  uint32 ask_id = 1 [
+    (gogoproto.jsontag) = "ask_id"
+  ];
+  
+  bool ask_fill = 2 [
+    (gogoproto.jsontag) = "ask_fill"
+  ];
+  
+  uint32 bid_id = 3 [
+    (gogoproto.jsontag) = "bid_id"
+  ];
+  
+  bool bid_fill = 4 [
+    (gogoproto.jsontag) = "bid_fill"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin spot = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "spot"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quantity = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quantity"
+  ];
+  
+}
+
+message QuerySyntheticResponse {
+  
+  cosmos.base.v1beta1.DecCoin consensus = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+
+  cosmos.base.v1beta1.DecCoin weight = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "weight"
+  ];
+  
+  repeated SyntheticQuote asks = 3 [
+    (gogoproto.jsontag) = "asks"
+  ];
+  
+  repeated SyntheticQuote bids = 4 [
+    (gogoproto.jsontag) = "bids"
+  ];
+
+}

@@ -1,0 +1,157 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QueryTradeRequest {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+}
+
+message ResponseQuotedParams {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin premium = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "premium"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin spot = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "spot"
+  ];  
+  
+}
+
+message ResponseTradeLeg {
+  
+  uint32 leg_id = 1 [
+    (gogoproto.jsontag) = "leg_id"
+  ];
+  
+  string type = 2 [
+    (gogoproto.jsontag) = "type"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin backing = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin premium = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "premium"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin cost = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "cost"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quantity = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quantity"
+  ];
+  
+  bytes long = 7 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "long"
+  ];
+  
+  bytes short = 8 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "short"
+  ];
+  
+  ResponseQuotedParams quoted = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quoted"
+  ];
+  
+  string current_value = 10 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "current_value"
+  ];  
+  
+}
+
+message QueryTradeResponse {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  string market = 2 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string duration = 3 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+  string order = 4 [
+    (gogoproto.jsontag) = "order"
+  ];
+  
+  bytes taker = 5 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "taker"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quantity = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quantity"
+  ];
+  
+  repeated ResponseTradeLeg legs = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "legs"
+  ];
+  
+  int64 start = 8 [
+    (gogoproto.jsontag) = "start"
+  ];
+  
+  int64 expiration = 9 [
+    (gogoproto.jsontag) = "expiration"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin strike = 10 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "strike"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin commission = 11 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "commission"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin settle_incentive = 12 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "settle_incentive"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 13 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  string current_value = 14 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "current_value"
+  ];  
+  
+  
+}
+

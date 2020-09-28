@@ -1,0 +1,65 @@
+syntax = "proto3";
+package microtick.keeper;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/keeper";
+
+message DataActiveQuote {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  string market = 2 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  uint32 duration = 3 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+  string duration_name = 4 [
+    (gogoproto.jsontag) = "duration_name"
+  ];
+  
+  bytes provider = 5 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "provider"
+  ];
+  
+  int64 modified = 6 [
+    (gogoproto.jsontag) = "modified"
+  ];
+  
+  int64 can_modify = 7 [
+    (gogoproto.jsontag) = "can_modify"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin backing = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin ask = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "ask"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin bid = 10 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "bid"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quantity = 11 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quantity"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin spot = 12 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "spot"
+  ];
+  
+}

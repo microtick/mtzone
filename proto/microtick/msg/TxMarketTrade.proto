@@ -1,0 +1,60 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "microtick/keeper/DataActiveTrade.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message TxMarketTrade {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string duration = 2 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+  bytes taker = 3 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "taker"
+  ];
+  
+  string order_type = 4 [
+    (gogoproto.jsontag) = "order_type"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quantity = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quantity"
+  ];
+  
+}
+
+message MarketTradeData {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string duration = 2 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+  microtick.keeper.DataActiveTrade trade = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "trade"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  int64 time = 5 [
+    (gogoproto.jsontag) = "time"
+  ];
+  
+}

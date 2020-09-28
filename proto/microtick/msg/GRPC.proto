@@ -1,0 +1,42 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "google/api/annotations.proto";
+import "microtick/msg/QueryAccount.proto";
+import "microtick/msg/QueryMarket.proto";
+import "microtick/msg/QueryConsensus.proto";
+import "microtick/msg/QueryOrderBook.proto";
+import "microtick/msg/QuerySynthetic.proto";
+import "microtick/msg/QueryQuote.proto";
+import "microtick/msg/QueryTrade.proto";
+import "microtick/msg/QueryParams.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+service GRPC {
+  rpc Account (QueryAccountRequest) returns (QueryAccountResponse) {
+    option (google.api.http).get = "/microtick/account/{account}";
+  }
+  rpc Market (QueryMarketRequest) returns (QueryMarketResponse) {
+    option (google.api.http).get = "/microtick/market/{market}";
+  }
+  rpc Consensus (QueryConsensusRequest) returns (QueryConsensusResponse) {
+    option (google.api.http).get = "/microtick/conesnsus/{market}";
+  }
+  rpc OrderBook (QueryOrderBookRequest) returns (QueryOrderBookResponse) {
+    option (google.api.http).get = "/microtick/orderbook/{market}/{duration}";
+  }
+  rpc Synthetic (QuerySyntheticRequest) returns (QuerySyntheticResponse) {
+    option (google.api.http).get = "/microtick/synthetic/{market}/{duration}";
+  }
+  rpc Quote (QueryQuoteRequest) returns (QueryQuoteResponse) {
+    option (google.api.http).get = "/microtick/quote/{id}";
+  }
+  rpc Trade (QueryTradeRequest) returns (QueryTradeResponse) {
+    option (google.api.http).get = "/microtick/trade/{id}";
+  }
+  rpc Params (QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/microtick/params";
+  }
+}
+

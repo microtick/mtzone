@@ -1,0 +1,101 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QueryQuoteRequest {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+}
+
+message QueryQuoteResponse {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  bytes provider = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "provider"
+  ];
+  
+  string market = 3 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string duration = 4 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin backing = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin ask = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "ask"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin bid = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "bid"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quantity = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quantity"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin spot = 10 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "spot"
+  ];
+  
+  string delta = 11 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "delta"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin call_ask = 12 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "call_ask"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin call_bid = 13 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "call_bid"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin put_ask = 14 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "put_ask"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin put_bid = 15 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "put_bid"
+  ];
+  
+  int64 modified = 16 [
+    (gogoproto.jsontag) = "modified"
+  ];
+  
+  int64 can_modify = 17 [
+    (gogoproto.jsontag) = "can_modify"
+  ];
+  
+}
+

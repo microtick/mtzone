@@ -6,20 +6,11 @@ import (
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
-type ListItem struct {
-    Id mt.MicrotickId `json:"Id"`
-    Value sdk.Dec `json:"Value"`
-}
-
 func NewListItem(id mt.MicrotickId, value sdk.Dec) ListItem {
     return ListItem {
         Id: id,
         Value: value,
     }
-}
-
-type OrderedList struct {
-    Data []ListItem
 }
 
 func NewOrderedList() OrderedList {

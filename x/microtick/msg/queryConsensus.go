@@ -1,51 +1,28 @@
 package msg
 
 import (
-    "fmt"
-    "strings"
+    "context"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-    abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
-    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-type ResponseMarketConsensus struct {
-    Market mt.MicrotickMarket `json:"market"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    SumBacking mt.MicrotickCoin `json:"sumBacking"`
-    SumWeight mt.MicrotickQuantity `json:"sumWeight"`
-}
-
-func (rm ResponseMarketConsensus) String() string {
-    return strings.TrimSpace(fmt.Sprintf(`Market: %s
-Consensus: %s
-Sum Backing: %s
-Sum Weight: %s`, rm.Market, rm.Consensus.String(), rm.SumBacking.String(),
-    rm.SumWeight.String()))
-}
-
-func QueryMarketConsensus(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
-    market := path[0]
-    data, err := keeper.GetDataMarket(ctx, market)
+func (querier Querier) Consensus(c context.Context, req *QueryConsensusRequest) (*QueryConsensusResponse, error) {
+    ctx := sdk.UnwrapSDKContext(c)
+    market := req.Market
+    data, err := querier.Keeper.GetDataMarket(ctx, market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
-    response := ResponseMarketConsensus {
+    response := QueryConsensusResponse { 
         Market: data.Market,
         Consensus: data.Consensus,
-        SumBacking: data.SumBacking,
-        SumWeight: data.SumWeight,
+        TotalBacking: data.TotalBacking,
+        TotalWeight: data.TotalWeight,
     }
     
-    bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)
-    if err != nil {
-        panic("Could not marshal result to JSON")
-    }
-    
-    return bz, nil
+    return &response, nil
 }

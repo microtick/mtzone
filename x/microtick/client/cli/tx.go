@@ -1,237 +1,253 @@
 package cli
 
 import (
-	"bufio"
-	
-	"github.com/spf13/cobra"
-
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/context"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
+  "github.com/cosmos/cosmos-sdk/client"
+  "github.com/cosmos/cosmos-sdk/client/flags"
+  "github.com/cosmos/cosmos-sdk/client/tx"
+  
+  "github.com/spf13/cobra"
 	
 	mt "github.com/mjackson001/mtzone/x/microtick/types"
 	"github.com/mjackson001/mtzone/x/microtick/msg"
 )
 
-func GetTxCmd(cdc *codec.Codec) *cobra.Command {
-	mtTxCmd := &cobra.Command{
+func GetTxCmd(key string) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "microtick",
 		Short: "Microtick transactions subcommands",
+		RunE: client.ValidateCmd,
 	}
 
-	mtTxCmd.AddCommand(flags.PostCommands(
-		GetCmdQuoteCancel(cdc),
-		GetCmdQuoteCreate(cdc),
-		GetCmdQuoteDeposit(cdc),
-		GetCmdQuoteUpdate(cdc),
-		GetCmdQuoteWithdraw(cdc),
-		GetCmdTradeMarket(cdc),
-		GetCmdTradePick(cdc),
-		GetCmdTradeSettle(cdc),
-	)...)
+	cmd.AddCommand(
+		cmdQuoteCancel(),
+		cmdQuoteCreate(),
+		cmdQuoteDeposit(),
+		cmdQuoteUpdate(),
+		cmdQuoteWithdraw(),
+		cmdTradeMarket(),
+		cmdTradePick(),
+		cmdTradeSettle(),
+	)
 
-	return mtTxCmd
+	return cmd
 }
 
-func GetCmdQuoteCancel(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "quote-cancel [id]",
+func cmdQuoteCancel() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "cancel [id]",
 		Short: "Cancel a quote",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			id := mt.NewMicrotickIdFromString(args[0])
-
-			txmsg := msg.NewTxCancelQuote(id, cliCtx.GetFromAddress())
-			err := txmsg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
-
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+			
+			message := msg.TxCancelQuote {
+			}
+			
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdQuoteCreate(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "quote-create [market] [duration] [backing] [spot] [ask_premium] [bid_premium]",
+func cmdQuoteCreate() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "create [market] [duration] [backing] [spot] [ask_premium] [bid_premium]",
 		Short: "Create a new quote",
 		Args:  cobra.ExactArgs(6),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			market := args[0]
-			dur := args[1]
-			coins := mt.NewMicrotickCoinFromString(args[2])
-			spot := mt.NewMicrotickSpotFromString(args[3])
-			ask := mt.NewMicrotickPremiumFromString(args[4])
-			bid := mt.NewMicrotickPremiumFromString(args[5])
-
-			msg := msg.NewTxCreateQuote(market, dur, cliCtx.GetFromAddress(), coins,
-				spot, ask, bid)
-			err := msg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
+			
+			message := msg.TxCreateQuote {
+				Market: args[0],
+				Duration: args[1],
+				Provider: clientCtx.GetFromAddress(),
+				Backing: mt.NewMicrotickCoinFromString(args[2]),
+				Spot: mt.NewMicrotickSpotFromString(args[3]),
+				Ask: mt.NewMicrotickPremiumFromString(args[4]),
+				Bid: mt.NewMicrotickPremiumFromString(args[5]),
+			}
 
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdQuoteDeposit(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "quote-deposit [id] [amount]",
+func cmdQuoteDeposit() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deposit [id] [amount]",
 		Short: "Deposit more backing to a quote",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			id := mt.NewMicrotickIdFromString(args[0])
-			deposit := mt.NewMicrotickCoinFromString(args[1])
-
-			txmsg := msg.NewTxDepositQuote(id, cliCtx.GetFromAddress(), deposit)
-			err := txmsg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
-
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+			
+			message := msg.TxDepositQuote {
+				Id: mt.NewMicrotickIdFromString(args[0]),
+				Requester: clientCtx.GetFromAddress(),
+				Deposit: mt.NewMicrotickCoinFromString(args[1]),
+			}
+			
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdQuoteUpdate(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "quote-update [id] [newspot] [new_ask_premium] [new_bid_premium]",
+func cmdQuoteUpdate() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update [id] [newspot] [new_ask_premium] [new_bid_premium]",
 		Short: "Update a quote",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			id := mt.NewMicrotickIdFromString(args[0])
-			newspot := mt.NewMicrotickSpotFromString(args[1])
-			newask := mt.NewMicrotickPremiumFromString(args[2])
-			newbid := mt.NewMicrotickPremiumFromString(args[3])
-
-			txmsg := msg.NewTxUpdateQuote(id, cliCtx.GetFromAddress(), newspot, newask, newbid)
-			err := txmsg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
+			
+			message := msg.TxUpdateQuote {
+				Id: mt.NewMicrotickIdFromString(args[0]),
+				Requester: clientCtx.GetFromAddress(),
+				NewSpot: mt.NewMicrotickSpotFromString(args[1]),
+				NewAsk: mt.NewMicrotickPremiumFromString(args[2]),
+				NewBid: mt.NewMicrotickPremiumFromString(args[3]),
+			}
 
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdQuoteWithdraw(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "quote-withdraw [id] [amount]",
+func cmdQuoteWithdraw() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "withdraw [id] [amount]",
 		Short: "Withdraw backing from a quote",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			id := mt.NewMicrotickIdFromString(args[0])
-			withdraw := mt.NewMicrotickCoinFromString(args[1])
-
-			txmsg := msg.NewTxWithdrawQuote(id, cliCtx.GetFromAddress(), withdraw)
-			err := txmsg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
-
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+			
+			message := msg.TxWithdrawQuote {
+				Id: mt.NewMicrotickIdFromString(args[0]),
+				Requester: clientCtx.GetFromAddress(),
+				Withdraw: mt.NewMicrotickCoinFromString(args[1]),
+			}
+			
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdTradeMarket(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "trade-market [market] [duration] [buy/sell] [call/put/syn] [quantity]",
+func cmdTradeMarket() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "trade [market] [duration] [buy/sell] [call/put/syn] [quantity]",
 		Short: "Create a new market trade",
 		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			market := args[0]
-			dur := args[1]
-			ttype := args[2] + "-" + args[3]
-			quantity := mt.NewMicrotickQuantityFromString(args[4])
-			
-			txmsg := msg.NewTxMarketTrade(market, dur, cliCtx.GetFromAddress(), ttype,
-				quantity)
-			err := txmsg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
+			
+			message := msg.TxMarketTrade {
+				Market: args[0],
+				Duration: args[1],
+				Taker: clientCtx.GetFromAddress(),
+				OrderType: args[2] + "-" + args[3],
+				Quantity: mt.NewMicrotickQuantityFromString(args[4]),
+			}
 
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdTradePick(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "trade-pick [id] [buy/sell] [call/put]",
+func cmdTradePick() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "pick [id] [buy/sell] [call/put]",
 		Short: "Create a new trade against specific quote id",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			id := mt.NewMicrotickIdFromString(args[0])
-			ttype := args[1] + "-" + args[2]
-			
-			txmsg := msg.NewTxPickTrade(cliCtx.GetFromAddress(), id, ttype)
-			err := txmsg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
+			
+			message := msg.TxPickTrade {
+				Id: mt.NewMicrotickIdFromString(args[0]),
+				Taker: clientCtx.GetFromAddress(),
+				OrderType: args[1] + "-" + args[2],
+			}
 
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdTradeSettle(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "trade-settle [id]",
+func cmdTradeSettle() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "settle [id]",
 		Short: "Settle trade",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			id := mt.NewMicrotickIdFromString(args[0])
-			
-			txmsg := msg.NewTxSettleTrade(id, cliCtx.GetFromAddress())
-			err := txmsg.ValidateBasic()
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
+			
+			message := msg.TxSettleTrade {
+				Id: mt.NewMicrotickIdFromString(args[0]),
+				Requester: clientCtx.GetFromAddress(),
+			}
 
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{txmsg})
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
 		},
 	}
+	
+	flags.AddTxFlagsToCmd(cmd)
+	
+	return cmd
 }

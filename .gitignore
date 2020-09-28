@@ -1,3 +1,7 @@
 Gopkg.lock
 vendor
 *.swp
+.cache
+mtm
+*.pb.go
+*.pb.gw.go

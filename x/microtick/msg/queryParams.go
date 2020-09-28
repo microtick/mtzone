@@ -1,20 +1,28 @@
 package msg
 
 import (
-    "github.com/cosmos/cosmos-sdk/codec"
+    "context"
     sdk "github.com/cosmos/cosmos-sdk/types"
-    abci "github.com/tendermint/tendermint/abci/types"
-    
-    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-func QueryParams(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper) (res []byte, err error) {
-    params := keeper.GetParams(ctx)
+func (querier Querier) Params(c context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
+    ctx := sdk.UnwrapSDKContext(c)
+    params := querier.Keeper.GetParams(ctx)
     
-    bz, err := codec.MarshalJSONIndent(keeper.Cdc, params)
-    if err != nil {
-        panic("Could not marshal result to JSON")
+    response := QueryParamsResponse {
+        EuropeanOptions: params.EuropeanOptions,
+        CommissionQuotePercent: params.CommissionQuotePercent,
+        CommissionTradeFixed: params.CommissionTradeFixed,
+        CommissionUpdatePercent: params.CommissionUpdatePercent,
+        CommissionSettleFixed: params.CommissionSettleFixed,
+        CommissionCancelPercent: params.CommissionCancelPercent,
+        SettleIncentive: params.SettleIncentive,
+        FreezeTime: params.FreezeTime,
+        HaltTime: params.HaltTime,
+        MintDenom: params.MintDenom,
+        MintRatio: params.MintRatio,
+        CancelSlashRate: params.CancelSlashRate,
     }
     
-    return bz, nil
+    return &response, nil
 }

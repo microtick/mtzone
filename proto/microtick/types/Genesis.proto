@@ -1,0 +1,72 @@
+syntax = "proto3";
+package microtick.types;
+
+import "gogoproto/gogo.proto";
+import "microtick/types/Params.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/types";
+
+message GenesisAccount {
+  
+  bytes account = 1 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "account"
+  ];
+  
+  uint32 placed_quotes = 2 [
+    (gogoproto.jsontag) = "placed_quotes"
+  ];
+  
+  uint32 placed_trades = 3 [
+    (gogoproto.jsontag) = "placed_trades"
+  ];
+  
+}
+
+message GenesisMarket {
+  
+  string name = 1 [
+    (gogoproto.jsontag) = "name"
+  ];
+  
+  string description = 2 [
+    (gogoproto.jsontag) = "description"
+  ];
+  
+}
+
+message GenesisDuration {
+  
+  string name = 1 [
+    (gogoproto.jsontag) = "name"
+  ];
+  
+  uint32 seconds = 2 [
+    (gogoproto.jsontag) = "seconds"
+  ];
+  
+}
+
+message GenesisMicrotick {
+  
+  microtick.types.MicrotickParams params = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "params"
+  ];
+  
+  repeated GenesisAccount accounts = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "accounts"
+  ];
+  
+  repeated GenesisMarket markets = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "markets"
+  ];
+  
+  repeated GenesisDuration durations = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "durations"
+  ];
+  
+}

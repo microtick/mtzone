@@ -4,45 +4,12 @@ import (
     "fmt"
     "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
-
-type TxUpdateQuote struct {
-    Id mt.MicrotickId
-    Requester mt.MicrotickAccount
-    NewSpot mt.MicrotickSpot
-    NewAsk mt.MicrotickPremium
-    NewBid mt.MicrotickPremium
-}
-
-func NewTxUpdateQuote(id mt.MicrotickId, requester sdk.AccAddress, 
-    newSpot mt.MicrotickSpot, newAsk mt.MicrotickPremium, newBid mt.MicrotickPremium) TxUpdateQuote {
-    return TxUpdateQuote {
-        Id: id,
-        Requester: requester,
-        NewSpot: newSpot,
-        NewAsk: newAsk,
-        NewBid: newBid,
-    }
-}
-
-type UpdateQuoteData struct {
-    Account string `json:"account"`
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    Duration mt.MicrotickDurationName `json:"duration"`
-    Spot mt.MicrotickSpot `json:"spot"`
-    Ask mt.MicrotickPremium `json:"ask"`
-    Bid mt.MicrotickPremium `json:"bid"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Time time.Time `json:"time"`
-    Commission mt.MicrotickCoin `json:"commission"`
-}
 
 func (msg TxUpdateQuote) Route() string { return "microtick" }
 
@@ -59,7 +26,7 @@ func (msg TxUpdateQuote) ValidateBasic() error {
 }
 
 func (msg TxUpdateQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
@@ -68,7 +35,7 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params, 
+func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams, 
     msg TxUpdateQuote) (*sdk.Result, error) {
         
     quote, err := keeper.GetActiveQuote(ctx, msg.Id)
@@ -81,7 +48,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
     commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
@@ -134,7 +101,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     // Data
     data := UpdateQuoteData {
-      Account: msg.Requester.String(),
+      Account: msg.Requester,
       Id: quote.Id,
       Market: quote.Market,
       Duration: quote.DurationName,
@@ -142,10 +109,10 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
       Ask: quote.Ask,
       Bid: quote.Bid,
       Consensus: dataMarket.Consensus,
-      Time: now,
+      Time: now.Unix(),
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+    bz := ModuleCdc.MustMarshalJSON(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

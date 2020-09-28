@@ -4,7 +4,6 @@ import (
     "fmt"
     "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
@@ -12,28 +11,11 @@ import (
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-type TxCancelQuote struct {
-    Id mt.MicrotickId
-    Requester mt.MicrotickAccount
-}
-
 func NewTxCancelQuote(id mt.MicrotickId, requester sdk.AccAddress) TxCancelQuote {
     return TxCancelQuote {
         Id: id,
         Requester: requester,
     }
-}
-
-type CancelQuoteData struct {
-    Account string `json:"account"`
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    Duration mt.MicrotickDurationName `json:"duration"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Time time.Time `json:"time"`
-    Refund mt.MicrotickCoin `json:"refund"`
-    Slash mt.MicrotickCoin `json:"slash"`
-    Commission mt.MicrotickCoin `json:"commission"`
 }
 
 func (msg TxCancelQuote) Route() string { return "microtick" }
@@ -48,7 +30,7 @@ func (msg TxCancelQuote) ValidateBasic() error {
 }
 
 func (msg TxCancelQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
@@ -57,7 +39,7 @@ func (msg TxCancelQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
     msg TxCancelQuote) (*sdk.Result, error) {
         
     quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
@@ -66,7 +48,7 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     }
     
     if quote.Frozen(ctx.BlockHeader().Time) {
-        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, quote.CanModify.String())
+        return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
     // Commission
@@ -124,17 +106,17 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     
     // Data
     data := CancelQuoteData {
-      Account: msg.Requester.String(),
+      Account: msg.Requester,
       Id: quote.Id,
       Market: quote.Market,
       Duration: quote.DurationName,
       Consensus: dataMarket.Consensus,
-      Time: ctx.BlockHeader().Time,
+      Time: ctx.BlockHeader().Time.Unix(),
       Refund: quote.Backing,
       Slash: mt.NewMicrotickCoinFromDec(slash),
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+    bz := ModuleCdc.MustMarshalJSON(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

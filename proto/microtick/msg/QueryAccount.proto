@@ -1,0 +1,62 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "microtick/types/Balances.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QueryAccountRequest {
+  
+  bytes account = 1 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "account"
+  ];
+  
+}
+
+message QueryAccountResponse {
+  
+  bytes account = 1 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "account"
+  ];
+  
+  repeated microtick.types.FractCoin balances = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "balances"
+  ];
+  
+  uint32 placed_quotes = 3 [
+    (gogoproto.jsontag) = "placed_quotes"
+  ];
+  
+  uint32 placed_trades = 4 [
+    (gogoproto.jsontag) = "placed_trades"
+  ];
+  
+  repeated uint32 active_quotes = 5 [
+    (gogoproto.jsontag) = "active_quotes"
+  ];
+  
+  repeated uint32 active_trades = 6 [
+    (gogoproto.jsontag) = "active_trades"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quote_backing = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quote_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin trade_backing = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "trade_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin settle_backing = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "settle_backing"
+  ];
+  
+}

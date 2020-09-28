@@ -2,52 +2,13 @@ package msg
 
 import (
     "fmt"
-    "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
     "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
-
-type TxCreateQuote struct {
-    Market mt.MicrotickMarket
-    Duration mt.MicrotickDurationName
-    Provider mt.MicrotickAccount
-    Backing mt.MicrotickCoin
-    Spot mt.MicrotickSpot
-    Ask mt.MicrotickPremium
-    Bid mt.MicrotickPremium
-}
-
-func NewTxCreateQuote(market mt.MicrotickMarket, dur mt.MicrotickDurationName, provider mt.MicrotickAccount, 
-    backing mt.MicrotickCoin, spot mt.MicrotickSpot, ask mt.MicrotickPremium, bid mt.MicrotickPremium) TxCreateQuote {
-    return TxCreateQuote {
-        Market: market,
-        Duration: dur,
-        Provider: provider,
-        Backing: backing,
-        Spot: spot,
-        Ask: ask,
-        Bid: bid,
-    }
-}
-
-type CreateQuoteData struct {
-    Account string `json:"account"`
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    Duration mt.MicrotickDurationName `json:"duration"`
-    Spot mt.MicrotickSpot `json:"spot"`
-    Ask mt.MicrotickPremium `json:"ask"`
-    Bid mt.MicrotickPremium `json:"bid"`
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    Time time.Time `json:"time"`
-    Backing mt.MicrotickCoin `json:"backing"`
-    Commission mt.MicrotickCoin `json:"commission"`
-}
 
 func (msg TxCreateQuote) Route() string { return "microtick" }
 
@@ -70,7 +31,7 @@ func (msg TxCreateQuote) ValidateBasic() error {
 }
 
 func (msg TxCreateQuote) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
@@ -79,7 +40,7 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Params,
+func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
     msg TxCreateQuote) (*sdk.Result, error) {
         
     // Do not create since markets are now a governance question
@@ -110,7 +71,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     
     accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Provider)
     accountStatus.ActiveQuotes.Insert(keeper.NewListItem(id, sdk.NewDec(int64(id))))
-    accountStatus.NumQuotes++
+    accountStatus.PlacedQuotes++
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Backing)
     
     // DataMarket
@@ -144,7 +105,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
     
     // Data
     data := CreateQuoteData {
-      Account: msg.Provider.String(),
+      Account: msg.Provider,
       Id: id,
       Market: msg.Market,
       Duration: msg.Duration,
@@ -152,11 +113,11 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Para
       Ask: msg.Ask,
       Bid: msg.Bid,
       Consensus: dataMarket.Consensus,
-      Time: now,
+      Time: now.Unix(),
       Backing: msg.Backing,
       Commission: commission,
     }
-    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+    bz := ModuleCdc.MustMarshalJSON(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

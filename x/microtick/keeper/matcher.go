@@ -74,7 +74,7 @@ func (matcher *Matcher) DebugMatcherFillInfo() {
 }
 
 func (matcher *Matcher) MatchByQuantity(dm *DataMarket, order mt.MicrotickOrderType, totalQuantity mt.MicrotickQuantity) error {
-    orderBook := dm.GetOrderBook(matcher.Trade.DurationName)
+    orderBook := dm.GetOrderBook(matcher.Trade.Duration)
     quantityToMatch := totalQuantity.Amount
     
     var list []mt.MicrotickId
@@ -363,10 +363,10 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         
         // Update the account status of counterparties
         if !longAccountStatus.ActiveTrades.Contains(matcher.Trade.Id) {
-            longAccountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
+            longAccountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration)))
         }
         if !shortAccountStatus.ActiveTrades.Contains(matcher.Trade.Id) {
-            shortAccountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration.UnixNano())))
+            shortAccountStatus.ActiveTrades.Insert(NewListItem(matcher.Trade.Id, sdk.NewDec(matcher.Trade.Expiration)))
         }
         quoteProviderAccountStatus.QuoteBacking = quoteProviderAccountStatus.QuoteBacking.Sub(thisFill.Refund)
         shortAccountStatus.TradeBacking = shortAccountStatus.TradeBacking.Add(thisFill.Backing)

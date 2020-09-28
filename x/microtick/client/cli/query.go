@@ -1,257 +1,288 @@
 package cli
 
 import (
-    "fmt"
+  "context"
+  "strconv"
     
-    "github.com/cosmos/cosmos-sdk/codec"
-    "github.com/cosmos/cosmos-sdk/client/flags"
-    "github.com/cosmos/cosmos-sdk/client/context"
-    "github.com/spf13/cobra"
+  "github.com/cosmos/cosmos-sdk/client"
+  "github.com/cosmos/cosmos-sdk/client/flags"
+  "github.com/spf13/cobra"
     
-    "github.com/mjackson001/mtzone/x/microtick/msg"
-    mt "github.com/mjackson001/mtzone/x/microtick/types"
+  sdk "github.com/cosmos/cosmos-sdk/types"
+  mt "github.com/mjackson001/mtzone/x/microtick/types"
+  "github.com/mjackson001/mtzone/x/microtick/msg"
 )
 
-func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {
-	mtQueryCmd := &cobra.Command{
+func GetQueryCmd() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "microtick",
 		Short: "Querying commands for the microtick module",
 	}
 
-	mtQueryCmd.AddCommand(flags.GetCommands(
-		GetCmdAccountStatus(moduleName, cdc),
-		GetCmdMarketStatus(moduleName, cdc),
-		GetCmdMarketConsensus(moduleName, cdc),
-		GetCmdOrderBook(moduleName, cdc),
-		GetCmdSyntheticBook(moduleName, cdc),
-		GetCmdActiveQuote(moduleName, cdc),
-		GetCmdActiveTrade(moduleName, cdc),
-		GetCmdParams(moduleName, cdc),
-	)...)
+	cmd.AddCommand(
+		cmdAccountStatus(),
+		cmdMarketStatus(),
+		cmdMarketConsensus(),
+		cmdOrderBook(),
+		cmdSyntheticBook(),
+		cmdQuote(),
+		cmdTrade(),
+		cmdParams(),
+	)
 
-	return mtQueryCmd
+	return cmd
 }
 
-func GetCmdAccountStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdAccountStatus() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "account [acct]",
-		Short: "Query account full details",
+		Short: "Query account details",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			acct := args[0]
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/account/%s", queryRoute, acct))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("No such account: %s \n", string(acct))
-				return nil
+				return err
 			}
-
-			var out msg.ResponseAccountStatus
-			cdc.MustUnmarshalJSON(res, &out)
 			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			acct, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
 			}
-			return nil
+			
+			message := &msg.QueryAccountRequest {
+				Account: acct,
+			}
+			
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Account(context.Background(), message)
+			if err != nil {
+				return err
+			}
+			
+			return clientCtx.PrintOutput(res)
 		},
 	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdMarketStatus(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdMarketStatus() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "market [name]",
 		Short: "Query market status",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			market := args[0]
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/market/%s", queryRoute, market))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("No such market: %s \n", string(market))
-				return nil
+				return err
 			}
 
-			var out msg.ResponseMarketStatus
-			cdc.MustUnmarshalJSON(res, &out)
-			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			message := &msg.QueryMarketRequest {
+				Market: args[0],
 			}
-			return nil
+			
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Market(context.Background(), message)
+			if err != nil {
+				return err
+			}
+			
+			return clientCtx.PrintOutput(res)
 		},
 	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdMarketConsensus(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdMarketConsensus() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "consensus [market]",
 		Short: "Query market consensus",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			market := args[0]
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/consensus/%s", queryRoute, market))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("No such market: %s \n", string(market))
-				return nil
+				return err
+			}			
+			
+			message := &msg.QueryConsensusRequest {
+				Market: args[0],
 			}
 
-			var out msg.ResponseMarketConsensus
-			cdc.MustUnmarshalJSON(res, &out)
-			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Consensus(context.Background(), message)
+			if err != nil {
+				return err
 			}
-			return nil
+			
+			return clientCtx.PrintOutput(res)
 		},
 	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdOrderBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdOrderBook() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "orderbook [market] [dur]",
 		Short: "Query market orderbook",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			market := args[0]
-			dur := args[1]
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/orderbook/%s/%s", queryRoute, market, dur))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("No such orderbook: %s %s\n", market, dur)
-				return nil
+				return err
+			}			
+			
+			message := &msg.QueryOrderBookRequest {
+				Market: args[0],
+				Duration: args[1],
 			}
 
-			var out msg.ResponseOrderBook
-			cdc.MustUnmarshalJSON(res, &out)
-			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.OrderBook(context.Background(), message)
+			if err != nil {
+				return err
 			}
-			return nil
+			
+			return clientCtx.PrintOutput(res)
 		},
 	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdSyntheticBook(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdSyntheticBook() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "synthetic [market] [dur]",
 		Short: "Query market synthetic orderbook",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			market := args[0]
-			dur := args[1]
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/synthetic/%s/%s", queryRoute, market, dur))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("No such orderbook: %s %s\n", market, dur)
-				return nil
-			}
-
-			var out msg.ResponseSyntheticBook
-			cdc.MustUnmarshalJSON(res, &out)
+				return err
+			}			
 			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			message := &msg.QuerySyntheticRequest {
+				Market: args[0],
+				Duration: args[1],
 			}
-			return nil
+			
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Synthetic(context.Background(), message)
+			if err != nil {
+				return err
+			}
+			
+			return clientCtx.PrintOutput(res)			
 		},
 	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdActiveQuote(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdQuote() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "quote [id]",
 		Short: "Query quote",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			id := args[0]
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/quote/%s", queryRoute, id))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("No such quote: %s \n", string(id))
-				return nil
-			}
-
-			var out msg.ResponseQuoteStatus
-			cdc.MustUnmarshalJSON(res, &out)
+				return err
+			}			
 			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			id, _ := strconv.ParseUint(args[0], 10, 32)
+			message := &msg.QueryQuoteRequest {
+				Id: mt.MicrotickId(id),
 			}
-			return nil
+			
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Quote(context.Background(), message)
+			if err != nil {
+				return err
+			}
+			
+			return clientCtx.PrintOutput(res)			
 		},
 	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdActiveTrade(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdTrade() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "trade [id]",
 		Short: "Query trade",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			id := args[0]
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/trade/%s", queryRoute, id))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("No such trade: %s \n", string(id))
-				return nil
-			}
-
-			var out msg.ResponseTradeStatus
-			cdc.MustUnmarshalJSON(res, &out)
+				return err
+			}			
 			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			id, _ := strconv.ParseUint(args[0], 10, 32)
+			message := &msg.QueryTradeRequest {
+				Id: mt.MicrotickId(id),
 			}
-			return nil
+			
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Trade(context.Background(), message)
+			if err != nil {
+				return err
+			}
+			
+			return clientCtx.PrintOutput(res)			
 		},
 	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }
 
-func GetCmdParams(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func cmdParams() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "params",
 		Short: "Query Microtick params",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			res, _, err := cliCtx.Query(fmt.Sprintf("custom/%s/params", queryRoute))
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
 			if err != nil {
-				fmt.Printf("Could not query params\n")
-				return nil
-			}
-
-			var out mt.Params
-			cdc.MustUnmarshalJSON(res, &out)
+				return err
+			}	
 			
-			if cliCtx.OutputFormat == "text" {
-				fmt.Println(out.String())
-			} else {
-				cliCtx.PrintOutput(out)
+			message := &msg.QueryParamsRequest {}
+			
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Params(context.Background(), message)
+			if err != nil {
+				return err
 			}
-			return nil
+			
+			return clientCtx.PrintOutput(res)			
 		},
 	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
 }

@@ -4,7 +4,6 @@ import (
     "fmt"
     "time"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
@@ -22,36 +21,6 @@ import (
 //     Else
 //         Anyone can settle trade
 
-type TxSettleTrade struct {
-    Id mt.MicrotickId
-    Requester sdk.AccAddress
-}
-
-func NewTxSettleTrade(id mt.MicrotickId, requester sdk.AccAddress) TxSettleTrade {
-    return TxSettleTrade {
-        Id: id,
-        Requester: requester,
-    }
-}
-
-type SettlementData struct {
-    LegId mt.MicrotickId `json:"leg_id"`
-    SettleAccount mt.MicrotickAccount `json:"settle_account"`
-    Settle mt.MicrotickCoin `json:"settle"`
-    RefundAccount mt.MicrotickAccount `json:"refund_account"`
-    Refund mt.MicrotickCoin `json:"refund"`
-}
-
-type TradeSettlementData struct {
-    Id mt.MicrotickId `json:"id"`
-    Time time.Time `json:"time"`
-    Final mt.MicrotickSpot `json:"final"`
-    Settlements []SettlementData `json:"settlements"`
-    Incentive mt.MicrotickCoin `json:"incentive"`
-    Commission mt.MicrotickCoin `json:"commission"`
-    Settler mt.MicrotickAccount `json:"settler"`
-}
-
 func (msg TxSettleTrade) Route() string { return "microtick" }
 
 func (msg TxSettleTrade) Type() string { return "trade_settle" }
@@ -64,7 +33,7 @@ func (msg TxSettleTrade) ValidateBasic() error {
 }
 
 func (msg TxSettleTrade) GetSignBytes() []byte {
-    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+    return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 func (msg TxSettleTrade) GetSigners() []sdk.AccAddress {
@@ -73,7 +42,7 @@ func (msg TxSettleTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params,
+func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams,
     msg TxSettleTrade) (*sdk.Result, error) {
     
     trade, err := keeper.GetActiveTrade(ctx, msg.Id)
@@ -85,7 +54,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     // check if trade has expired
     now := ctx.BlockHeader().Time
-    if now.Before(trade.Expiration) {
+    if now.Before(time.Unix(trade.Expiration, 0)) {
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "trade not expired")
     }
         
@@ -170,14 +139,14 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Params
     
     data := TradeSettlementData {
         Id: trade.Id,
-        Time: now,
+        Time: now.Unix(),
         Final: dataMarket.Consensus,
         Settlements: settleData,
         Incentive: trade.SettleIncentive,
         Commission: commission,
         Settler: msg.Requester,
     }
-    bz, _ := codec.MarshalJSONIndent(ModuleCdc, data)
+    bz := ModuleCdc.MustMarshalJSON(&data)
 
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

@@ -10,21 +10,6 @@ import (
 
 // DataActiveQuote
 
-type DataActiveQuote struct {
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    Duration mt.MicrotickDuration `json:"duration"`
-    DurationName mt.MicrotickDurationName `json:"duration_name"`
-    Provider mt.MicrotickAccount `json:"provider"`
-    Modified time.Time `json:"modified"`
-    CanModify time.Time `json:"canModify"`
-    Backing mt.MicrotickCoin `json:"backing"`
-    Ask mt.MicrotickPremium `json:"ask"`
-    Bid mt.MicrotickPremium `json:"bid"`
-    Quantity mt.MicrotickQuantity `json:"quantity"`
-    Spot mt.MicrotickSpot `json:"spot"`
-}
-
 func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMarket, dur mt.MicrotickDuration, 
     durName mt.MicrotickDurationName, provider mt.MicrotickAccount, backing mt.MicrotickCoin, spot mt.MicrotickSpot, 
     ask mt.MicrotickPremium, bid mt.MicrotickPremium) DataActiveQuote {
@@ -40,8 +25,8 @@ func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMar
         Ask: ask,
         Bid: bid,
         
-        Modified: now,
-        CanModify: now,
+        Modified: now.Unix(),
+        CanModify: now.Unix(),
     }
 }
 
@@ -54,17 +39,17 @@ func (daq *DataActiveQuote) ComputeQuantity() {
     }
 }
 
-func (daq *DataActiveQuote) Freeze(now time.Time, params mt.Params) {
+func (daq *DataActiveQuote) Freeze(now time.Time, params mt.MicrotickParams) {
     expire, err := time.ParseDuration(fmt.Sprintf("%d", params.FreezeTime) + "s")
     if err != nil {
         panic("invalid time")
     }
-    daq.Modified = now
-    daq.CanModify = now.Add(expire)
+    daq.Modified = now.Unix()
+    daq.CanModify = now.Add(expire).Unix()
 }
 
 func (daq DataActiveQuote) Frozen(now time.Time) bool {
-    if now.Before(daq.CanModify) {
+    if now.Before(time.Unix(daq.CanModify, 0)) {
         return true
     }
     return false
@@ -75,7 +60,7 @@ func (daq DataActiveQuote) Stale(now time.Time) bool {
     if err != nil {
         panic("invalid time")
     }
-    threshold := daq.Modified.Add(interval)
+    threshold := time.Unix(daq.Modified, 0).Add(interval)
     if now.After(threshold) {
         return true
     }

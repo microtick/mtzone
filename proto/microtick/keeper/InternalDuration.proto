@@ -1,0 +1,18 @@
+syntax = "proto3";
+package microtick.keeper;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/keeper";
+
+message InternalDuration {
+  
+  string name = 1 [
+    (gogoproto.jsontag) = "name"
+  ];
+  
+  uint32 duration = 2 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+}

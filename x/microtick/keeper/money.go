@@ -11,10 +11,6 @@ import (
 const MTModuleAccount = "microtick"
 const MTPoolName = "commissionPool"
 
-type CommissionPool struct {
-	Pool sdk.DecCoin `json:"pool"`
-}
-
 // Commissions
 
 func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin, doRebate bool) (*sdk.Coin, error) {
@@ -30,10 +26,10 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	}
 	if store.Has(key) {
 		bz := store.Get(key)
-		k.Cdc.MustUnmarshalJSON(bz, &pool)
+		k.Codec.MustUnmarshalJSON(bz, &pool)
 	}
 	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
-	store.Set(key, k.Cdc.MustMarshalJSON(pool))
+	store.Set(key, k.Codec.MustMarshalJSON(&pool))
 	
     // Mint stake and award to commission payer
     if doRebate {
@@ -65,7 +61,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 	}
 	if store.Has(key) {
 		bz := store.Get(key)
-		k.Cdc.MustUnmarshalJSON(bz, &pool)
+		k.Codec.MustUnmarshalJSON(bz, &pool)
 	}
 	coin, _ := pool.Pool.TruncateDecimal()
 	
@@ -79,7 +75,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 	}
     	
     pool.Pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
-    store.Set(key, k.Cdc.MustMarshalJSON(pool))
+    store.Set(key, k.Codec.MustMarshalJSON(&pool))
     
     ctx.EventManager().EmitEvent(
         sdk.NewEvent(
@@ -128,7 +124,9 @@ func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) (sdk.Dec, 
 	params := k.GetParams(ctx)
 	udai := k.BankKeeper.GetBalance(ctx, addr, mt.ExtTokenType)
 	utick := k.BankKeeper.GetBalance(ctx, addr, params.MintDenom)
-    return sdk.NewDecFromInt(udai.Amount).QuoInt64(1000000), sdk.NewDecFromInt(utick.Amount).QuoInt64(1000000)
+    dai := sdk.NewDecFromInt(udai.Amount).QuoInt64(1000000)
+    tick := sdk.NewDecFromInt(utick.Amount).QuoInt64(1000000)
+    return dai, tick
 }
 
 func (k Keeper) RefundBacking(ctx sdk.Context) {

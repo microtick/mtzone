@@ -1,0 +1,77 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+
+  bool european_options = 1 [
+    (gogoproto.jsontag) = "european_options",
+  ];
+  
+  string commission_quote_percent = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "commission_quote_percent"
+  ];  
+  
+  string commission_trade_fixed = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "commission_trade_fixed"
+  ];  
+  
+  string commission_update_percent = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "commission_update_percent"
+  ];  
+  
+  string commission_settle_fixed = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "commission_settle_fixed"
+  ];  
+  
+  string commission_cancel_percent = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "commission_cancel_percent"
+  ];  
+  
+  string settle_incentive = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "settle_incentive"
+  ];  
+  
+  int32 freeze_time = 8 [
+    (gogoproto.jsontag) = "freeze_time"
+  ];
+  
+  string halt_time = 9 [
+    (gogoproto.jsontag) = "halt_time"
+  ];
+  
+  string mint_denom = 10 [
+    (gogoproto.jsontag) = "mint_denom"
+  ];
+  
+  string mint_ratio = 11 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "mint_ratio"
+  ];  
+  
+  string cancel_slash_rate = 12 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "cancel_slash_rate"
+  ]; 
+  
+}
+

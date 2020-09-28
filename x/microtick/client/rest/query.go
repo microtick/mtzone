@@ -6,10 +6,10 @@ import (
 	
 		"github.com/gorilla/mux"
 		"github.com/cosmos/cosmos-sdk/types/rest"
-		"github.com/cosmos/cosmos-sdk/client/context"
+		"github.com/cosmos/cosmos-sdk/client"
 )
 
-func registerQueryRoutes(cliCtx context.CLIContext, r *mux.Router) {
+func RegisterRoutes(cliCtx client.Context, r *mux.Router) {
 		r.HandleFunc("/microtick/account/{acct}", queryAccountStatusHandler(cliCtx)).Methods("GET")
 		r.HandleFunc("/microtick/market/{market}", queryMarketStatusHandler(cliCtx)).Methods("GET")
 		r.HandleFunc("/microtick/consensus/{market}", queryMarketConsensusHandler(cliCtx)).Methods("GET")
@@ -20,7 +20,7 @@ func registerQueryRoutes(cliCtx context.CLIContext, r *mux.Router) {
 		r.HandleFunc("/microtick/params", queryParams(cliCtx)).Methods("GET")
 }
 
-func queryAccountStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
+func queryAccountStatusHandler(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		account := vars["acct"]
@@ -41,7 +41,7 @@ func queryAccountStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
-func queryMarketStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
+func queryMarketStatusHandler(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -62,7 +62,7 @@ func queryMarketStatusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
-func queryMarketConsensusHandler(cliCtx context.CLIContext) http.HandlerFunc {
+func queryMarketConsensusHandler(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -83,7 +83,7 @@ func queryMarketConsensusHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
-func queryMarketOrderbookHandler(cliCtx context.CLIContext) http.HandlerFunc {
+func queryMarketOrderbookHandler(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -105,7 +105,7 @@ func queryMarketOrderbookHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
-func queryMarketSyntheticHandler(cliCtx context.CLIContext) http.HandlerFunc {
+func queryMarketSyntheticHandler(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		market := vars["market"]
@@ -127,7 +127,7 @@ func queryMarketSyntheticHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
-func queryQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
+func queryQuoteHandler(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -148,7 +148,7 @@ func queryQuoteHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
-func queryTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
+func queryTradeHandler(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -169,7 +169,7 @@ func queryTradeHandler(cliCtx context.CLIContext) http.HandlerFunc {
 	}
 }
 
-func queryParams(cliCtx context.CLIContext) http.HandlerFunc {
+func queryParams(cliCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {

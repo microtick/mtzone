@@ -1,115 +1,65 @@
 package msg
 
 import (
-    "fmt"
-    "strings"
+    "context"
     
-    "github.com/cosmos/cosmos-sdk/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-    abci "github.com/tendermint/tendermint/abci/types"
     
     mt "github.com/mjackson001/mtzone/x/microtick/types"
-    "github.com/mjackson001/mtzone/x/microtick/keeper"
 )
 
-type ResponseOrderBook struct {
-    Consensus mt.MicrotickSpot `json:"consensus"`
-    SumBacking mt.MicrotickCoin `json:"sumBacking"`
-    SumWeight mt.MicrotickQuantity `json:"sumWeight"`
-    CallAsks []ResponseOrderBookQuote `json:"callAsks"`
-    CallBids []ResponseOrderBookQuote `json:"callBids"`
-    PutAsks []ResponseOrderBookQuote `json:"putAsks"`
-    PutBids []ResponseOrderBookQuote `json:"putBids"`
-}
-
-type ResponseOrderBookQuote struct {
-    Id mt.MicrotickId `json:"id"`
-    Premium sdk.Dec `json:"premium"`
-    Quantity sdk.Dec `json:"quantity"`
-}
-
-func (rob ResponseOrderBook) String() string {
-    var i int
-    var ca, cb, pa, pb string
-    for i = 0; i < len(rob.CallAsks); i++ {
-        ca += formatQuote(rob.CallAsks[i]) + "\n"
-    }
-    for i = 0; i < len(rob.CallBids); i++ {
-        cb += formatQuote(rob.CallBids[i]) + "\n"
-    }
-    for i = 0; i < len(rob.PutAsks); i++ {
-        pa += formatQuote(rob.PutAsks[i]) + "\n"
-    }
-    for i = 0; i < len(rob.PutBids); i++ {
-        pb += formatQuote(rob.PutBids[i]) + "\n"
-    }
-    return strings.TrimSpace(fmt.Sprintf(`Consensus: %s
-Sum Backing: %s
-SumWeight: %s
-CallAsks: 
-%sCallBids: 
-%sPutAsks: 
-%sPutBids: 
-%s`, rob.Consensus, rob.SumBacking, rob.SumWeight, ca, cb, pa, pb))
-}
-
-func formatQuote(robq ResponseOrderBookQuote) string {
-    return fmt.Sprintf(`  %d premium: %s quantity: %s`, robq.Id, robq.Premium.String(), robq.Quantity.String())
-}
-
-func QueryOrderBook(ctx sdk.Context, path []string, 
-    req abci.RequestQuery, keeper keeper.Keeper)(res []byte, err error) {
-        
-    market := path[0]
-    durName := path[1]
+func (querier Querier) OrderBook(c context.Context, req *QueryOrderBookRequest) (*QueryOrderBookResponse, error) {
+    ctx := sdk.UnwrapSDKContext(c)    
+    market := req.Market
+    durName := req.Duration
     
-    dataMarket, err := keeper.GetDataMarket(ctx, market)
+    dataMarket, err := querier.Keeper.GetDataMarket(ctx, market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
     orderBook := dataMarket.GetOrderBook(durName)
     
-    callasks := make([]ResponseOrderBookQuote, len(orderBook.CallAsks.Data))
-    callbids := make([]ResponseOrderBookQuote, len(orderBook.CallBids.Data))
-    putasks := make([]ResponseOrderBookQuote, len(orderBook.PutAsks.Data))
-    putbids := make([]ResponseOrderBookQuote, len(orderBook.PutBids.Data))
+    callasks := make([]*OrderBookQuote, len(orderBook.CallAsks.Data))
+    callbids := make([]*OrderBookQuote, len(orderBook.CallBids.Data))
+    putasks := make([]*OrderBookQuote, len(orderBook.PutAsks.Data))
+    putbids := make([]*OrderBookQuote, len(orderBook.PutBids.Data))
     for i := 0; i < len(orderBook.CallAsks.Data); i++ {
-        quote, _ := keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[i].Id)
-        callasks[i] = ResponseOrderBookQuote {
+        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[i].Id)
+        callasks[i] = &OrderBookQuote {
             Id: quote.Id,
-            Premium: quote.CallAsk(dataMarket.Consensus).Amount,
-            Quantity: quote.Quantity.Amount,
+            Premium: quote.CallAsk(dataMarket.Consensus),
+            Quantity: quote.Quantity,
         }
     }
     for i := 0; i < len(orderBook.CallBids.Data); i++ {
         j := len(orderBook.CallBids.Data) - i - 1
-        quote, _ := keeper.GetActiveQuote(ctx, orderBook.CallBids.Data[j].Id)
-        callbids[i] = ResponseOrderBookQuote {
+        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.CallBids.Data[j].Id)
+        callbids[i] = &OrderBookQuote {
             Id: quote.Id,
-            Premium: quote.CallBid(dataMarket.Consensus).Amount,
-            Quantity: quote.Quantity.Amount,
+            Premium: quote.CallBid(dataMarket.Consensus),
+            Quantity: quote.Quantity,
         }
     }
     for i := 0; i < len(orderBook.PutAsks.Data); i++ {
-        quote, _ := keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[i].Id)
-        putasks[i] = ResponseOrderBookQuote {
+        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[i].Id)
+        putasks[i] = &OrderBookQuote {
             Id: quote.Id,
-            Premium: quote.PutAsk(dataMarket.Consensus).Amount,
-            Quantity: quote.Quantity.Amount,
+            Premium: quote.PutAsk(dataMarket.Consensus),
+            Quantity: quote.Quantity,
         }
     }
     for i := 0; i < len(orderBook.PutBids.Data); i++ {
         j := len(orderBook.PutBids.Data) - i - 1
-        quote, _ := keeper.GetActiveQuote(ctx, orderBook.PutBids.Data[j].Id)
-        putbids[i] = ResponseOrderBookQuote {
+        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.PutBids.Data[j].Id)
+        putbids[i] = &OrderBookQuote {
             Id: quote.Id,
-            Premium: quote.PutBid(dataMarket.Consensus).Amount,
-            Quantity: quote.Quantity.Amount,
+            Premium: quote.PutBid(dataMarket.Consensus),
+            Quantity: quote.Quantity,
         }
     }
-    response := ResponseOrderBook {
+    response := QueryOrderBookResponse {
         Consensus: dataMarket.Consensus,
         SumBacking: orderBook.SumBacking,
         SumWeight: orderBook.SumWeight,
@@ -119,10 +69,5 @@ func QueryOrderBook(ctx sdk.Context, path []string,
         PutBids: putbids,
     }
     
-    bz, err := codec.MarshalJSONIndent(keeper.Cdc, response)
-    if err != nil {
-        panic("Could not marshal result to JSON")
-    }
-    
-    return bz, nil
+    return &response, nil
 }

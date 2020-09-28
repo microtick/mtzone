@@ -1,0 +1,50 @@
+syntax = "proto3";
+package microtick.keeper;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "microtick/keeper/OrderedList.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/keeper";
+
+message DataAccountStatus {
+  
+  bytes account = 1 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "account"
+  ];
+  
+  OrderedList active_quotes = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "active_quotes"
+  ];
+  
+  OrderedList active_trades = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "active_trades"
+  ];
+  
+  uint32 placed_quotes = 4 [
+    (gogoproto.jsontag) = "placed_quotes"
+  ];
+  
+  uint32 placed_trades = 5 [
+    (gogoproto.jsontag) = "placed_trades"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quote_backing = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quote_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin trade_backing = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "trade_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin settle_backing = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "settle_backing"
+  ];
+  
+}

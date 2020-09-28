@@ -6,23 +6,27 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-
-	"github.com/cosmos/cosmos-sdk/client/context"
+    cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/gogo/protobuf/grpc"
+
 	mt "github.com/mjackson001/mtzone/x/microtick/types"
 	"github.com/mjackson001/mtzone/x/microtick/msg"
 	"github.com/mjackson001/mtzone/x/microtick/keeper"
 	"github.com/mjackson001/mtzone/x/microtick/client/cli"
 	"github.com/mjackson001/mtzone/x/microtick/client/rest"
+	
+	abci "github.com/tendermint/tendermint/abci/types"	
 )
 
 const (
     ModuleName = "microtick"
-    DefaultParamspace = "mtmparams"
 )
 
 var (
@@ -31,48 +35,57 @@ var (
 )
 
 // app module basics object
-type AppModuleBasic struct{}
-
-var _ module.AppModuleBasic = AppModuleBasic{}
+type AppModuleBasic struct{
+	cdc codec.Marshaler
+}
 
 // module name
 func (AppModuleBasic) Name() string {
 	return ModuleName
 }
 
-// register module codec
-func (AppModuleBasic) RegisterCodec(cdc *codec.Codec) {
+func (AppModuleBasic) RegisterCodec(cdc *codec.LegacyAmino) {
 	msg.RegisterCodec(cdc)
 }
 
+// RegisterInterfaces registers the module's interface types
+func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+	msg.RegisterInterfaces(registry)
+}
+
+
 // default genesis state
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage {
-	return cdc.MustMarshalJSON(mt.DefaultGenesisState())
+	defaultGenesis := mt.DefaultGenesisState()
+	return cdc.MustMarshalJSON(&defaultGenesis)
 }
 
 // module validate genesis
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, bz json.RawMessage) error {
-	var data mt.GenesisState
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, config client.TxEncodingConfig, bz json.RawMessage) error {
+	var data mt.GenesisMicrotick
 	err := cdc.UnmarshalJSON(bz, &data)
 	if err != nil {
-		return err
+		return sdkerrors.Wrapf(err, "failed to unmarshal %s genesis state", ModuleName)
 	}
 	return mt.ValidateGenesis(data)
 }
 
 // register rest routes
-func (AppModuleBasic) RegisterRESTRoutes(ctx context.CLIContext, rtr *mux.Router) {
+func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
 	rest.RegisterRoutes(ctx, rtr)
 }
 
-// get the root tx command of this module
-func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command { 
-	return cli.GetTxCmd(cdc)
+func (AppModuleBasic) RegisterGRPCRoutes(ctx client.Context, mux *runtime.ServeMux) {
 }
 
 // get the root query command of this module
-func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetQueryCmd(ModuleName, cdc)
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
+}
+
+// get the root tx command of this module
+func (AppModuleBasic) GetTxCmd() *cobra.Command { 
+	return cli.GetTxCmd(ModuleName)
 }
 
 //___________________________
@@ -83,9 +96,9 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(keeper keeper.Keeper) AppModule {
+func NewAppModule(cdc codec.Marshaler, keeper keeper.Keeper) AppModule {
 	return AppModule{
-		AppModuleBasic: AppModuleBasic{},
+		AppModuleBasic: AppModuleBasic{cdc: cdc},
 		keeper:         keeper,
 	}
 }
@@ -99,8 +112,8 @@ func (AppModule) Name() string {
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
 
 // module message route name
-func (AppModule) Route() string { 
-	return ModuleName
+func (am AppModule) Route() sdk.Route { 
+	return sdk.NewRoute(ModuleName, NewHandler(am.keeper))
 }
 
 // module handler
@@ -113,14 +126,20 @@ func (AppModule) QuerierRoute() string {
 	return ModuleName
 }
 
-// module querier
-func (am AppModule) NewQuerierHandler() sdk.Querier {
-	return NewQuerier(am.keeper)
+func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
+  return msg.NewQuerier(am.keeper)
+}
+
+// RegisterQueryService registers a GRPC query service to respond to the
+// module-specific GRPC queries.
+func (am AppModule) RegisterQueryService(server grpc.Server) {
+	querier := msg.Querier{Keeper: am.keeper}
+	msg.RegisterGRPCServer(server, querier)
 }
 
 // module init-genesis
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState mt.GenesisState
+	var genesisState mt.GenesisMicrotick
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	InitGenesis(ctx, am.keeper, genesisState)
 	return []abci.ValidatorUpdate{}
@@ -129,7 +148,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 // module export genesis
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
 	gs := ExportGenesis(ctx, am.keeper)
-	return cdc.MustMarshalJSON(gs)
+	return cdc.MustMarshalJSON(&gs)
 }
 
 // module begin-block

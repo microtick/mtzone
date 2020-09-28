@@ -8,22 +8,6 @@ import (
     mt "github.com/mjackson001/mtzone/x/microtick/types"
 )
 
-type DataActiveTrade struct {
-    Id mt.MicrotickId `json:"id"`
-    Market mt.MicrotickMarket `json:"market"`
-    // DurationName is only a tag at this point, not functional
-    DurationName mt.MicrotickDurationName `json:"duration"`
-    Order mt.MicrotickOrderType `json:"order"`
-    Taker mt.MicrotickAccount `json:"taker"`
-    Quantity mt.MicrotickQuantity `json:"quantity"`
-    Legs []DataTradeLeg `json:"legs"`
-    Start time.Time `json:"start"`
-    Expiration time.Time `json:"expiration"`
-    Strike mt.MicrotickSpot `json:"strike"`
-    Commission mt.MicrotickCoin `json:"commission"`
-    SettleIncentive mt.MicrotickCoin `json:"settleIncentive"`
-}
-
 func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, 
     dur mt.MicrotickDurationName, durSeconds mt.MicrotickDuration, 
     otype mt.MicrotickOrderType, taker mt.MicrotickAccount, 
@@ -37,23 +21,16 @@ func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket,
     return DataActiveTrade {
         Id: 0, // set actual trade ID later after premium has been verified
         Market: market,
-        DurationName: dur,
+        Duration: dur,
         Order: otype,
         Taker: taker,
         Quantity: quantity,
-        Start: now,
-        Expiration: now.Add(expire),
+        Start: now.Unix(),
+        Expiration: now.Add(expire).Unix(),
         Strike: strike,
         Commission: commission,
         SettleIncentive: settleIncentive,
     }
-}
-
-type DataQuotedParams struct {
-    Id mt.MicrotickId `json:"id"`
-    Final bool `json:"final"`
-    Premium mt.MicrotickPremium `json:"premium"`
-    Spot mt.MicrotickSpot `json:"spot"`
 }
 
 func NewDataQuotedParams(id mt.MicrotickId, final bool, premium mt.MicrotickPremium, spot mt.MicrotickSpot) DataQuotedParams {
@@ -63,18 +40,6 @@ func NewDataQuotedParams(id mt.MicrotickId, final bool, premium mt.MicrotickPrem
         Premium: premium,
         Spot: spot,
     }
-}
-
-type DataTradeLeg struct {
-    LegId mt.MicrotickId `json:"leg_id"`
-    Type mt.MicrotickLegType `json:"type"`
-    Backing mt.MicrotickCoin `json:"backing"`
-    Premium mt.MicrotickPremium `json:"premium"`
-    Cost mt.MicrotickCoin `json:"cost"`
-    Quantity mt.MicrotickQuantity `json:"quantity"`
-    Long mt.MicrotickAccount `json:"long"`
-    Short mt.MicrotickAccount `json:"short"`
-    Quoted DataQuotedParams `json:"quoted"`
 }
 
 func NewDataTradeLeg(legId mt.MicrotickId, 

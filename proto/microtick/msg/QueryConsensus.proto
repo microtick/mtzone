@@ -1,0 +1,38 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QueryConsensusRequest {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+}
+
+message QueryConsensusResponse {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin total_backing = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "total_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin total_weight = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "total_weight"
+  ];
+  
+}

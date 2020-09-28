@@ -1,0 +1,94 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QueryMarketRequest {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+}
+
+message MarketOrderBookStatus {
+  
+  string name = 1 [
+    (gogoproto.jsontag) = "name"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin sum_backing = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sum_backing"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin sum_weight = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sum_weight"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin inside_ask = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "inside_ask"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin inside_bid = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "inside_bid"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin inside_call_ask = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "inside_call_ask"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin inside_call_bid = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "inside_call_bid"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin inside_put_ask = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "inside_put_ask"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin inside_put_bid = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "inside_put_bid"
+  ];  
+  
+}
+
+message QueryMarketResponse {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string description = 2 [
+    (gogoproto.jsontag) = "description"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  repeated MarketOrderBookStatus order_books = 4 [
+    (gogoproto.jsontag) = "order_books"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin total_backing = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "total_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin total_weight = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "total_weight"
+  ];
+  
+}

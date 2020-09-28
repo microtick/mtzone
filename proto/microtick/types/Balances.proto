@@ -1,0 +1,20 @@
+syntax = "proto3";
+package microtick.types;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/types";
+
+message FractCoin {
+  
+  string denom = 1 [
+    (gogoproto.jsontag) = "denom"
+  ];
+  
+  string amount = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "amount"
+  ];  
+  
+}

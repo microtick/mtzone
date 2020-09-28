@@ -1,0 +1,85 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message TxUpdateQuote {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  bytes requester = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "requester"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin new_spot = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "new_spot"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin new_ask = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "new_ask"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin new_bid = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "new_bid"
+  ];
+  
+}
+
+message UpdateQuoteData {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  bytes account = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "account"
+  ];
+  
+  string market = 3 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string duration = 4 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin spot = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "spot"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin ask = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "ask"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin bid = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "bid"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  int64 time = 9 [
+    (gogoproto.jsontag) = "time"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin commission = 10 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "commission"
+  ];
+  
+}

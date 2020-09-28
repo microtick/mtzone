@@ -1,0 +1,29 @@
+syntax = "proto3";
+package microtick.keeper;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/keeper";
+
+message ListItem {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  string value = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "value"
+  ];
+  
+}
+
+message OrderedList {
+  
+  repeated ListItem data = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "data"
+  ];
+  
+}

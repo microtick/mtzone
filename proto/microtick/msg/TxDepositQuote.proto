@@ -1,0 +1,66 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message TxDepositQuote {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  bytes requester = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "requester"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin deposit = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "deposit"
+  ];
+  
+}
+
+message DepositQuoteData {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  bytes account = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "account"
+  ];
+  
+  string market = 3 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin consensus = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+  
+  int64 time = 5 [
+    (gogoproto.jsontag) = "time"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin backing = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quote_backing = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quote_backing"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin commission = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "commission"
+  ];
+  
+}

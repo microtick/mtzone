@@ -1,0 +1,72 @@
+syntax = "proto3";
+package microtick.msg;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+
+message QueryOrderBookRequest {
+  
+  string market = 1 [
+    (gogoproto.jsontag) = "market"
+  ];
+  
+  string duration = 2 [
+    (gogoproto.jsontag) = "duration"
+  ];
+  
+}
+
+message OrderBookQuote {
+  
+  uint32 id = 1 [
+    (gogoproto.jsontag) = "id"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin premium = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "premium"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin quantity = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "quantity"
+  ];
+  
+}
+
+message QueryOrderBookResponse {
+  
+  cosmos.base.v1beta1.DecCoin consensus = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "consensus"
+  ];
+
+  cosmos.base.v1beta1.DecCoin sum_backing = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sum_backing"
+  ];
+
+  cosmos.base.v1beta1.DecCoin sum_weight = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sum_weight"
+  ];
+  
+  repeated OrderBookQuote call_asks = 4 [
+    (gogoproto.jsontag) = "call_asks"
+  ];
+  
+  repeated OrderBookQuote call_bids = 5 [
+    (gogoproto.jsontag) = "call_bids"
+  ];
+  
+  repeated OrderBookQuote put_asks = 6 [
+    (gogoproto.jsontag) = "put_asks"
+  ];
+  
+  repeated OrderBookQuote put_bids = 7 [
+    (gogoproto.jsontag) = "put_bids"
+  ];
+  
+}

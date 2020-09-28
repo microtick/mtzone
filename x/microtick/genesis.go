@@ -11,18 +11,18 @@ import (
 func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) mt.GenesisAccount {
     var ga mt.GenesisAccount
     ga.Account = das.Account
-    ga.NumQuotes = das.NumQuotes
-    ga.NumTrades = das.NumTrades
+    ga.PlacedQuotes = das.PlacedQuotes
+    ga.PlacedTrades = das.PlacedTrades
     return ga
 }
 
-func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data mt.GenesisState) {
+func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data mt.GenesisMicrotick) {
     mtKeeper.SetParams(ctx, data.Params)
     
     for _, acct := range data.Accounts {
         status := mtKeeper.GetAccountStatus(ctx, acct.Account)
-        status.NumQuotes = acct.NumQuotes
-        status.NumTrades = acct.NumTrades
+        status.PlacedQuotes = acct.PlacedQuotes
+        status.PlacedTrades = acct.PlacedTrades
         mtKeeper.SetAccountStatus(ctx, acct.Account, status)
     }
     
@@ -40,7 +40,7 @@ func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data mt.GenesisState) 
 	}
 }
 
-func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) mt.GenesisState {
+func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) mt.GenesisMicrotick {
     params := mtKeeper.GetParams(ctx)
     
     var accounts []mt.GenesisAccount
