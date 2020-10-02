@@ -5,7 +5,7 @@ import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "microtick/keeper/DataActiveTrade.proto";
 
-option go_package = "github.com/mjackson001/mtzone/x/microtick/msg";
+option go_package = "gitlab.com/microtick/mtzone/x/microtick/msg";
 
 message TxPickTrade {
   

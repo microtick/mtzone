@@ -4,7 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/mjackson001/mtzone/x/microtick/keeper"
+	"gitlab.com/microtick/mtzone/x/microtick/keeper"
 )
 
 // Querier if used as Keeper will have duplicate methods if used directly, and gRPC names take precedence over keeper

@@ -7,8 +7,8 @@ import (
   
   "github.com/spf13/cobra"
 	
-	mt "github.com/mjackson001/mtzone/x/microtick/types"
-	"github.com/mjackson001/mtzone/x/microtick/msg"
+	mt "gitlab.com/microtick/mtzone/x/microtick/types"
+	"gitlab.com/microtick/mtzone/x/microtick/msg"
 )
 
 func GetTxCmd(key string) *cobra.Command {

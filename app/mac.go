@@ -6,7 +6,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/mjackson001/mtzone/x/microtick"
+	"gitlab.com/microtick/mtzone/x/microtick"
 )
 
 func MacPerms() map[string][]string {

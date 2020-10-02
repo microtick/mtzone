@@ -3,5 +3,7 @@ vendor
 *.swp
 .cache
 mtm
+mtd
+mtcli
 *.pb.go
 *.pb.gw.go

@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/mjackson001/mtzone/app"
-	"github.com/mjackson001/mtzone/cmd/mtm/cmd"
+	"gitlab.com/microtick/mtzone/app"
+	"gitlab.com/microtick/mtzone/cmd/mtm/cmd"
 )
 
 // In main we set the custom version info and call the rootCmd

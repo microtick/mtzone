@@ -63,7 +63,7 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	
-	"github.com/mjackson001/mtzone/x/microtick"
+	"gitlab.com/microtick/mtzone/x/microtick"
 )
 
 const AppName = "microtick"

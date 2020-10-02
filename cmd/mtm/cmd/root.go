@@ -33,7 +33,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	
-	"github.com/mjackson001/mtzone/app"
+	"gitlab.com/microtick/mtzone/app"
 )
 
 // NewRootCmd creates a new root command for microtick. It is called once in the

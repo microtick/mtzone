@@ -20,8 +20,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	
-	appparams "github.com/mjackson001/mtzone/app/params"
-	"github.com/mjackson001/mtzone/x/microtick"
+	appparams "gitlab.com/microtick/mtzone/app/params"
+	"gitlab.com/microtick/mtzone/x/microtick"
 )
 
 var (

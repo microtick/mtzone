@@ -7,7 +7,7 @@ Welcome to Microtick on [Cosmos SDK](https://github.com/cosmos/cosmos-sdk).
 You must set GOPATH to a working directory somewhere and have your PATH set to point to its bin directory.
 
 ```
-$ git clone https://github.com/mjackson001/mtzone.git
+$ git clone https://gitlab.com/microtick/mtzone.git
 $ cd mtzone
 $ export GOPATH=<path to your golang working directory>
 $ export PATH=$PATH:$GOPATH/bin
