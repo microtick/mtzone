@@ -22,7 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	
-	"github.com/mjackson001/mtzone/app"
+	"gitlab.com/microtick/mtzone/app"
 )
 
 func replayCmd() *cobra.Command {

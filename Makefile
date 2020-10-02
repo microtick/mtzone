@@ -1,5 +1,6 @@
 VERSIONFILE=app/version.go
 TEST_DOCKER_REPO=microtick/mtzonetest
+GOPATH=$(shell go env GOPATH)
 
 all: install
 
@@ -15,6 +16,8 @@ install:
 	@echo "const MTCommit = \"$(COMMIT)\"" >> $(VERSIONFILE)
 	GO111MODULE=on go install ./cmd/mtd 
 	GO111MODULE=on go install -tags="ledger" ./cmd/mtcli
+	@cp $(GOPATH)/bin/mtd .
+	@cp $(GOPATH)/bin/mtcli .
 
 test-docker:
 	@docker build -f contrib/Dockerfile.test -t ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) .

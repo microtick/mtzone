@@ -1,7 +1,7 @@
 package keeper
 
 import (
-    mt "github.com/mjackson001/mtzone/x/microtick/types"
+    mt "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
 // DataAccountStatus

@@ -5,9 +5,9 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
     abci "github.com/tendermint/tendermint/abci/types"
     
-    mt "github.com/mjackson001/mtzone/x/microtick/types"
-    "github.com/mjackson001/mtzone/x/microtick/keeper"
-    "github.com/mjackson001/mtzone/x/microtick/msg"
+    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    "gitlab.com/microtick/mtzone/x/microtick/keeper"
+    "gitlab.com/microtick/mtzone/x/microtick/msg"
 )
 
 func NewQuerier(keeper keeper.Keeper) sdk.Querier {

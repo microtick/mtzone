@@ -25,7 +25,7 @@ import (
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/mjackson001/mtzone/app"
+	"gitlab.com/microtick/mtzone/app"
 )
 
 var (

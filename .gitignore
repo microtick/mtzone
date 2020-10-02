@@ -1,3 +1,5 @@
 Gopkg.lock
 vendor
 *.swp
+mtd
+mtcli

@@ -40,7 +40,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	
-	"github.com/mjackson001/mtzone/x/microtick"
+	"gitlab.com/microtick/mtzone/x/microtick"
 )
 
 const appName = "MicrotickApp"

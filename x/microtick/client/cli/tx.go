@@ -12,8 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	
-	mt "github.com/mjackson001/mtzone/x/microtick/types"
-	"github.com/mjackson001/mtzone/x/microtick/msg"
+	mt "gitlab.com/microtick/mtzone/x/microtick/types"
+	"gitlab.com/microtick/mtzone/x/microtick/msg"
 )
 
 func GetTxCmd(cdc *codec.Codec) *cobra.Command {

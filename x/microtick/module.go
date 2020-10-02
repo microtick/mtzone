@@ -13,11 +13,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	
-	mt "github.com/mjackson001/mtzone/x/microtick/types"
-	"github.com/mjackson001/mtzone/x/microtick/msg"
-	"github.com/mjackson001/mtzone/x/microtick/keeper"
-	"github.com/mjackson001/mtzone/x/microtick/client/cli"
-	"github.com/mjackson001/mtzone/x/microtick/client/rest"
+	mt "gitlab.com/microtick/mtzone/x/microtick/types"
+	"gitlab.com/microtick/mtzone/x/microtick/msg"
+	"gitlab.com/microtick/mtzone/x/microtick/keeper"
+	"gitlab.com/microtick/mtzone/x/microtick/client/cli"
+	"gitlab.com/microtick/mtzone/x/microtick/client/rest"
 )
 
 const (

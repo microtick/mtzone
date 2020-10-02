@@ -16,7 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	
-	mt "github.com/mjackson001/mtzone/x/microtick/types"
+	mt "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
 type Keeper struct {

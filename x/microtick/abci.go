@@ -6,8 +6,8 @@ import (
     "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
     
-    mt "github.com/mjackson001/mtzone/x/microtick/types"
-    "github.com/mjackson001/mtzone/x/microtick/keeper"
+    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    "gitlab.com/microtick/mtzone/x/microtick/keeper"
 )
 
 func EndBlocker(ctx sdk.Context, mtKeeper keeper.Keeper) {

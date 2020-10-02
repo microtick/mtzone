@@ -8,7 +8,7 @@ import (
     "github.com/cosmos/cosmos-sdk/client/context"
     "github.com/spf13/cobra"
     
-    "github.com/mjackson001/mtzone/x/microtick/msg"
+    "gitlab.com/microtick/mtzone/x/microtick/msg"
 )
 
 func GetQueryCmd(moduleName string, cdc *codec.Codec) *cobra.Command {

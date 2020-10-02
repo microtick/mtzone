@@ -1,8 +1,8 @@
 package microtick
 
 import (
-    "github.com/mjackson001/mtzone/x/microtick/keeper"
-    "github.com/mjackson001/mtzone/x/microtick/types"
+    "gitlab.com/microtick/mtzone/x/microtick/keeper"
+    "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
 type (
