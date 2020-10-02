@@ -1,45 +1,47 @@
-# Microtick Zone
-
-Welcome to Microtick on [Cosmos SDK](https://github.com/cosmos/cosmos-sdk).
+# Microtick STARGATE
 
 ## Instructions for building
 
-You must set GOPATH to a working directory somewhere and have your PATH set to point to its bin directory.
+1. Set GOPATH, GOBIN, and PATH to include GOBIN appropriately.
 
 ```
-$ git clone https://gitlab.com/microtick/mtzone.git
-$ cd mtzone
-$ export GOPATH=<path to your golang working directory>
-$ export PATH=$PATH:$GOPATH/bin
+export GOPATH=...
+$ export GOBIN=$GOPATH/bin
+$ export PATH=$GOBIN:$PATH
+```
+
+2. Follow the instructions to install grpc-gateway binaries in your GOBIN:
+
+https://pkg.go.dev/mod/github.com/grpc-ecosystem/grpc-gateway
+
+3. Build the Microtick 'mtm' executable:
+
+```
+$ make proto
 $ make
 ```
 
 ## Instructions for running
 
-1. Clean out any existing working data.  Alternatively you can set MTROOT to point to a new working directory.
+4. Remove any existing data and initialize
+
 ```
-$ rm -r $HOME/.microtick
+$ rm -r ~/.microtick
+$ ./mtm init localnet --chain-id=microtick_test
 ```
 
-2. Initialize working data
+5. Create a validator with staking tokens (stake) and a test account with test tokens (udai).  1 dai = 1000000 udai.
+
 ```
-$ mtd init localnet --chain-id=<your chain id>
+$ ./mtm keys add validator --keyring-backend=test
+$ ./mtm keys add myaccount --keyring-backend=test
+$ ./mtm add-genesis-account validator 1000000000000stake --keyring-backend=test
+$ ./mtm add-genesis-account myaccount 1000000000000udai --keyring-backend=test
+$ ./mtm gentx validator --keyring-backend=test --chain-id=microtick_test
+$ ./mtm collect-gentxs
 ```
 
-3. Create a validator with staking tokens (stake) and a test account with test tokens (udai).  1 dai = 1000000 udai.
+6. Run your test chain:
 ```
-$ mtcli config chain-id <your chain id>
-$ mtcli config output text
-$ mtcli config trust-node true
-$ mtcli keys add validator
-$ mtcli keys add test
-$ mtd add-genesis-account $(mtcli keys show validator -a) 1000000000000stake
-$ mtd add-genesis-account $(mtcli keys show test -a) 1000000000000udai
-$ mtd gentx --name validator
-$ mtd collect-gentxs
-```
-
-5. Run your test chain:
-```
-$ mtd start
+$ ./mtm start
 ```
