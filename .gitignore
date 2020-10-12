@@ -7,3 +7,5 @@ mtd
 mtcli
 *.pb.go
 *.pb.gw.go
+js
+mtprotojs.tar.gz

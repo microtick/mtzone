@@ -35,6 +35,7 @@ install:
 	@echo "const MTBuildDate = \"$(DATE)\"" >> $(VERSIONFILE)
 	@echo "const MTHostBuild = \"$(HOST)\"" >> $(VERSIONFILE)
 	@echo "const MTCommit = \"$(COMMIT)\"" >> $(VERSIONFILE)
+	@#$(GO) install -gcflags '-N -l' -mod=readonly -tags="netgo ledger" ./cmd/mtm
 	$(GO) install -mod=readonly -tags="netgo ledger" ./cmd/mtm
 	@mv $(shell go env GOPATH)/bin/mtm .
 	
@@ -49,6 +50,11 @@ endif
 proto: $(PROTOC) protovendor
 	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
 	./scripts/protocgen.sh
+
+.PHONY: js
+js: $(PROTOOC) protovendor
+	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
+	./scripts/protocjs.sh
 	
 .PHONY: protovendor
 protovendor: modsensure $(MODVENDOR)
