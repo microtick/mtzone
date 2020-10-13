@@ -22,6 +22,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/capability"
+	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
@@ -33,12 +36,20 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/cosmos/cosmos-sdk/x/ibc"
+	transfer "github.com/cosmos/cosmos-sdk/x/ibc-transfer"
+	ibctransferkeeper "github.com/cosmos/cosmos-sdk/x/ibc-transfer/keeper"
+	ibctransfertypes "github.com/cosmos/cosmos-sdk/x/ibc-transfer/types"
+	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
+	ibchost "github.com/cosmos/cosmos-sdk/x/ibc/24-host"
+	ibckeeper "github.com/cosmos/cosmos-sdk/x/ibc/keeper"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -86,6 +97,7 @@ type MicrotickApp struct {
 	keeper struct {
 		acct       authkeeper.AccountKeeper
 		bank       bankkeeper.Keeper
+		capability *capabilitykeeper.Keeper
 		params     paramskeeper.Keeper
 		staking    stakingkeeper.Keeper
 		distr      distrkeeper.Keeper
@@ -94,7 +106,9 @@ type MicrotickApp struct {
 		gov        govkeeper.Keeper
 		upgrade    upgradekeeper.Keeper
 		crisis     crisiskeeper.Keeper
+		ibc				 *ibckeeper.Keeper
 		evidence   evidencekeeper.Keeper
+		transfer   ibctransferkeeper.Keeper
 		microtick  microtick.Keeper
 	}
 	
@@ -192,8 +206,11 @@ func NewApp(
     stakingtypes.StoreKey,
     minttypes.StoreKey,
     govtypes.StoreKey,
+    ibchost.StoreKey,
     upgradetypes.StoreKey,
     evidencetypes.StoreKey,
+    ibctransfertypes.StoreKey,
+    capabilitytypes.StoreKey,
 		microtick.GlobalsKey,
 		microtick.AccountStatusKey,
 		microtick.ActiveQuotesKey,
@@ -202,6 +219,7 @@ func NewApp(
 		microtick.DurationsKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
+	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &MicrotickApp{
 		BaseApp:           bapp,
@@ -215,6 +233,11 @@ func NewApp(
 
   app.keeper.params = initParamsKeeper(appCodec, cdc, app.keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 	bapp.SetParamStore(app.keeper.params.Subspace(bam.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
+	
+	// add capability keeper and ScopeToModule for ibc module
+	app.keeper.capability = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
+	scopedIBCKeeper := app.keeper.capability.ScopeToModule(ibchost.ModuleName)
+	scopedTransferKeeper := app.keeper.capability.ScopeToModule(ibctransfertypes.ModuleName)
 	
 	// add keepers
 	app.keeper.acct = authkeeper.NewAccountKeeper(
@@ -287,6 +310,24 @@ func NewApp(
 		authtypes.FeeCollectorName,
 	)
 	
+	// Create IBC Keeper
+	app.keeper.ibc = ibckeeper.NewKeeper(
+		appCodec, keys[ibchost.StoreKey], app.keeper.staking, scopedIBCKeeper,
+	)
+
+	// Create Transfer Keepers
+	app.keeper.transfer = ibctransferkeeper.NewKeeper(
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		app.keeper.ibc.ChannelKeeper, &app.keeper.ibc.PortKeeper,
+		app.keeper.acct, app.keeper.bank, scopedTransferKeeper,
+	)
+	transferModule := transfer.NewAppModule(app.keeper.transfer)
+
+	// Create static IBC router, add transfer route, then set and seal it
+	ibcRouter := porttypes.NewRouter()
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
+	app.keeper.ibc.SetRouter(ibcRouter)
+	
 	// create evidence keeper with evidence router
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec, app.keys[evidencetypes.StoreKey], &app.keeper.staking, app.keeper.slashing,
@@ -331,12 +372,14 @@ func NewApp(
 		genutil.NewAppModule(app.keeper.acct, app.keeper.staking, app.BaseApp.DeliverTx, encodingConfig.TxConfig),
 		auth.NewAppModule(appCodec, app.keeper.acct, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.keeper.bank, app.keeper.acct),
+		capability.NewAppModule(appCodec, *app.keeper.capability),
 		crisis.NewAppModule(&app.keeper.crisis),
 		gov.NewAppModule(appCodec, app.keeper.gov, app.keeper.acct, app.keeper.bank),
 		mint.NewAppModule(appCodec, app.keeper.mint, app.keeper.acct),
 		slashing.NewAppModule(appCodec, app.keeper.slashing, app.keeper.acct, app.keeper.bank, app.keeper.staking),
 		distr.NewAppModule(appCodec, app.keeper.distr, app.keeper.acct, app.keeper.bank, app.keeper.staking),
 		staking.NewAppModule(appCodec, app.keeper.staking, app.keeper.acct, app.keeper.bank),
+		ibc.NewAppModule(app.keeper.ibc),
 		upgrade.NewAppModule(app.keeper.upgrade),
 		evidence.NewAppModule(app.keeper.evidence),
 	)
@@ -346,7 +389,7 @@ func NewApp(
 	// CanWithdrawInvariant invariant.
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName, 
-		evidencetypes.ModuleName, stakingtypes.ModuleName, 
+		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, microtick.ModuleName,
@@ -363,6 +406,7 @@ func NewApp(
 	//       properly initialized with tokens from genesis accounts.
 	app.mm.SetOrderInitGenesis(
 		microtick.ModuleName,
+		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -371,8 +415,10 @@ func NewApp(
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		crisistypes.ModuleName,
+		ibchost.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
+		ibctransfertypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.keeper.crisis)
@@ -383,6 +429,7 @@ func NewApp(
 		//microtick.NewAppModule(app.keeper.microtick),
 		auth.NewAppModule(appCodec, app.keeper.acct, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.keeper.bank, app.keeper.acct),
+		capability.NewAppModule(appCodec, *app.keeper.capability),
 		gov.NewAppModule(appCodec, app.keeper.gov, app.keeper.acct, app.keeper.bank),
 		mint.NewAppModule(appCodec, app.keeper.mint, app.keeper.acct),
 		staking.NewAppModule(appCodec, app.keeper.staking, app.keeper.acct, app.keeper.bank),
@@ -390,6 +437,8 @@ func NewApp(
 		slashing.NewAppModule(appCodec, app.keeper.slashing, app.keeper.acct, app.keeper.bank, app.keeper.staking),
 		params.NewAppModule(app.keeper.params),
 		evidence.NewAppModule(app.keeper.evidence),
+		ibc.NewAppModule(app.keeper.ibc),
+		transferModule,
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -417,6 +466,14 @@ func NewApp(
 	if err != nil {
 		tmos.Exit("app initialization:" + err.Error())
 	}
+	
+	// Initialize and seal the capability keeper so all persistent capabilities
+	// are loaded in-memory and prevent any further modules from creating scoped
+	// sub-keepers.
+	// This must be done during creation of baseapp rather than in InitChain so
+	// that in-memory capabilities get regenerated on app restart
+	ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+	app.keeper.capability.InitializeAndSeal(ctx)
 
 	return app
 }
@@ -508,6 +565,7 @@ func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyA
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypes.ParamKeyTable())
 	paramsKeeper.Subspace(crisistypes.ModuleName)
+	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(microtick.ModuleName)
 
 	return paramsKeeper

@@ -10,6 +10,9 @@ import (
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
+	"github.com/cosmos/cosmos-sdk/x/capability"
+	"github.com/cosmos/cosmos-sdk/x/ibc"
+	transfer "github.com/cosmos/cosmos-sdk/x/ibc-transfer"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/mint"
@@ -34,6 +37,8 @@ var (
 		// tokens, token balance.
 		bank.AppModuleBasic{},
 
+		capability.AppModuleBasic{},
+
 		// inflation
 		mint.AppModuleBasic{},
 
@@ -49,9 +54,11 @@ var (
 		),
 
 		params.AppModuleBasic{},
+		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		crisis.AppModuleBasic{},
+		transfer.AppModuleBasic{},
 		microtick.AppModuleBasic{},
 	)
 )

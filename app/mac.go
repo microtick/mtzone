@@ -6,6 +6,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ibctransfertypes "github.com/cosmos/cosmos-sdk/x/ibc-transfer/types"
 	"gitlab.com/microtick/mtzone/x/microtick"
 )
 
@@ -17,7 +18,8 @@ func MacPerms() map[string][]string {
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
-		microtick.ModuleName:						{authtypes.Minter, authtypes.Burner},
+		ibctransfertypes.ModuleName:	{authtypes.Minter, authtypes.Burner},
+		microtick.ModuleName:		{authtypes.Minter, authtypes.Burner},
 	}
 }
 
