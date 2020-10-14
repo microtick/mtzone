@@ -13,7 +13,7 @@ var (
 )
 
 // Register concrete types on codec codec
-func RegisterCodec(cdc *codec.LegacyAmino) {
+func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
     cdc.RegisterConcrete(TxCreateQuote{}, "microtick/QuoteCreate", nil)
     cdc.RegisterConcrete(TxCancelQuote{}, "microtick/QuoteCancel", nil)
     cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/QuoteUpdate", nil)

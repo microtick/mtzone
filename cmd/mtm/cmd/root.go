@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,10 +12,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/store"
+	"github.com/cosmos/cosmos-sdk/snapshots"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
@@ -26,19 +26,18 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/cli"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
-	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	
 	"gitlab.com/microtick/mtzone/app"
+	appparams "gitlab.com/microtick/mtzone/app/params"
 )
 
 // NewRootCmd creates a new root command for microtick. It is called once in the
 // main function.
-func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
+func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 	encodingConfig := app.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithJSONMarshaler(encodingConfig.Marshaler).
@@ -85,7 +84,7 @@ func Execute(rootCmd *cobra.Command) error {
 	return executor.ExecuteContext(ctx)
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+func initRootCmd(rootCmd *cobra.Command, encodingConfig appparams.EncodingConfig) {
 	authclient.Codec = encodingConfig.Marshaler
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
@@ -122,34 +121,56 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts serverty
 		panic(err)
 	}
 
+	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
+	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
+	if err != nil {
+		panic(err)
+	}
+	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
+	if err != nil {
+		panic(err)
+	}
+
 	return app.NewApp(
-		logger, db, traceStore, cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)), skipUpgradeHeights,
+		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
+		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
+		app.MakeEncodingConfig(),
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
+		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
 		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
 		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
+		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
 		baseapp.SetInterBlockCache(cache),
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
+		baseapp.SetSnapshotStore(snapshotStore),
+		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
+		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
 	)
 }
 
 func exportAppStateAndTMValidators(
 	logger log.Logger, db dbm.DB, tio io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
-) (json.RawMessage, []tmtypes.GenesisValidator, *abci.ConsensusParams, error) {
+) (servertypes.ExportedApp, error) {
 
-	app := app.NewApp(logger, db, ioutil.Discard, uint(1), map[int64]bool{}, "")
+  encCfg := app.MakeEncodingConfig()
+  encCfg.Marshaler = codec.NewProtoCodec(encCfg.InterfaceRegistry)
+  
+  var mt *app.MicrotickApp
 
 	if height != -1 {
-		err := app.LoadHeight(height)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		return app.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+	  mt = app.NewApp(logger, db, tio, false, map[int64]bool{}, "", uint(1), encCfg)
+	  
+	  if err := mt.LoadHeight(height); err != nil {
+	  	return servertypes.ExportedApp{}, err
+	  }
+	} else {
+		mt = app.NewApp(logger, db, tio, true, map[int64]bool{}, "", uint(1), encCfg)
 	}
 
-	return app.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+	return mt.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
 }
 
 func queryCmd() *cobra.Command {

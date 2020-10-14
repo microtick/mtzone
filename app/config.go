@@ -1,7 +1,6 @@
 package app
 
 import (
-	simparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -29,30 +28,18 @@ import (
 
 var (
 	mbasics = module.NewBasicManager(
-		genutil.AppModuleBasic{},
-
-		// accounts, fees.
 		auth.AppModuleBasic{},
-
-		// tokens, token balance.
+		genutil.AppModuleBasic{},
 		bank.AppModuleBasic{},
-
 		capability.AppModuleBasic{},
-
-		// inflation
 		mint.AppModuleBasic{},
-
 		staking.AppModuleBasic{},
-
 		slashing.AppModuleBasic{},
-
 		distr.AppModuleBasic{},
-
 		gov.NewAppModuleBasic(
 			paramsclient.ProposalHandler, distrclient.ProposalHandler,
 			upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
 		),
-
 		params.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
@@ -69,11 +56,11 @@ func ModuleBasics() module.BasicManager {
 }
 
 // MakeEncodingConfig creates an EncodingConfig for testing
-func MakeEncodingConfig() simparams.EncodingConfig {
+func MakeEncodingConfig() appparams.EncodingConfig {
 	encodingConfig := appparams.MakeEncodingConfig()
-	std.RegisterCodec(encodingConfig.Amino)
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	mbasics.RegisterCodec(encodingConfig.Amino)
+	mbasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	mbasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
 }

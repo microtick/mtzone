@@ -59,11 +59,13 @@ if [ -z "$PROD"]; then
     MTROOT=$WORK redirect $MTBINARY keys add microtick $TESTOPTS
   fi
 
-  echo "Adding validator genesis account"
-  MTROOT=$WORK redirect $MTBINARY add-genesis-account validator 1000000000000utick $TESTOPTS 
+  VALIDATOR=$($MTBINARY keys show validator -a --home=$WORK --keyring-backend=test)
+  echo "Adding validator genesis account: $VALIDATOR"
+  MTROOT=$WORK redirect $MTBINARY add-genesis-account $VALIDATOR 1000000000000utick
 
-  echo "Adding microtick genesis account"
-  MTROOT=$WORK redirect $MTBINARY add-genesis-account microtick 1000000000000udai $TESTOPTS
+  MICROTICK=$($MTBINARY keys show microtick -a --home=$WORK --keyring-backend=test)
+  echo "Adding microtick genesis account: $MICROTICK"
+  MTROOT=$WORK redirect $MTBINARY add-genesis-account $MICROTICK 1000000000000udai
 
   echo "Creating genesis transaction"
   MTROOT=$WORK redirect $MTBINARY gentx validator --amount 1000000000000utick --chain-id $1 $TESTOPTS

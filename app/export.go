@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"log"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	logger "github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
-
+	
+  servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
@@ -21,23 +18,30 @@ import (
 // file.
 func (app *MicrotickApp) ExportAppStateAndValidators(
 	forZeroHeight bool, jailAllowedAddrs []string,
-) (appState json.RawMessage, validators []tmtypes.GenesisValidator, cp *abci.ConsensusParams, err error) {
+) (servertypes.ExportedApp, error) {
 
 	// as if they could withdraw from the start of the next block
 	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
 
+  height := app.LastBlockHeight() + 1
 	if forZeroHeight {
+		height = 0
 		app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs)
 	}
 
 	genState := app.mm.ExportGenesis(ctx, app.appCodec)
-	appState, err = json.MarshalIndent(genState, "", "  ")
+	appState, err := json.MarshalIndent(genState, "", "  ")
 	if err != nil {
-		return nil, nil, nil, err
+		return servertypes.ExportedApp{}, err
 	}
 
-	validators = staking.WriteValidators(ctx, app.keeper.staking)
-	return appState, validators, app.BaseApp.GetConsensusParams(ctx), nil
+	validators := staking.WriteValidators(ctx, app.keeper.staking)
+	return servertypes.ExportedApp {
+		AppState: appState,
+		Validators: validators,
+		Height: height,
+		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
+	}, nil
 }
 
 // prepare for fresh start at zero height
@@ -166,28 +170,4 @@ func (app *MicrotickApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAd
 			return false
 		},
 	)
-}
-
-// Setup initializes a new MicrotickApp. A Nop logger is set in MicrotickApp.
-func Setup(isCheckTx bool) *MicrotickApp {
-	db := dbm.NewMemDB()
-	app := NewApp(logger.NewNopLogger(), db, nil, 5, map[int64]bool{}, DefaultHome)
-	if !isCheckTx {
-		// init chain must be called to stop deliverState from being nil
-		genesisState := NewDefaultGenesisState()
-		stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
-		if err != nil {
-			panic(err)
-		}
-
-		// Initialize the chain
-		app.InitChain(
-			abci.RequestInitChain{
-				Validators:    []abci.ValidatorUpdate{},
-				AppStateBytes: stateBytes,
-			},
-		)
-	}
-
-	return app
 }

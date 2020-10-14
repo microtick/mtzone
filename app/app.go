@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server/api"
+	"github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -19,6 +20,7 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -65,7 +67,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmos "github.com/tendermint/tendermint/libs/os"
 
-	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/version"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -75,6 +76,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	
 	"gitlab.com/microtick/mtzone/x/microtick"
+	mtparams "gitlab.com/microtick/mtzone/app/params"
 )
 
 const AppName = "microtick"
@@ -93,6 +95,7 @@ type MicrotickApp struct {
 	// keys to access the substores
 	keys    map[string]*sdk.KVStoreKey
 	tkeys   map[string]*sdk.TransientStoreKey
+	memKeys map[string]*sdk.MemoryStoreKey
 	
 	keeper struct {
 		acct       authkeeper.AccountKeeper
@@ -181,12 +184,10 @@ func SetAppVersion() {
 }
 
 func NewApp(
-	logger log.Logger, db dbm.DB, tio io.Writer, invCheckPeriod uint,
-	skipUpgradeHeights map[int64]bool, homePath string, options ...func(*bam.BaseApp),
+	logger log.Logger, db dbm.DB, tio io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool, homePath string, 
+	invCheckPeriod uint, encodingConfig mtparams.EncodingConfig, options ...func(*bam.BaseApp),
 ) *MicrotickApp {
 		
-	// TODO: Remove cdc in favor of appCodec once all modules are migrated.
-	encodingConfig := MakeEncodingConfig()
 	appCodec := encodingConfig.Marshaler
 	cdc := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry	
@@ -195,7 +196,7 @@ func NewApp(
 	bapp.SetCommitMultiStoreTracer(tio)
 	bapp.SetAppVersion(version.Version)
 	bapp.GRPCQueryRouter().SetInterfaceRegistry(interfaceRegistry)
-	bapp.GRPCQueryRouter().RegisterSimulateService(bapp.Simulate, interfaceRegistry, std.DefaultPublicKeyCodec{})
+	bapp.GRPCQueryRouter().RegisterSimulateService(bapp.Simulate, interfaceRegistry)
 
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, 
@@ -229,6 +230,7 @@ func NewApp(
 		invCheckPeriod:    invCheckPeriod,
 		keys:              keys,
 		tkeys:             tkeys,
+		memKeys:					 memKeys,
 	}
 
   app.keeper.params = initParamsKeeper(appCodec, cdc, app.keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
@@ -332,10 +334,6 @@ func NewApp(
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec, app.keys[evidencetypes.StoreKey], &app.keeper.staking, app.keeper.slashing,
 	)
-	evidenceRouter := evidencetypes.NewRouter()
-
-	evidenceKeeper.SetRouter(evidenceRouter)
-
 	app.keeper.evidence = *evidenceKeeper
 
 	// register the proposal types
@@ -371,6 +369,7 @@ func NewApp(
 		microtick.NewAppModule(appCodec, app.keeper.microtick),
 		genutil.NewAppModule(app.keeper.acct, app.keeper.staking, app.BaseApp.DeliverTx, encodingConfig.TxConfig),
 		auth.NewAppModule(appCodec, app.keeper.acct, authsims.RandomGenesisAccounts),
+		vesting.NewAppModule(app.keeper.acct, app.keeper.bank),
 		bank.NewAppModule(appCodec, app.keeper.bank, app.keeper.acct),
 		capability.NewAppModule(appCodec, *app.keeper.capability),
 		crisis.NewAppModule(&app.keeper.crisis),
@@ -379,9 +378,11 @@ func NewApp(
 		slashing.NewAppModule(appCodec, app.keeper.slashing, app.keeper.acct, app.keeper.bank, app.keeper.staking),
 		distr.NewAppModule(appCodec, app.keeper.distr, app.keeper.acct, app.keeper.bank, app.keeper.staking),
 		staking.NewAppModule(appCodec, app.keeper.staking, app.keeper.acct, app.keeper.bank),
-		ibc.NewAppModule(app.keeper.ibc),
 		upgrade.NewAppModule(app.keeper.upgrade),
 		evidence.NewAppModule(app.keeper.evidence),
+		ibc.NewAppModule(app.keeper.ibc),
+		params.NewAppModule(app.keeper.params),
+		transferModule,
 	)
 	
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -425,8 +426,9 @@ func NewApp(
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 	app.mm.RegisterQueryServices(app.GRPCQueryRouter())
 	
+	/*
 	app.sm = module.NewSimulationManager(
-		//microtick.NewAppModule(app.keeper.microtick),
+		microtick.NewAppModule(appCodec, app.keeper.microtick),
 		auth.NewAppModule(appCodec, app.keeper.acct, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.keeper.bank, app.keeper.acct),
 		capability.NewAppModule(appCodec, *app.keeper.capability),
@@ -442,10 +444,12 @@ func NewApp(
 	)
 
 	app.sm.RegisterStoreDecoders()
+	*/
   
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
+	app.MountMemoryStores(memKeys)
 
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
@@ -462,9 +466,10 @@ func NewApp(
 	
 	app.SetEndBlocker(app.EndBlocker)
 	
-	err := app.LoadLatestVersion()
-	if err != nil {
-		tmos.Exit("app initialization:" + err.Error())
+	if loadLatest {
+		 if err := app.LoadLatestVersion(); err != nil {
+		 		tmos.Exit(err.Error())
+		 }
 	}
 	
 	// Initialize and seal the capability keeper so all persistent capabilities
@@ -540,7 +545,7 @@ func (app *MicrotickApp) SimulationManager() *module.SimulationManager {
 
 // RegisterAPIRoutes registers all application module routes with the provided
 // API server.
-func (app *MicrotickApp) RegisterAPIRoutes(apiSvr *api.Server) {
+func (app *MicrotickApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
 	authrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
