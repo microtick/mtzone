@@ -34,19 +34,23 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
     // Mint stake and award to commission payer
     if doRebate {
         rebate := sdk.NewCoin(params.MintDenom, params.MintRatio.MulInt(extCoins.Amount).TruncateInt())
-        mintCoins := sdk.Coins{ rebate }
+        if rebate.Amount.IsPositive() {
+            mintCoins := sdk.Coins{ rebate }
     
-        err := k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
-        if err != nil {
-    	    return nil, err
-        }
+            err := k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
+            if err != nil {
+    	        return nil, err
+            }
     
-	    err = k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
-	    if err != nil {
-		    return nil, err
-	    }
+	        err = k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
+	        if err != nil {
+		        return nil, err
+	        }
 	    
-	    return &rebate, nil
+	        return &rebate, nil
+        } else {
+        	return &rebate, nil
+        }
     }
 	return nil, nil
 }
