@@ -3,6 +3,7 @@ package msg
 import (
     "fmt"
     
+   	"github.com/gogo/protobuf/proto"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
@@ -117,7 +118,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
       Backing: msg.Backing,
       Commission: commission,
     }
-    bz := ModuleCdc.MustMarshalJSON(&data)
+    bz, err := proto.Marshal(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

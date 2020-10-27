@@ -56,5 +56,10 @@ message MarketTradeData {
   int64 time = 5 [
     (gogoproto.jsontag) = "time"
   ];
+
+  cosmos.base.v1beta1.DecCoin commission = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "commission"
+  ];
   
 }

@@ -52,7 +52,7 @@ proto: $(PROTOC) protovendor
 	./scripts/protocgen.sh
 
 .PHONY: js
-js: $(PROTOOC) protovendor
+js: $(PROTOC) protovendor
 	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
 	./scripts/protocjs.sh
 	

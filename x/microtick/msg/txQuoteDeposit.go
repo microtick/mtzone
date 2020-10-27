@@ -4,6 +4,7 @@ import (
     "fmt"
     "time"
     
+    "github.com/gogo/protobuf/proto"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
@@ -102,7 +103,7 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micro
       QuoteBacking: quote.Backing,
       Commission: commission,
     }
-    bz := ModuleCdc.MustMarshalJSON(&data)
+    bz, err := proto.Marshal(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

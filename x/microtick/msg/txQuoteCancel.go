@@ -4,6 +4,7 @@ import (
     "fmt"
     "time"
     
+    "github.com/gogo/protobuf/proto"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
@@ -116,7 +117,7 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
       Slash: mt.NewMicrotickCoinFromDec(slash),
       Commission: commission,
     }
-    bz := ModuleCdc.MustMarshalJSON(&data)
+    bz, err := proto.Marshal(&data)
     
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

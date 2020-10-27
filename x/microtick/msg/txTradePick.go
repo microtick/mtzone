@@ -3,6 +3,7 @@ package msg
 import (
     "fmt"
     
+    "github.com/gogo/protobuf/proto"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
@@ -105,8 +106,9 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
             Consensus: market.Consensus,
             Time: now.Unix(),
             Trade: matcher.Trade,
+            Commission: commission,
         }
-        bz := ModuleCdc.MustMarshalJSON(&data)
+        bz, err := proto.Marshal(&data)
         
         var events []sdk.Event
         events = append(events, sdk.NewEvent(

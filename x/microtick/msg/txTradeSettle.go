@@ -4,6 +4,7 @@ import (
     "fmt"
     "time"
     
+    "github.com/gogo/protobuf/proto"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
@@ -146,7 +147,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
         Commission: commission,
         Settler: msg.Requester,
     }
-    bz := ModuleCdc.MustMarshalJSON(&data)
+    bz, err := proto.Marshal(&data)
 
     var events []sdk.Event
     events = append(events, sdk.NewEvent(

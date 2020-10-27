@@ -35,7 +35,7 @@ mkdir -p $WORK
 echo "Initializing: $2"
 MTROOT=$WORK redirect $MTBINARY init $2
 
-echo "Setting chain id"
+echo "Setting chain id: $1"
 GENESIS=$WORK/config/genesis.json
 TRANSFORMS='.chain_id="'$1'"'
 TRANSFORMS+='|.app_state.slashing.params.signed_blocks_window="10000"'

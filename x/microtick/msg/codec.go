@@ -28,5 +28,11 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
   registry.RegisterImplementations((*sdk.Msg)(nil),
     &TxCancelQuote{},
     &TxCreateQuote{},
+    &TxUpdateQuote{},
+    &TxDepositQuote{},
+    &TxWithdrawQuote{},
+    &TxMarketTrade{},
+    &TxPickTrade{},
+    &TxSettleTrade{},
   )
 }
