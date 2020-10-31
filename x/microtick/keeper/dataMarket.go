@@ -27,7 +27,9 @@ func newOrderBook(name mt.MicrotickDurationName) DataOrderBook {
     return DataOrderBook {
         Name: name,
         CallAsks: NewOrderedList(),
+        CallBids: NewOrderedList(),
         PutAsks: NewOrderedList(),
+        PutBids: NewOrderedList(),
         SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }

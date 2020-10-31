@@ -13,7 +13,7 @@ const MTPoolName = "commissionPool"
 
 // Commissions
 
-func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin, doRebate bool) (*sdk.Coin, error) {
+func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin, doRebate bool, ratioAdjust sdk.Dec) (*sdk.Coin, error) {
 	params := k.GetParams(ctx)
     extCoins := mt.MicrotickCoinToExtCoin(amount)
     
@@ -33,7 +33,15 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	
     // Mint stake and award to commission payer
     if doRebate {
-        rebate := sdk.NewCoin(params.MintDenom, params.MintRatio.MulInt(extCoins.Amount).TruncateInt())
+    	// Limit ratio adjustment to 0 <= adjust <= 1
+    	if ratioAdjust.GT(sdk.OneDec()) {
+    		ratioAdjust = sdk.OneDec()
+    	}
+    	if ratioAdjust.LT(sdk.ZeroDec()) {
+    		ratioAdjust = sdk.ZeroDec()
+    	}
+    	adjustedMintRatio := params.MintRatio.Mul(ratioAdjust)
+        rebate := sdk.NewCoin(params.MintDenom, adjustedMintRatio.MulInt(extCoins.Amount).TruncateInt())
         if rebate.Amount.IsPositive() {
             mintCoins := sdk.Coins{ rebate }
     

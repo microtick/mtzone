@@ -76,7 +76,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
         if err != nil {
             return nil, mt.ErrInsufficientFunds
         }
-        reward, err := mtKeeper.PoolCommission(ctx, msg.Taker, trade.Commission, true)
+        reward, err := mtKeeper.PoolCommission(ctx, msg.Taker, trade.Commission, true, sdk.OneDec())
         if err != nil {
             return nil, err
         }

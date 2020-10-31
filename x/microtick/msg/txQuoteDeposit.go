@@ -61,7 +61,7 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micro
     
     // Add commission to pool
     //fmt.Printf("Deposit Commission: %s\n", commission.String())
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true)
+    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, false, sdk.ZeroDec())
     if err != nil {
         return nil, err
     }

@@ -85,7 +85,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true)
+    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true, sdk.OneDec())
     if err != nil {
         return nil, err
     }

@@ -79,6 +79,17 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
         quote.Bid = msg.NewBid
     }
     
+    orderBook := dataMarket.GetOrderBook(quote.DurationName)
+    adjustment := sdk.OneDec()
+    if len(orderBook.CallAsks.Data) > 0 {
+        bestCallAsk, _ := keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
+        bestPutAsk, _ := keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
+        average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
+        if quote.Ask.Amount.GT(average) {
+            adjustment = average.Quo(quote.Ask.Amount)
+        }
+    }    
+    
     dataMarket.AddQuote(quote)
     if !dataMarket.FactorIn(quote, true) {
         return nil, mt.ErrQuoteParams
@@ -95,7 +106,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true)
+    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
     if err != nil {
         return nil, err
     }

@@ -81,6 +81,18 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
     }
+    
+    orderBook := dataMarket.GetOrderBook(msg.Duration)
+    adjustment := sdk.OneDec()
+    if len(orderBook.CallAsks.Data) > 0 {
+        bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
+        bestPutAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
+        average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
+        if dataActiveQuote.Ask.Amount.GT(average) {
+            adjustment = average.Quo(dataActiveQuote.Ask.Amount)
+        }
+    }
+    
     dataMarket.AddQuote(dataActiveQuote)
     if !dataMarket.FactorIn(dataActiveQuote, true) {
         return nil, mt.ErrQuoteParams
@@ -99,7 +111,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    reward, err := mtKeeper.PoolCommission(ctx, msg.Provider, commission, true)
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Provider, commission, true, adjustment)
     if err != nil {
         return nil, err
     }

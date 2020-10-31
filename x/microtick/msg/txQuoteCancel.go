@@ -58,7 +58,7 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
-    _, err = mtKeeper.PoolCommission(ctx, msg.Requester, commission, false)
+    _, err = mtKeeper.PoolCommission(ctx, msg.Requester, commission, false, sdk.ZeroDec())
     if err != nil {
         return nil, err
     }
