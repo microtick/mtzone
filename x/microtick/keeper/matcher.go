@@ -284,6 +284,7 @@ func (matcher *Matcher) MatchQuote(order mt.MicrotickOrderType, quote DataActive
     backing := quote.Backing
     refund := backing
     
+    matcher.HasQuantity = true
     matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quote.Id, buysell, legType,
         quote.Quantity, premium, mt.NewMicrotickCoinFromDec(cost), backing, refund))
 }
