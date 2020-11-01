@@ -33,6 +33,7 @@ func (querier Querier) Quote(c context.Context, req *QueryQuoteRequest) (*QueryQ
         Ask: data.Ask,
         Bid: data.Bid,
         Quantity: data.Quantity,
+        UnitBacking: data.ComputeUnitBacking(),
         CallBid: data.CallBid(dataMarket.Consensus),
         CallAsk: data.CallAsk(dataMarket.Consensus),
         PutBid: data.PutBid(dataMarket.Consensus),

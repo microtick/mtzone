@@ -53,47 +53,53 @@ message QueryQuoteResponse {
     (gogoproto.jsontag) = "quantity"
   ];
   
-  cosmos.base.v1beta1.DecCoin consensus = 9 [
+  string unit_backing = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.jsontag) = "unit_backing"
+  ];  
+  
+  cosmos.base.v1beta1.DecCoin consensus = 10 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "consensus"
   ];
   
-  cosmos.base.v1beta1.DecCoin spot = 10 [
+  cosmos.base.v1beta1.DecCoin spot = 11 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "spot"
   ];
   
-  string delta = 11 [
+  string delta = 12 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "delta"
   ];
   
-  cosmos.base.v1beta1.DecCoin call_ask = 12 [
+  cosmos.base.v1beta1.DecCoin call_ask = 13 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "call_ask"
   ];
   
-  cosmos.base.v1beta1.DecCoin call_bid = 13 [
+  cosmos.base.v1beta1.DecCoin call_bid = 14 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "call_bid"
   ];
   
-  cosmos.base.v1beta1.DecCoin put_ask = 14 [
+  cosmos.base.v1beta1.DecCoin put_ask = 15 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "put_ask"
   ];
   
-  cosmos.base.v1beta1.DecCoin put_bid = 15 [
+  cosmos.base.v1beta1.DecCoin put_bid = 16 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "put_bid"
   ];
   
-  int64 modified = 16 [
+  int64 modified = 17 [
     (gogoproto.jsontag) = "modified"
   ];
   
-  int64 can_modify = 17 [
+  int64 can_modify = 18 [
     (gogoproto.jsontag) = "can_modify"
   ];
   

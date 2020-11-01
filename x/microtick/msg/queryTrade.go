@@ -35,6 +35,7 @@ func (querier Querier) Trade(c context.Context, req *QueryTradeRequest) (*QueryT
             Quoted: ResponseQuotedParams {
                 Id: leg.Quoted.Id,
                 Premium: leg.Quoted.Premium,
+                UnitBacking: leg.Quoted.UnitBacking,
                 Spot: leg.Quoted.Spot,
             },
             CurrentValue: leg.CalculateValue(dataMarket.Consensus.Amount, data.Strike.Amount),

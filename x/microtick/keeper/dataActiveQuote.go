@@ -30,12 +30,16 @@ func NewDataActiveQuote(now time.Time, id mt.MicrotickId, market mt.MicrotickMar
     }
 }
 
-func (daq *DataActiveQuote) ComputeQuantity() {
+func (daq *DataActiveQuote) ComputeUnitBacking() sdk.Dec {
     averagePremium := daq.Ask.Amount.Add(daq.Bid.Amount).QuoInt64(2)
-    actualLeverage := averagePremium.Mul(sdk.NewDec(mt.Leverage))
+    return averagePremium.Mul(sdk.NewDec(mt.Leverage))
+}
+
+func (daq *DataActiveQuote) ComputeQuantity() {
+    unitBacking := daq.ComputeUnitBacking()
     daq.Quantity = mt.MicrotickQuantity{
         Denom: "quantity",
-        Amount: daq.Backing.Amount.Quo(actualLeverage),
+        Amount: daq.Backing.Amount.Quo(unitBacking),
     }
 }
 

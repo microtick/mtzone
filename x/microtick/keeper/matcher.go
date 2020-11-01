@@ -233,6 +233,7 @@ func (matcher *Matcher) MatchSynthetic(sob *DataSyntheticBook, dm *DataMarket, t
             premium = quoteBid.CallBid(matcher.Trade.Strike)
             legType = mt.MicrotickLegCall
         }
+        
         cost = premium.Amount.Mul(quantity)
         if synthFill && li.BidFill {
             backing = quoteBid.Backing
@@ -376,10 +377,15 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         keeper.SetAccountStatus(ctx, long, longAccountStatus)
         keeper.SetAccountStatus(ctx, short, shortAccountStatus)
         
+        quotedPremium := thisQuote.Ask
+        if !thisFill.BuySell {
+            quotedPremium = thisQuote.Bid
+        }
         quotedParams := NewDataQuotedParams(
             thisQuote.Id,
             finalFill,
-            thisFill.Premium,
+            quotedPremium,
+            thisQuote.ComputeUnitBacking(),
             thisQuote.Spot,
         )
         

@@ -33,11 +33,12 @@ func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket,
     }
 }
 
-func NewDataQuotedParams(id mt.MicrotickId, final bool, premium mt.MicrotickPremium, spot mt.MicrotickSpot) DataQuotedParams {
+func NewDataQuotedParams(id mt.MicrotickId, final bool, premium mt.MicrotickPremium, unitBacking sdk.Dec, spot mt.MicrotickSpot) DataQuotedParams {
     return DataQuotedParams {
         Id: id,
         Final: final,
         Premium: premium,
+        UnitBacking: unitBacking,
         Spot: spot,
     }
 }
