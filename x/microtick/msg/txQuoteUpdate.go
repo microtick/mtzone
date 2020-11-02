@@ -71,13 +71,15 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     
     if msg.NewAsk.Amount.IsPositive() {
         quote.Ask = msg.NewAsk
-        quote.ComputeQuantity()
         quote.Freeze(now, params)
     }
     
     if msg.NewBid.Amount.GTE(sdk.ZeroDec()) {
         quote.Bid = msg.NewBid
     }
+    
+    // Recompute quantity
+    quote.ComputeQuantity()
     
     orderBook := dataMarket.GetOrderBook(quote.DurationName)
     adjustment := sdk.OneDec()
