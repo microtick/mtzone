@@ -15,44 +15,43 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/snapshots"
+	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/libs/cli"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
-	
-	"gitlab.com/microtick/mtzone/app"
-	appparams "gitlab.com/microtick/mtzone/app/params"
+
+	microtick "gitlab.com/microtick/mtzone/app"
+	"gitlab.com/microtick/mtzone/app/params"
 )
 
-// NewRootCmd creates a new root command for microtick. It is called once in the
+// NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
-func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
-	encodingConfig := app.MakeEncodingConfig()
+func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
+	encodingConfig := microtick.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithJSONMarshaler(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
-		WithAccountRetriever(authtypes.AccountRetriever{}).
+		WithAccountRetriever(types.AccountRetriever{}).
 		WithBroadcastMode(flags.BroadcastBlock).
-		WithHomeDir(app.DefaultHome)
+		WithHomeDir(microtick.DefaultNodeHome)
 
 	rootCmd := &cobra.Command{
 		Use:   "mtm",
-		Short: "Microtick",
-		Long:  "Microtick Blockchain & CLI Utility.",
+		Short: "Microtick Stargate App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
 				return err
@@ -75,33 +74,93 @@ func Execute(rootCmd *cobra.Command) error {
 	// and a Tendermint RPC. This requires the use of a pointer reference when
 	// getting and setting the client.Context. Ideally, we utilize
 	// https://github.com/spf13/cobra/pull/1118.
-	
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, client.ClientContextKey, &client.Context{})
 	ctx = context.WithValue(ctx, server.ServerContextKey, server.NewDefaultContext())
-	
-	executor := tmcli.PrepareBaseCmd(rootCmd, "MTM", app.DefaultHome)
+
+	executor := tmcli.PrepareBaseCmd(rootCmd, "", microtick.DefaultNodeHome)
 	return executor.ExecuteContext(ctx)
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig appparams.EncodingConfig) {
+func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	authclient.Codec = encodingConfig.Marshaler
+
 	rootCmd.AddCommand(
-		rpc.StatusCommand(),
-		queryCmd(),
-		txCmd(),
-		keys.Commands(app.DefaultHome),
-		genutilcli.InitCmd(app.ModuleBasics(), app.DefaultHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultHome),
-		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(app.ModuleBasics(), encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultHome),
-		genutilcli.ValidateGenesisCmd(app.ModuleBasics(), encodingConfig.TxConfig),
-		AddGenesisAccountCmd(app.DefaultHome),
-		cli.NewCompletionCmd(rootCmd, true),
+		genutilcli.InitCmd(microtick.ModuleBasics, microtick.DefaultNodeHome),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, microtick.DefaultNodeHome),
+		//app.MigrateGenesisCmd(),
+		genutilcli.GenTxCmd(microtick.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, microtick.DefaultNodeHome),
+		genutilcli.ValidateGenesisCmd(microtick.ModuleBasics, encodingConfig.TxConfig),
+		AddGenesisAccountCmd(microtick.DefaultNodeHome),
+		tmcli.NewCompletionCmd(rootCmd, true),
+		//testnetCmd(microtick.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 	)
 
-	server.AddCommands(rootCmd, app.DefaultHome, newApp, exportAppStateAndTMValidators)
+	server.AddCommands(rootCmd, microtick.DefaultNodeHome, newApp, createSimappAndExport, addModuleInitFlags)
+
+	// add keybase, auxiliary RPC, query, and tx child commands
+	rootCmd.AddCommand(
+		rpc.StatusCommand(),
+		queryCommand(),
+		txCommand(),
+		keys.Commands(microtick.DefaultNodeHome),
+	)
+}
+func addModuleInitFlags(startCmd *cobra.Command) {
+	crisis.AddModuleInitFlags(startCmd)
+}
+
+func queryCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                        "query",
+		Aliases:                    []string{"q"},
+		Short:                      "Querying subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	cmd.AddCommand(
+		authcmd.GetAccountCmd(),
+		rpc.ValidatorCommand(),
+		rpc.BlockCommand(),
+		authcmd.QueryTxsByEventsCmd(),
+		authcmd.QueryTxCmd(),
+	)
+
+	microtick.ModuleBasics.AddQueryCommands(cmd)
+	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
+
+	return cmd
+}
+
+func txCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                        "tx",
+		Short:                      "Transactions subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	cmd.AddCommand(
+		authcmd.GetSignCommand(),
+		authcmd.GetSignBatchCommand(),
+		authcmd.GetMultiSignCommand(),
+		authcmd.GetValidateSignaturesCommand(),
+		flags.LineBreak,
+		authcmd.GetBroadcastCommand(),
+		authcmd.GetEncodeCommand(),
+		authcmd.GetDecodeCommand(),
+		flags.LineBreak,
+		vestingcli.GetTxCmd(),
+	)
+
+	microtick.ModuleBasics.AddTxCommands(cmd)
+	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
+
+	return cmd
 }
 
 func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
@@ -131,14 +190,14 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts serverty
 		panic(err)
 	}
 
-	return app.NewApp(
+	return microtick.NewMicrotickApp(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		app.MakeEncodingConfig(),
+		microtick.MakeEncodingConfig(), // Ideally, we would reuse the one created by NewRootCmd.
+		appOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
-		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
 		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
 		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
 		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
@@ -151,73 +210,22 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts serverty
 	)
 }
 
-func exportAppStateAndTMValidators(
-	logger log.Logger, db dbm.DB, tio io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
-) (servertypes.ExportedApp, error) {
+func createSimappAndExport(
+	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
+	appOpts servertypes.AppOptions) (servertypes.ExportedApp, error) {
 
-  encCfg := app.MakeEncodingConfig()
-  encCfg.Marshaler = codec.NewProtoCodec(encCfg.InterfaceRegistry)
-  
-  var mt *app.MicrotickApp
-
+	encCfg := microtick.MakeEncodingConfig() // Ideally, we would reuse the one created by NewRootCmd.
+	encCfg.Marshaler = codec.NewProtoCodec(encCfg.InterfaceRegistry)
+	var microtickApp *microtick.MicrotickApp
 	if height != -1 {
-	  mt = app.NewApp(logger, db, tio, false, map[int64]bool{}, "", uint(1), encCfg)
-	  
-	  if err := mt.LoadHeight(height); err != nil {
-	  	return servertypes.ExportedApp{}, err
-	  }
+		microtickApp = microtick.NewMicrotickApp(logger, db, traceStore, false, map[int64]bool{}, "", uint(1), encCfg, appOpts)
+
+		if err := microtickApp.LoadHeight(height); err != nil {
+			return servertypes.ExportedApp{}, err
+		}
 	} else {
-		mt = app.NewApp(logger, db, tio, true, map[int64]bool{}, "", uint(1), encCfg)
+		microtickApp = microtick.NewMicrotickApp(logger, db, traceStore, true, map[int64]bool{}, "", uint(1), encCfg, appOpts)
 	}
 
-	return mt.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
-}
-
-func queryCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "query",
-		Aliases: []string{"q"},
-		Short:   "Querying subcommands",
-	}
-
-	cmd.AddCommand(
-		authcmd.GetAccountCmd(),
-		flags.LineBreak,
-		rpc.ValidatorCommand(),
-		rpc.BlockCommand(),
-		authcmd.QueryTxsByEventsCmd(),
-		authcmd.QueryTxCmd(),
-		flags.LineBreak,
-	)
-
-	app.ModuleBasics().AddQueryCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
-	return cmd
-}
-
-func txCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "tx",
-		Short: "Transactions subcommands",
-	}
-
-	cmd.AddCommand(
-		bankcmd.NewSendTxCmd(),
-		flags.LineBreak,
-		authcmd.GetSignCommand(),
-		authcmd.GetSignBatchCommand(),
-		authcmd.GetMultiSignCommand(),
-		authcmd.GetValidateSignaturesCommand(),
-		flags.LineBreak,
-		authcmd.GetBroadcastCommand(),
-		authcmd.GetEncodeCommand(),
-		authcmd.GetDecodeCommand(),
-		flags.LineBreak,
-	)
-
-	// add modules' tx commands
-	app.ModuleBasics().AddTxCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
-
-	return cmd
+	return microtickApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
 }

@@ -17,12 +17,12 @@ const HaltTimeString = "168h"
 // Default parameter values
 var (
   DefaultEuropeanOptions bool = true
-  DefaultCommissionQuotePercent = sdk.MustNewDecFromStr("0.0005")
+  DefaultCommissionQuotePercent = sdk.MustNewDecFromStr("0.0004")
   DefaultCommissionTradeFixed = sdk.MustNewDecFromStr("0.025")
   DefaultCommissionUpdatePercent = sdk.MustNewDecFromStr("0.00005")
   DefaultSettleIncentive = sdk.MustNewDecFromStr("0.025")
   DefaultCommissionSettleFixed = sdk.MustNewDecFromStr("0.01")
-  DefaultCommissionCancelPercent = sdk.MustNewDecFromStr("0.001")
+  DefaultCommissionCancelPercent = sdk.MustNewDecFromStr("0.0001")
   DefaultFreezeTime = int32(30)
   DefaultMintDenom = "utick"
   DefaultMintRatio = sdk.MustNewDecFromStr("0.5")

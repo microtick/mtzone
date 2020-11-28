@@ -1,66 +1,75 @@
 package app
 
 import (
-	"github.com/cosmos/cosmos-sdk/std"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	"github.com/cosmos/cosmos-sdk/x/ibc"
-	transfer "github.com/cosmos/cosmos-sdk/x/ibc-transfer"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	"github.com/cosmos/cosmos-sdk/x/params"
-	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
-	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
-	
-	appparams "gitlab.com/microtick/mtzone/app/params"
-	"gitlab.com/microtick/mtzone/x/microtick"
+	"flag"
+
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 )
 
+// List of available flags for the simulator
 var (
-	mbasics = module.NewBasicManager(
-		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{},
-		bank.AppModuleBasic{},
-		capability.AppModuleBasic{},
-		mint.AppModuleBasic{},
-		staking.AppModuleBasic{},
-		slashing.AppModuleBasic{},
-		distr.AppModuleBasic{},
-		gov.NewAppModuleBasic(
-			paramsclient.ProposalHandler, distrclient.ProposalHandler,
-			upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
-		),
-		params.AppModuleBasic{},
-		ibc.AppModuleBasic{},
-		upgrade.AppModuleBasic{},
-		evidence.AppModuleBasic{},
-		crisis.AppModuleBasic{},
-		transfer.AppModuleBasic{},
-		microtick.AppModuleBasic{},
-	)
+	FlagGenesisFileValue        string
+	FlagParamsFileValue         string
+	FlagExportParamsPathValue   string
+	FlagExportParamsHeightValue int
+	FlagExportStatePathValue    string
+	FlagExportStatsPathValue    string
+	FlagSeedValue               int64
+	FlagInitialBlockHeightValue int
+	FlagNumBlocksValue          int
+	FlagBlockSizeValue          int
+	FlagLeanValue               bool
+	FlagCommitValue             bool
+	FlagOnOperationValue        bool // TODO: Remove in favor of binary search for invariant violation
+	FlagAllInvariantsValue      bool
+
+	FlagEnabledValue     bool
+	FlagVerboseValue     bool
+	FlagPeriodValue      uint
+	FlagGenesisTimeValue int64
 )
 
-// ModuleBasics returns all app modules basics
-func ModuleBasics() module.BasicManager {
-	return mbasics
+// GetSimulatorFlags gets the values of all the available simulation flags
+func GetSimulatorFlags() {
+	// config fields
+	flag.StringVar(&FlagGenesisFileValue, "Genesis", "", "custom simulation genesis file; cannot be used with params file")
+	flag.StringVar(&FlagParamsFileValue, "Params", "", "custom simulation params file which overrides any random params; cannot be used with genesis")
+	flag.StringVar(&FlagExportParamsPathValue, "ExportParamsPath", "", "custom file path to save the exported params JSON")
+	flag.IntVar(&FlagExportParamsHeightValue, "ExportParamsHeight", 0, "height to which export the randomly generated params")
+	flag.StringVar(&FlagExportStatePathValue, "ExportStatePath", "", "custom file path to save the exported app state JSON")
+	flag.StringVar(&FlagExportStatsPathValue, "ExportStatsPath", "", "custom file path to save the exported simulation statistics JSON")
+	flag.Int64Var(&FlagSeedValue, "Seed", 42, "simulation random seed")
+	flag.IntVar(&FlagInitialBlockHeightValue, "InitialBlockHeight", 1, "initial block to start the simulation")
+	flag.IntVar(&FlagNumBlocksValue, "NumBlocks", 500, "number of new blocks to simulate from the initial block height")
+	flag.IntVar(&FlagBlockSizeValue, "BlockSize", 200, "operations per block")
+	flag.BoolVar(&FlagLeanValue, "Lean", false, "lean simulation log output")
+	flag.BoolVar(&FlagCommitValue, "Commit", false, "have the simulation commit")
+	flag.BoolVar(&FlagOnOperationValue, "SimulateEveryOperation", false, "run slow invariants every operation")
+	flag.BoolVar(&FlagAllInvariantsValue, "PrintAllInvariants", false, "print all invariants if a broken invariant is found")
+
+	// simulation flags
+	flag.BoolVar(&FlagEnabledValue, "Enabled", false, "enable the simulation")
+	flag.BoolVar(&FlagVerboseValue, "Verbose", false, "verbose log output")
+	flag.UintVar(&FlagPeriodValue, "Period", 0, "run slow invariants only once every period assertions")
+	flag.Int64Var(&FlagGenesisTimeValue, "GenesisTime", 0, "override genesis UNIX time instead of using a random UNIX time")
 }
 
-// MakeEncodingConfig creates an EncodingConfig for testing
-func MakeEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeEncodingConfig()
-	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	mbasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	mbasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	return encodingConfig
+// NewConfigFromFlags creates a simulation from the retrieved values of the flags.
+func NewConfigFromFlags() simulation.Config {
+	return simulation.Config{
+		GenesisFile:        FlagGenesisFileValue,
+		ParamsFile:         FlagParamsFileValue,
+		ExportParamsPath:   FlagExportParamsPathValue,
+		ExportParamsHeight: FlagExportParamsHeightValue,
+		ExportStatePath:    FlagExportStatePathValue,
+		ExportStatsPath:    FlagExportStatsPathValue,
+		Seed:               FlagSeedValue,
+		InitialBlockHeight: FlagInitialBlockHeightValue,
+		NumBlocks:          FlagNumBlocksValue,
+		BlockSize:          FlagBlockSizeValue,
+		Lean:               FlagLeanValue,
+		Commit:             FlagCommitValue,
+		OnOperation:        FlagOnOperationValue,
+		AllInvariants:      FlagAllInvariantsValue,
+	}
 }

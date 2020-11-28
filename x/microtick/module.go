@@ -1,6 +1,7 @@
 package microtick
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/gorilla/mux"
@@ -14,7 +15,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/gogo/protobuf/grpc"
 
 	mt "gitlab.com/microtick/mtzone/x/microtick/types"
 	"gitlab.com/microtick/mtzone/x/microtick/msg"
@@ -75,7 +75,8 @@ func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
 	rest.RegisterRoutes(ctx, rtr)
 }
 
-func (AppModuleBasic) RegisterGRPCRoutes(ctx client.Context, mux *runtime.ServeMux) {
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(ctx client.Context, mux *runtime.ServeMux) {
+	msg.RegisterGRPCHandlerClient(context.Background(), mux, msg.NewGRPCClient(ctx))
 }
 
 // get the root query command of this module
@@ -111,6 +112,11 @@ func (AppModule) Name() string {
 // register invariants
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
 
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	querier := msg.Querier{Keeper: am.keeper}
+	msg.RegisterGRPCServer(cfg.QueryServer(), querier)
+}
+
 // module message route name
 func (am AppModule) Route() sdk.Route { 
 	return sdk.NewRoute(ModuleName, NewHandler(am.keeper))
@@ -127,14 +133,7 @@ func (AppModule) QuerierRoute() string {
 }
 
 func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-  return msg.NewQuerier(am.keeper)
-}
-
-// RegisterQueryService registers a GRPC query service to respond to the
-// module-specific GRPC queries.
-func (am AppModule) RegisterQueryService(server grpc.Server) {
-	querier := msg.Querier{Keeper: am.keeper}
-	msg.RegisterGRPCServer(server, querier)
+  return msg.NewQuerier(am.keeper, legacyQuerierCdc)
 }
 
 // module init-genesis

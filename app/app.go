@@ -3,22 +3,35 @@ package app
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 
-	bam "github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/gorilla/mux"
+	"github.com/rakyll/statik/fs"
+
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
+	"github.com/tendermint/tendermint/libs/log"
+	tmos "github.com/tendermint/tendermint/libs/os"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -30,6 +43,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
+	distr "github.com/cosmos/cosmos-sdk/x/distribution"
+	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
@@ -38,57 +55,102 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/ibc"
-	transfer "github.com/cosmos/cosmos-sdk/x/ibc-transfer"
-	ibctransferkeeper "github.com/cosmos/cosmos-sdk/x/ibc-transfer/keeper"
-	ibctransfertypes "github.com/cosmos/cosmos-sdk/x/ibc-transfer/types"
-	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
-	ibchost "github.com/cosmos/cosmos-sdk/x/ibc/24-host"
-	ibckeeper "github.com/cosmos/cosmos-sdk/x/ibc/keeper"
+	transfer "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer"
+	ibctransferkeeper "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
+	ibc "github.com/cosmos/cosmos-sdk/x/ibc/core"
+	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client"
+	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/05-port/types"
+	ibchost "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
+	ibckeeper "github.com/cosmos/cosmos-sdk/x/ibc/core/keeper"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
-	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-
 	"github.com/cosmos/cosmos-sdk/x/params"
+	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
-
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmos "github.com/tendermint/tendermint/libs/os"
-
-	"github.com/cosmos/cosmos-sdk/version"
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	"github.com/cosmos/cosmos-sdk/x/staking"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/cosmos-sdk/x/upgrade"
+	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
+	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	
+	// unnamed import of statik for swagger UI support
+	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 	
 	"gitlab.com/microtick/mtzone/x/microtick"
 	mtparams "gitlab.com/microtick/mtzone/app/params"
 )
 
-const AppName = "microtick"
+const appName = "microtick"
 
-var DefaultHome string = ""
+var (
+	// DefaultNodeHome default home directories for the application daemon
+	DefaultNodeHome string
 
-// Extended ABCI application
+	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
+	// non-dependant module elements, such as codec registration
+	// and genesis verification.
+	ModuleBasics = module.NewBasicManager(
+		auth.AppModuleBasic{},
+		genutil.AppModuleBasic{},
+		bank.AppModuleBasic{},
+		capability.AppModuleBasic{},
+		staking.AppModuleBasic{},
+		mint.AppModuleBasic{},
+		distr.AppModuleBasic{},
+		gov.NewAppModuleBasic(
+			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
+		),
+		params.AppModuleBasic{},
+		crisis.AppModuleBasic{},
+		slashing.AppModuleBasic{},
+		ibc.AppModuleBasic{},
+		upgrade.AppModuleBasic{},
+		evidence.AppModuleBasic{},
+		transfer.AppModuleBasic{},
+		vesting.AppModuleBasic{},
+		microtick.AppModuleBasic{},
+	)
+
+	// module account permissions
+	maccPerms = map[string][]string{
+		authtypes.FeeCollectorName:     nil,
+		distrtypes.ModuleName:          nil,
+		minttypes.ModuleName:           {authtypes.Minter},
+		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:            {authtypes.Burner},
+		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		microtick.ModuleName:						{authtypes.Minter, authtypes.Burner},
+	}
+
+	// module accounts that are allowed to receive tokens
+	allowedReceivingModAcc = map[string]bool{
+		distrtypes.ModuleName: true,
+	}
+)
+
+var (
+	_ App                     = (*MicrotickApp)(nil)
+	_ servertypes.Application = (*MicrotickApp)(nil)
+)
+
+// Microtick extends an ABCI application, but with most of its parameters exported.
+// They are exported for convenience in creating helper functions, as object
+// capabilities aren't needed for testing.
 type MicrotickApp struct {
-	*bam.BaseApp
-	cdc								*codec.LegacyAmino
-	appCodec					codec.Marshaler
-	interfaceRegistry codectypes.InterfaceRegistry
+	*baseapp.BaseApp
+	legacyAmino       *codec.LegacyAmino
+	appCodec          codec.Marshaler
+	interfaceRegistry types.InterfaceRegistry
 
 	invCheckPeriod uint
 
@@ -96,30 +158,33 @@ type MicrotickApp struct {
 	keys    map[string]*sdk.KVStoreKey
 	tkeys   map[string]*sdk.TransientStoreKey
 	memKeys map[string]*sdk.MemoryStoreKey
-	
-	keeper struct {
-		acct       authkeeper.AccountKeeper
-		bank       bankkeeper.Keeper
-		capability *capabilitykeeper.Keeper
-		params     paramskeeper.Keeper
-		staking    stakingkeeper.Keeper
-		distr      distrkeeper.Keeper
-		slashing   slashingkeeper.Keeper
-		mint       mintkeeper.Keeper
-		gov        govkeeper.Keeper
-		upgrade    upgradekeeper.Keeper
-		crisis     crisiskeeper.Keeper
-		ibc				 *ibckeeper.Keeper
-		evidence   evidencekeeper.Keeper
-		transfer   ibctransferkeeper.Keeper
-		microtick  microtick.Keeper
-	}
-	
+
+	// keepers
+	AccountKeeper    authkeeper.AccountKeeper
+	BankKeeper       bankkeeper.Keeper
+	CapabilityKeeper *capabilitykeeper.Keeper
+	StakingKeeper    stakingkeeper.Keeper
+	SlashingKeeper   slashingkeeper.Keeper
+	MintKeeper       mintkeeper.Keeper
+	DistrKeeper      distrkeeper.Keeper
+	GovKeeper        govkeeper.Keeper
+	CrisisKeeper     crisiskeeper.Keeper
+	UpgradeKeeper    upgradekeeper.Keeper
+	ParamsKeeper     paramskeeper.Keeper
+	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	EvidenceKeeper   evidencekeeper.Keeper
+	TransferKeeper   ibctransferkeeper.Keeper
+	MicrotickKeeper  microtick.Keeper
+
+	// make scoped keepers public for test purposes
+	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
+	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
+
+	// the module manager
 	mm *module.Manager
-	sm *module.SimulationManager
 }
 
-func SetAppVersion() {
+func init() {
 	// Check for MTROOT environment set
 	mtroot := os.Getenv("MTROOT")
 	if mtroot == "" {
@@ -128,7 +193,7 @@ func SetAppVersion() {
 		// Print custom MTROOT on stderr
 		fmt.Fprintf(os.Stderr, "MTROOT set to %s\n", mtroot)
 	}
-	DefaultHome = fmt.Sprintf("%s", mtroot)
+	DefaultNodeHome = fmt.Sprintf("%s", mtroot)
 	
 	// Check MTROOT version.lock file for correct version, if not, print a warning
 	if _, err := os.Stat(mtroot); os.IsNotExist(err) {
@@ -183,269 +248,199 @@ func SetAppVersion() {
 	config.Seal()
 }
 
-func NewApp(
-	logger log.Logger, db dbm.DB, tio io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool, homePath string, 
-	invCheckPeriod uint, encodingConfig mtparams.EncodingConfig, options ...func(*bam.BaseApp),
+// NewMicrotickApp returns a reference to an initialized Microtick.
+func NewMicrotickApp(
+	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
+	homePath string, invCheckPeriod uint, encodingConfig mtparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *MicrotickApp {
-		
-	appCodec := encodingConfig.Marshaler
-	cdc := encodingConfig.Amino
-	interfaceRegistry := encodingConfig.InterfaceRegistry	
 
-	bapp := bam.NewBaseApp(AppName, logger, db, encodingConfig.TxConfig.TxDecoder(), options...)
-	bapp.SetCommitMultiStoreTracer(tio)
-	bapp.SetAppVersion(version.Version)
-	bapp.GRPCQueryRouter().SetInterfaceRegistry(interfaceRegistry)
-	bapp.GRPCQueryRouter().RegisterSimulateService(bapp.Simulate, interfaceRegistry)
+	appCodec := encodingConfig.Marshaler
+	legacyAmino := encodingConfig.Amino
+	interfaceRegistry := encodingConfig.InterfaceRegistry
+
+	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
+	bApp.SetCommitMultiStoreTracer(traceStore)
+	bApp.SetAppVersion(version.Version)
+	bApp.SetInterfaceRegistry(interfaceRegistry)
 
 	keys := sdk.NewKVStoreKeys(
-		authtypes.StoreKey, 
-		banktypes.StoreKey, 
-		paramstypes.StoreKey,
-		slashingtypes.StoreKey,
-		distrtypes.StoreKey,
-    stakingtypes.StoreKey,
-    minttypes.StoreKey,
-    govtypes.StoreKey,
-    ibchost.StoreKey,
-    upgradetypes.StoreKey,
-    evidencetypes.StoreKey,
-    ibctransfertypes.StoreKey,
-    capabilitytypes.StoreKey,
+		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
+		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
+		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		microtick.GlobalsKey,
 		microtick.AccountStatusKey,
 		microtick.ActiveQuotesKey,
 		microtick.ActiveTradesKey,
 		microtick.MarketsKey,
-		microtick.DurationsKey,
+		microtick.DurationsKey,		
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &MicrotickApp{
-		BaseApp:           bapp,
-		cdc:               cdc,
-		appCodec:				   appCodec,
+		BaseApp:           bApp,
+		legacyAmino:       legacyAmino,
+		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
 		invCheckPeriod:    invCheckPeriod,
 		keys:              keys,
 		tkeys:             tkeys,
-		memKeys:					 memKeys,
+		memKeys:           memKeys,
 	}
 
-  app.keeper.params = initParamsKeeper(appCodec, cdc, app.keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
-	bapp.SetParamStore(app.keeper.params.Subspace(bam.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
-	
+	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
+	// set the BaseApp's parameter store
+	bApp.SetParamStore(app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
+
 	// add capability keeper and ScopeToModule for ibc module
-	app.keeper.capability = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
-	scopedIBCKeeper := app.keeper.capability.ScopeToModule(ibchost.ModuleName)
-	scopedTransferKeeper := app.keeper.capability.ScopeToModule(ibctransfertypes.ModuleName)
-	
+	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
+	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
+	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
+
 	// add keepers
-	app.keeper.acct = authkeeper.NewAccountKeeper(
-		appCodec,
-		app.keys[authtypes.StoreKey],
-		app.GetSubspace(authtypes.ModuleName),
-		authtypes.ProtoBaseAccount,
-		MacPerms(),
-	)	
-	
-	app.keeper.bank = bankkeeper.NewBaseKeeper(
-		appCodec,
-		app.keys[banktypes.StoreKey],
-		app.keeper.acct,
-		app.GetSubspace(banktypes.ModuleName),
-		app.ModuleAccountAddrs(),
+	app.AccountKeeper = authkeeper.NewAccountKeeper(
+		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms,
 	)
-	
-	skeeper := stakingkeeper.NewKeeper(
-		appCodec,
-		app.keys[stakingtypes.StoreKey],
-		app.keeper.acct,
-		app.keeper.bank,
-		app.GetSubspace(stakingtypes.ModuleName),
+	app.BankKeeper = bankkeeper.NewBaseKeeper(
+		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(),
 	)
+	stakingKeeper := stakingkeeper.NewKeeper(
+		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
+	)
+	app.MintKeeper = mintkeeper.NewKeeper(
+		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), &stakingKeeper,
+		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
+	)
+	app.DistrKeeper = distrkeeper.NewKeeper(
+		appCodec, keys[distrtypes.StoreKey], app.GetSubspace(distrtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
+		&stakingKeeper, authtypes.FeeCollectorName, app.ModuleAccountAddrs(),
+	)
+	app.SlashingKeeper = slashingkeeper.NewKeeper(
+		appCodec, keys[slashingtypes.StoreKey], &stakingKeeper, app.GetSubspace(slashingtypes.ModuleName),
+	)
+	app.CrisisKeeper = crisiskeeper.NewKeeper(
+		app.GetSubspace(crisistypes.ModuleName), invCheckPeriod, app.BankKeeper, authtypes.FeeCollectorName,
+	)
+	app.UpgradeKeeper = upgradekeeper.NewKeeper(skipUpgradeHeights, keys[upgradetypes.StoreKey], appCodec, homePath)
 
-	app.keeper.distr = distrkeeper.NewKeeper(
-		appCodec,
-		app.keys[distrtypes.StoreKey],
-		app.GetSubspace(distrtypes.ModuleName),
-		app.keeper.acct,
-		app.keeper.bank,
-		&skeeper,
-		authtypes.FeeCollectorName,
-		app.ModuleAccountAddrs(),
-	)
-
-	app.keeper.slashing = slashingkeeper.NewKeeper(
-		appCodec,
-		app.keys[slashingtypes.StoreKey],
-		&skeeper,
-		app.GetSubspace(slashingtypes.ModuleName),
-	)	
-	
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
-	app.keeper.staking = *skeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(
-			app.keeper.distr.Hooks(),
-			app.keeper.slashing.Hooks(),
-		),
-	)
-	
-	app.keeper.mint = mintkeeper.NewKeeper(
-		appCodec,
-		app.keys[minttypes.StoreKey],
-		app.GetSubspace(minttypes.ModuleName),
-		&skeeper,
-		app.keeper.acct,
-		app.keeper.bank,
-		authtypes.FeeCollectorName,
+	app.StakingKeeper = *stakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
 	)
 
-	app.keeper.upgrade = upgradekeeper.NewKeeper(skipUpgradeHeights, app.keys[upgradetypes.StoreKey], appCodec, homePath)
-
-	app.keeper.crisis = crisiskeeper.NewKeeper(
-		app.GetSubspace(crisistypes.ModuleName),
-		invCheckPeriod,
-		app.keeper.bank,
-		authtypes.FeeCollectorName,
-	)
-	
 	// Create IBC Keeper
-	app.keeper.ibc = ibckeeper.NewKeeper(
-		appCodec, keys[ibchost.StoreKey], app.keeper.staking, scopedIBCKeeper,
+	app.IBCKeeper = ibckeeper.NewKeeper(
+		appCodec, keys[ibchost.StoreKey], app.StakingKeeper, scopedIBCKeeper,
 	)
-
-	// Create Transfer Keepers
-	app.keeper.transfer = ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.keeper.ibc.ChannelKeeper, &app.keeper.ibc.PortKeeper,
-		app.keeper.acct, app.keeper.bank, scopedTransferKeeper,
-	)
-	transferModule := transfer.NewAppModule(app.keeper.transfer)
-
-	// Create static IBC router, add transfer route, then set and seal it
-	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
-	app.keeper.ibc.SetRouter(ibcRouter)
-	
-	// create evidence keeper with evidence router
-	evidenceKeeper := evidencekeeper.NewKeeper(
-		appCodec, app.keys[evidencetypes.StoreKey], &app.keeper.staking, app.keeper.slashing,
-	)
-	app.keeper.evidence = *evidenceKeeper
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.keeper.params)).
-		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.keeper.distr)).
-		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.keeper.upgrade))
-
-	app.keeper.gov = govkeeper.NewKeeper(
-		appCodec,
-		app.keys[govtypes.StoreKey],
-		app.GetSubspace(govtypes.ModuleName),
-		app.keeper.acct,
-		app.keeper.bank,
-		&skeeper,
-		govRouter,
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
+		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
+		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
+		AddRoute(ibchost.RouterKey, ibcclient.NewClientUpdateProposalHandler(app.IBCKeeper.ClientKeeper))
+	app.GovKeeper = govkeeper.NewKeeper(
+		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
+		&stakingKeeper, govRouter,
 	)
+
+	// Create Transfer Keepers
+	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+	)
+	transferModule := transfer.NewAppModule(app.TransferKeeper)
+
+	// Create static IBC router, add transfer route, then set and seal it
+	ibcRouter := porttypes.NewRouter()
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
+	app.IBCKeeper.SetRouter(ibcRouter)
+
+	// create evidence keeper with router
+	evidenceKeeper := evidencekeeper.NewKeeper(
+		appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
+	)
+	// If evidence needs to be handled for the app, set routes in router here and seal
+	app.EvidenceKeeper = *evidenceKeeper
+	/****  Module Options ****/
+
+	/****  Module Options ****/
+	var skipGenesisInvariants = false
+	opt := appOpts.Get(crisis.FlagSkipGenesisInvariants)
+	if opt, ok := opt.(bool); ok {
+		skipGenesisInvariants = opt
+	}
+
+	// NOTE: Any module instantiated in the module manager that is later modified
+	// must be passed by reference here.
 	
-	app.keeper.microtick = microtick.NewKeeper(
+	app.MicrotickKeeper = microtick.NewKeeper(
 		appCodec,
 		app.GetSubspace(microtick.ModuleName),
-		app.keeper.acct, app.keeper.bank, app.keeper.distr, app.keeper.staking,
+		app.AccountKeeper, app.BankKeeper, app.DistrKeeper, app.StakingKeeper,
 		keys[microtick.GlobalsKey],
 		keys[microtick.AccountStatusKey],
 		keys[microtick.ActiveQuotesKey],
 		keys[microtick.ActiveTradesKey],
 		keys[microtick.MarketsKey],
 		keys[microtick.DurationsKey],
-	)
+	)	
 
 	app.mm = module.NewManager(
-		microtick.NewAppModule(appCodec, app.keeper.microtick),
-		genutil.NewAppModule(app.keeper.acct, app.keeper.staking, app.BaseApp.DeliverTx, encodingConfig.TxConfig),
-		auth.NewAppModule(appCodec, app.keeper.acct, authsims.RandomGenesisAccounts),
-		vesting.NewAppModule(app.keeper.acct, app.keeper.bank),
-		bank.NewAppModule(appCodec, app.keeper.bank, app.keeper.acct),
-		capability.NewAppModule(appCodec, *app.keeper.capability),
-		crisis.NewAppModule(&app.keeper.crisis),
-		gov.NewAppModule(appCodec, app.keeper.gov, app.keeper.acct, app.keeper.bank),
-		mint.NewAppModule(appCodec, app.keeper.mint, app.keeper.acct),
-		slashing.NewAppModule(appCodec, app.keeper.slashing, app.keeper.acct, app.keeper.bank, app.keeper.staking),
-		distr.NewAppModule(appCodec, app.keeper.distr, app.keeper.acct, app.keeper.bank, app.keeper.staking),
-		staking.NewAppModule(appCodec, app.keeper.staking, app.keeper.acct, app.keeper.bank),
-		upgrade.NewAppModule(app.keeper.upgrade),
-		evidence.NewAppModule(app.keeper.evidence),
-		ibc.NewAppModule(app.keeper.ibc),
-		params.NewAppModule(app.keeper.params),
+		microtick.NewAppModule(appCodec, app.MicrotickKeeper),
+		genutil.NewAppModule(
+			app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx,
+			encodingConfig.TxConfig,
+		),
+		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
+		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
+		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
+		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
+		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
+		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		upgrade.NewAppModule(app.UpgradeKeeper),
+		evidence.NewAppModule(app.EvidenceKeeper),
+		ibc.NewAppModule(app.IBCKeeper),
+		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 	)
-	
+
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
+	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName, 
+		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(
-		crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, microtick.ModuleName,
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
+	  microtick.ModuleName,
 	)
-	
-/*
-	app.mm.SetOrderEndBlockers(
-		crisis.ModuleName, gov.ModuleName, staking.ModuleName,
-		microtick.ModuleName,
-	)
-*/
 
 	// NOTE: The genutils module must occur after staking so that pools are
-	//       properly initialized with tokens from genesis accounts.
+	// properly initialized with tokens from genesis accounts.
+	// NOTE: Capability module must occur first so that it can initialize any capabilities
+	// so that other modules that want to create or claim capabilities afterwards in InitChain
+	// can do so safely.
 	app.mm.SetOrderInitGenesis(
 		microtick.ModuleName,
-		capabilitytypes.ModuleName,
-		authtypes.ModuleName,
-		distrtypes.ModuleName,
-		stakingtypes.ModuleName,
-		banktypes.ModuleName,
-		slashingtypes.ModuleName,
-		govtypes.ModuleName,
-		minttypes.ModuleName,
-		crisistypes.ModuleName,
-		ibchost.ModuleName,
-		genutiltypes.ModuleName,
-		evidencetypes.ModuleName,
-		ibctransfertypes.ModuleName,
+		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
+		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
+		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
 	)
 
-	app.mm.RegisterInvariants(&app.keeper.crisis)
+	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
-	app.mm.RegisterQueryServices(app.GRPCQueryRouter())
-	
-	/*
-	app.sm = module.NewSimulationManager(
-		microtick.NewAppModule(appCodec, app.keeper.microtick),
-		auth.NewAppModule(appCodec, app.keeper.acct, authsims.RandomGenesisAccounts),
-		bank.NewAppModule(appCodec, app.keeper.bank, app.keeper.acct),
-		capability.NewAppModule(appCodec, *app.keeper.capability),
-		gov.NewAppModule(appCodec, app.keeper.gov, app.keeper.acct, app.keeper.bank),
-		mint.NewAppModule(appCodec, app.keeper.mint, app.keeper.acct),
-		staking.NewAppModule(appCodec, app.keeper.staking, app.keeper.acct, app.keeper.bank),
-		distr.NewAppModule(appCodec, app.keeper.distr, app.keeper.acct, app.keeper.bank, app.keeper.staking),
-		slashing.NewAppModule(appCodec, app.keeper.slashing, app.keeper.acct, app.keeper.bank, app.keeper.staking),
-		params.NewAppModule(app.keeper.params),
-		evidence.NewAppModule(app.keeper.evidence),
-		ibc.NewAppModule(app.keeper.ibc),
-		transferModule,
-	)
+	app.mm.RegisterServices(module.NewConfigurator(app.MsgServiceRouter(), app.GRPCQueryRouter()))
 
-	app.sm.RegisterStoreDecoders()
-	*/
-  
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
@@ -454,93 +449,144 @@ func NewApp(
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
-	
 	app.SetAnteHandler(
 		ante.NewAnteHandler(
-			app.keeper.acct,
-			app.keeper.bank,
-			ante.DefaultSigVerificationGasConsumer,
+			app.AccountKeeper, app.BankKeeper, ante.DefaultSigVerificationGasConsumer,
 			encodingConfig.TxConfig.SignModeHandler(),
 		),
 	)
-	
 	app.SetEndBlocker(app.EndBlocker)
-	
+
 	if loadLatest {
-		 if err := app.LoadLatestVersion(); err != nil {
-		 		tmos.Exit(err.Error())
-		 }
+		if err := app.LoadLatestVersion(); err != nil {
+			tmos.Exit(err.Error())
+		}
+
+		// Initialize and seal the capability keeper so all persistent capabilities
+		// are loaded in-memory and prevent any further modules from creating scoped
+		// sub-keepers.
+		// This must be done during creation of baseapp rather than in InitChain so
+		// that in-memory capabilities get regenerated on app restart.
+		// Note that since this reads from the store, we can only perform it when
+		// `loadLatest` is set to true.
+		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+		app.CapabilityKeeper.InitializeAndSeal(ctx)
 	}
-	
-	// Initialize and seal the capability keeper so all persistent capabilities
-	// are loaded in-memory and prevent any further modules from creating scoped
-	// sub-keepers.
-	// This must be done during creation of baseapp rather than in InitChain so
-	// that in-memory capabilities get regenerated on app restart
-	ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
-	app.keeper.capability.InitializeAndSeal(ctx)
+	app.ScopedIBCKeeper = scopedIBCKeeper
+	app.ScopedTransferKeeper = scopedTransferKeeper
 
 	return app
 }
 
-func (app *MicrotickApp) Name() string { return app.BaseApp.Name() }
-
-// InitChainer application update at chain initialization
-func (app *MicrotickApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
-	var genesisState simapp.GenesisState
-	app.cdc.MustUnmarshalJSON(req.AppStateBytes, &genesisState)
-	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+// MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
+// simapp. It is useful for tests and clients who do not want to construct the
+// full simapp
+func MakeCodecs() (codec.Marshaler, *codec.LegacyAmino) {
+	config := MakeEncodingConfig()
+	return config.Marshaler, config.Amino
 }
 
-// BeginBlocker - application updates every begin block
+// Name returns the name of the App
+func (app *MicrotickApp) Name() string { return app.BaseApp.Name() }
+
+// BeginBlocker application updates every begin block
 func (app *MicrotickApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	return app.mm.BeginBlock(ctx, req)
 }
 
-// EndBlocker - application updates every end block
+// EndBlocker application updates every end block
 func (app *MicrotickApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
 	return app.mm.EndBlock(ctx, req)
 }
 
-// LegacyAmino returns Microtick's amino codec.
-func (app *MicrotickApp) LegacyAmino() *codec.LegacyAmino {
-	return app.cdc
+// InitChainer application update at chain initialization
+func (app *MicrotickApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+	var genesisState GenesisState
+	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		panic(err)
+	}
+	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
-// AppCodec returns Microtick's app codec.
-func (app *MicrotickApp) AppCodec() codec.Marshaler {
-	return app.appCodec
+// LoadHeight loads a particular height
+func (app *MicrotickApp) LoadHeight(height int64) error {
+	return app.LoadVersion(height)
 }
 
 // ModuleAccountAddrs returns all the app's module account addresses.
 func (app *MicrotickApp) ModuleAccountAddrs() map[string]bool {
-	return MacAddrs()
+	modAccAddrs := make(map[string]bool)
+	for acc := range maccPerms {
+		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
+	}
+
+	return modAccAddrs
+}
+
+// BlockedAddrs returns all the app's module account addresses that are not
+// allowed to receive external tokens.
+func (app *MicrotickApp) BlockedAddrs() map[string]bool {
+	blockedAddrs := make(map[string]bool)
+	for acc := range maccPerms {
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
+	}
+
+	return blockedAddrs
+}
+
+// LegacyAmino returns SimApp's amino codec.
+//
+// NOTE: This is solely to be used for testing purposes as it may be desirable
+// for modules to register their own custom testing types.
+func (app *MicrotickApp) LegacyAmino() *codec.LegacyAmino {
+	return app.legacyAmino
+}
+
+// AppCodec returns Microtick's app codec.
+//
+// NOTE: This is solely to be used for testing purposes as it may be desirable
+// for modules to register their own custom testing types.
+func (app *MicrotickApp) AppCodec() codec.Marshaler {
+	return app.appCodec
 }
 
 // InterfaceRegistry returns Microtick's InterfaceRegistry
-func (app *MicrotickApp) InterfaceRegistry() codectypes.InterfaceRegistry {
+func (app *MicrotickApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
 }
 
 // GetKey returns the KVStoreKey for the provided store key.
+//
+// NOTE: This is solely to be used for testing purposes.
 func (app *MicrotickApp) GetKey(storeKey string) *sdk.KVStoreKey {
 	return app.keys[storeKey]
 }
 
 // GetTKey returns the TransientStoreKey for the provided store key.
+//
+// NOTE: This is solely to be used for testing purposes.
 func (app *MicrotickApp) GetTKey(storeKey string) *sdk.TransientStoreKey {
 	return app.tkeys[storeKey]
 }
 
+// GetMemKey returns the MemStoreKey for the provided mem key.
+//
+// NOTE: This is solely used for testing purposes.
+func (app *MicrotickApp) GetMemKey(storeKey string) *sdk.MemoryStoreKey {
+	return app.memKeys[storeKey]
+}
+
 // GetSubspace returns a param subspace for a given module name.
+//
+// NOTE: This is solely to be used for testing purposes.
 func (app *MicrotickApp) GetSubspace(moduleName string) paramstypes.Subspace {
-	subspace, _ := app.keeper.params.GetSubspace(moduleName)
+	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
 }
 
-// SimulationManager implements the SimulationApp interface
 func (app *MicrotickApp) SimulationManager() *module.SimulationManager {
-	return app.sm
+	//return app.sm
+	return nil
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -549,13 +595,42 @@ func (app *MicrotickApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.
 	clientCtx := apiSvr.ClientCtx
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
 	authrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
-	ModuleBasics().RegisterRESTRoutes(clientCtx, apiSvr.Router)
-	ModuleBasics().RegisterGRPCRoutes(apiSvr.ClientCtx, apiSvr.GRPCRouter)
+	// Register new tx routes from grpc-gateway.
+	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCRouter)
+
+	// Register legacy and grpc-gateway routes for all modules.
+	ModuleBasics.RegisterRESTRoutes(clientCtx, apiSvr.Router)
+	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCRouter)
+
+	// register swagger API from root so that other applications can override easily
+	if apiConfig.Swagger {
+		RegisterSwaggerAPI(clientCtx, apiSvr.Router)
+	}
 }
 
-// load a particular height
-func (app *MicrotickApp) LoadHeight(height int64) error {
-	return app.LoadVersion(height)
+// RegisterTxService implements the Application.RegisterTxService method.
+func (app *MicrotickApp) RegisterTxService(clientCtx client.Context) {
+	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
+}
+
+// RegisterSwaggerAPI registers swagger route with API Server
+func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router) {
+	statikFS, err := fs.New()
+	if err != nil {
+		panic(err)
+	}
+
+	staticServer := http.FileServer(statikFS)
+	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", staticServer))
+}
+
+// GetMaccPerms returns a copy of the module account permissions
+func GetMaccPerms() map[string][]string {
+	dupMaccPerms := make(map[string][]string)
+	for k, v := range maccPerms {
+		dupMaccPerms[k] = v
+	}
+	return dupMaccPerms
 }
 
 // initParamsKeeper init params keeper and its subspaces

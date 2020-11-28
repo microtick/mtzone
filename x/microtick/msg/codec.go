@@ -2,15 +2,25 @@ package msg
 
 import (
     "github.com/cosmos/cosmos-sdk/codec"
+   	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
 
 var (
-    ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
+    //ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
+    amino = codec.NewLegacyAmino()
+    ModuleCdc = codec.NewAminoCodec(amino)
+    
 	_, _, _, _ sdk.Msg = &TxCancelQuote{}, &TxCreateQuote{}, &TxUpdateQuote{}, &TxDepositQuote{}
 	_, _, _, _ sdk.Msg = &TxWithdrawQuote{}, &TxMarketTrade{}, &TxPickTrade{}, &TxSettleTrade{}
 )
+
+func init() {
+    RegisterLegacyAminoCodec(amino)
+    cryptocodec.RegisterCrypto(amino)
+    amino.Seal()
+}
 
 // Register concrete types on codec codec
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
