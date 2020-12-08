@@ -33,10 +33,12 @@ func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams, 
+func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
     msg TxDepositQuote) (*sdk.Result, error) {
         
-    quote, err := keeper.GetActiveQuote(ctx, msg.Id)
+    deposit := mt.NewMicrotickCoinFromString(msg.Deposit)
+        
+    quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
@@ -49,17 +51,17 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micro
         return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
-    commission := mt.NewMicrotickCoinFromDec(msg.Deposit.Amount.Mul(params.CommissionQuotePercent))
+    commission := mt.NewMicrotickCoinFromDec(deposit.Amount.Mul(params.CommissionQuotePercent))
     
-    total := msg.Deposit.Add(commission)
+    total := deposit.Add(commission)
     
     // Subtract coins from requester
-    err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
     
-    dataMarket, err := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
         return nil, mt.ErrInvalidMarket
     }
@@ -69,8 +71,8 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micro
     orderBook := dataMarket.GetOrderBook(quote.DurationName)
     adjustment := sdk.OneDec()
     if len(orderBook.CallAsks.Data) > 0 {
-        bestCallAsk, _ := keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
-        bestPutAsk, _ := keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
+        bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
+        bestPutAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
         average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
         if quote.Ask.Amount.GT(average) {
             adjustment = average.Quo(quote.Ask.Amount)
@@ -79,12 +81,12 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micro
     
     // Add commission to pool
     //fmt.Printf("Deposit Commission: %s\n", commission.String())
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
     if err != nil {
         return nil, err
     }
     
-    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Add(msg.Deposit.Amount))
+    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Add(deposit.Amount))
     quote.ComputeQuantity()
     
     // But we do freeze the new backing from any other updates
@@ -94,14 +96,14 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micro
     if !dataMarket.FactorIn(quote, true) {
         return nil, mt.ErrQuoteParams
     }
-    keeper.SetDataMarket(ctx, dataMarket)
-    keeper.SetActiveQuote(ctx, quote)
+    mtKeeper.SetDataMarket(ctx, dataMarket)
+    mtKeeper.SetActiveQuote(ctx, quote)
     
      // DataAccountStatus
     
-    accountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Deposit)
-    keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
+    accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Requester)
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(deposit)
+    mtKeeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
     // Data
     data := DepositQuoteData {
@@ -110,7 +112,7 @@ func HandleTxDepositQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micro
       Market: dataMarket.Market,
       Consensus: dataMarket.Consensus,
       Time: now.Unix(),
-      Backing: msg.Deposit,
+      Backing: deposit,
       QuoteBacking: quote.Backing,
       Commission: commission,
     }

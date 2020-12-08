@@ -9,7 +9,7 @@ import (
 func (querier Querier) Account(c context.Context, req *QueryAccountRequest) (*QueryAccountResponse, error) {
     ctx := sdk.UnwrapSDKContext(c)
     address := req.Account
-    dai, tick := querier.Keeper.GetTotalBalance(ctx, address)
+    backing, tick := querier.Keeper.GetTotalBalance(ctx, address)
     data := querier.Keeper.GetAccountStatus(ctx, address)
     activeQuotes := make([]mt.MicrotickId, len(data.ActiveQuotes.Data))
     activeTrades := make([]mt.MicrotickId, len(data.ActiveTrades.Data))
@@ -23,8 +23,8 @@ func (querier Querier) Account(c context.Context, req *QueryAccountRequest) (*Qu
         Account: address,
         Balances: []mt.FractCoin {
             mt.FractCoin {
-                Denom: "dai",
-                Amount: dai,
+                Denom: "backing",
+                Amount: backing,
             },
             mt.FractCoin {
                 Denom: "tick",

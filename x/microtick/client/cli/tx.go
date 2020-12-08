@@ -6,9 +6,17 @@ import (
   "github.com/cosmos/cosmos-sdk/client/tx"
   
   "github.com/spf13/cobra"
+  
+	sdk "github.com/cosmos/cosmos-sdk/types"
+  "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	
 	mt "gitlab.com/microtick/mtzone/x/microtick/types"
 	"gitlab.com/microtick/mtzone/x/microtick/msg"
+)
+
+const (
+	FlagExtPerInt = "ext-per-int"
 )
 
 func GetTxCmd(key string) *cobra.Command {
@@ -72,7 +80,7 @@ func cmdQuoteCreate() *cobra.Command {
 				Market: args[0],
 				Duration: args[1],
 				Provider: clientCtx.GetFromAddress(),
-				Backing: mt.NewMicrotickCoinFromString(args[2]),
+				Backing: args[2],
 				Spot: mt.NewMicrotickSpotFromString(args[3]),
 				Ask: mt.NewMicrotickPremiumFromString(args[4]),
 				Bid: mt.NewMicrotickPremiumFromString(args[5]),
@@ -102,7 +110,7 @@ func cmdQuoteDeposit() *cobra.Command {
 			message := msg.TxDepositQuote {
 				Id: mt.NewMicrotickIdFromString(args[0]),
 				Requester: clientCtx.GetFromAddress(),
-				Deposit: mt.NewMicrotickCoinFromString(args[1]),
+				Deposit: args[1],
 			}
 			
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
@@ -158,7 +166,7 @@ func cmdQuoteWithdraw() *cobra.Command {
 			message := msg.TxWithdrawQuote {
 				Id: mt.NewMicrotickIdFromString(args[0]),
 				Requester: clientCtx.GetFromAddress(),
-				Withdraw: mt.NewMicrotickCoinFromString(args[1]),
+				Withdraw: args[1],
 			}
 			
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
@@ -250,4 +258,77 @@ func cmdTradeSettle() *cobra.Command {
 	flags.AddTxFlagsToCmd(cmd)
 	
 	return cmd
+}
+
+// NewCmdSubmitDenomChangeProposal implements a command handler for submitting a software upgrade proposal transaction.
+func NewCmdSubmitDenomChangeProposal() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "microtick-denom-change [denom] [flags]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a denom change proposal for the microtick module",
+		Long: "Submit a denom along with an initial deposit.\n",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			extDenom := args[0]
+			content, err := parseArgsToContent(cmd, extDenom)
+			if err != nil {
+				return err
+			}
+
+			from := clientCtx.GetFromAddress()
+
+			depositStr, err := cmd.Flags().GetString(cli.FlagDeposit)
+			if err != nil {
+				return err
+			}
+			
+			deposit, err := sdk.ParseCoins(depositStr)
+			if err != nil {
+				return err
+			}
+
+			msg, err := gov.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			if err = msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
+	cmd.Flags().Int64(FlagExtPerInt, 1000000, "how many external units per internal backing (default 1000000)")
+
+	return cmd
+}
+
+func parseArgsToContent(cmd *cobra.Command, extDenom string) (gov.Content, error) {
+	title, err := cmd.Flags().GetString(cli.FlagTitle)
+	if err != nil {
+		return nil, err
+	}
+
+	description, err := cmd.Flags().GetString(cli.FlagDescription)
+	if err != nil {
+		return nil, err
+	}
+	
+	extPerInt, err := cmd.Flags().GetInt64(FlagExtPerInt)
+	if err != nil {
+		return nil, err
+	}
+	
+	content := msg.NewDenomChangeProposal(title, description, extDenom, extPerInt)
+	return content, nil
 }

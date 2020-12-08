@@ -73,7 +73,7 @@ func (matcher *Matcher) DebugMatcherFillInfo() {
     }
 }
 
-func (matcher *Matcher) MatchByQuantity(dm *DataMarket, order mt.MicrotickOrderType, totalQuantity mt.MicrotickQuantity) error {
+func (matcher *Matcher) MatchByQuantity(k Keeper, dm *DataMarket, order mt.MicrotickOrderType, totalQuantity mt.MicrotickQuantity) error {
     orderBook := dm.GetOrderBook(matcher.Trade.Duration)
     quantityToMatch := totalQuantity.Amount
     
@@ -165,7 +165,7 @@ func (matcher *Matcher) MatchByQuantity(dm *DataMarket, order mt.MicrotickOrderT
     return nil
 }
 
-func (matcher *Matcher) MatchSynthetic(sob *DataSyntheticBook, dm *DataMarket, totalQuantity mt.MicrotickQuantity) error {
+func (matcher *Matcher) MatchSynthetic(k Keeper, sob *DataSyntheticBook, dm *DataMarket, totalQuantity mt.MicrotickQuantity) error {
     if totalQuantity.Amount.GT(sob.Weight.Amount) {
         return sdkerrors.Wrap(mt.ErrTradeMatch, "insufficient quantity")
     }
@@ -255,7 +255,7 @@ func (matcher *Matcher) MatchSynthetic(sob *DataSyntheticBook, dm *DataMarket, t
     return nil
 }
 
-func (matcher *Matcher) MatchQuote(order mt.MicrotickOrderType, quote DataActiveQuote) {
+func (matcher *Matcher) MatchQuote(k Keeper, order mt.MicrotickOrderType, quote DataActiveQuote) {
     var premium mt.MicrotickPremium
     var buysell bool
     var legType mt.MicrotickLegType

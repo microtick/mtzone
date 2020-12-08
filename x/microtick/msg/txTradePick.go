@@ -66,7 +66,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
     matcher := keeper.NewMatcher(trade, nil)
     
     // Step 2 - Compute premium and cost
-    matcher.MatchQuote(msg.OrderType, quote)
+    matcher.MatchQuote(mtKeeper, msg.OrderType, quote)
     
     if matcher.HasQuantity {
         

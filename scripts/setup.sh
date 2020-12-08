@@ -38,6 +38,8 @@ MTROOT=$WORK redirect $MTBINARY init $2
 echo "Setting chain id: $1"
 GENESIS=$WORK/config/genesis.json
 TRANSFORMS='.chain_id="'$1'"'
+TRANSFORMS+='|.app_state.gov.deposit_params.max_deposit_period="300s"'
+TRANSFORMS+='|.app_state.gov.voting_params.voting_period="300s"'
 TRANSFORMS+='|.app_state.slashing.params.signed_blocks_window="10000"'
 TRANSFORMS+='|.app_state.microtick.markets=[{name:"XBTUSD",description:"Crypto - Bitcoin"},{name:"ETHUSD",description:"Crypto - Ethereum"}]'
 TRANSFORMS+='|.app_state.microtick.durations=[{name:"5minute",seconds:300},{name:"15minute",seconds:900},{name:"1hour",seconds:3600},{name:"4hour",seconds:14400},{name:"12hour",seconds:43200}]'
@@ -65,7 +67,7 @@ if [ -z "$PROD"]; then
 
   MICROTICK=$($MTBINARY keys show microtick -a --home=$WORK --keyring-backend=test)
   echo "Adding microtick genesis account: $MICROTICK"
-  MTROOT=$WORK redirect $MTBINARY add-genesis-account $MICROTICK 1000000000000udai
+  MTROOT=$WORK redirect $MTBINARY add-genesis-account $MICROTICK 1000000000000udai,1000000000utick
 
   echo "Creating genesis transaction"
   MTROOT=$WORK redirect $MTBINARY gentx validator --amount 1000000000000utick --chain-id $1 $TESTOPTS

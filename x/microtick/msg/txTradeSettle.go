@@ -43,10 +43,10 @@ func (msg TxSettleTrade) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams,
+func HandleTxSettleTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
     msg TxSettleTrade) (*sdk.Result, error) {
     
-    trade, err := keeper.GetActiveTrade(ctx, msg.Id)
+    trade, err := mtKeeper.GetActiveTrade(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidTrade, "%d", msg.Id)
     }
@@ -59,7 +59,7 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "trade not expired")
     }
         
-    dataMarket, err := keeper.GetDataMarket(ctx, trade.Market)
+    dataMarket, err := mtKeeper.GetDataMarket(ctx, trade.Market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, trade.Market)
     }
@@ -74,18 +74,18 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     settlements := trade.CalculateLegSettlements(dataMarket.Consensus)
     
     // Reward settle incentive 
-    err = keeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
+    err = mtKeeper.DepositMicrotickCoin(ctx, msg.Requester, trade.SettleIncentive)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "settle incentive")
     }
     
     // Commission
     commission := mt.NewMicrotickCoinFromDec(params.CommissionSettleFixed)
-    err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true, sdk.OneDec())
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, sdk.OneDec())
     if err != nil {
         return nil, err
     }
@@ -96,26 +96,26 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
         for _, pair := range settlements {
             
             // Long
-            err = keeper.DepositMicrotickCoin(ctx, pair.SettleAccount, pair.Settle)
+            err = mtKeeper.DepositMicrotickCoin(ctx, pair.SettleAccount, pair.Settle)
             if err != nil {
                 return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "payout")
             }
             
             // Refund
-            err := keeper.DepositMicrotickCoin(ctx, pair.RefundAccount, pair.Refund)
+            err := mtKeeper.DepositMicrotickCoin(ctx, pair.RefundAccount, pair.Refund)
             if err != nil {
                 return nil, sdkerrors.Wrap(mt.ErrTradeSettlement, "refund")
             }
             
             // Adjust trade backing
-            accountStatus := keeper.GetAccountStatus(ctx, pair.RefundAccount)
+            accountStatus := mtKeeper.GetAccountStatus(ctx, pair.RefundAccount)
             accountStatus.ActiveTrades.Delete(trade.Id)
             accountStatus.TradeBacking = accountStatus.TradeBacking.Sub(pair.Backing)
-            keeper.SetAccountStatus(ctx, pair.RefundAccount, accountStatus)
+            mtKeeper.SetAccountStatus(ctx, pair.RefundAccount, accountStatus)
             
-            accountStatus = keeper.GetAccountStatus(ctx, pair.SettleAccount)
+            accountStatus = mtKeeper.GetAccountStatus(ctx, pair.SettleAccount)
             accountStatus.ActiveTrades.Delete(trade.Id)
-            keeper.SetAccountStatus(ctx, pair.SettleAccount, accountStatus)
+            mtKeeper.SetAccountStatus(ctx, pair.SettleAccount, accountStatus)
             
             settleData = append(settleData, SettlementData {
                 LegId: pair.LegId,
@@ -126,10 +126,10 @@ func HandleTxSettleTrade(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
             })
         }
         
-        accountStatusTaker := keeper.GetAccountStatus(ctx, trade.Taker)
+        accountStatusTaker := mtKeeper.GetAccountStatus(ctx, trade.Taker)
         accountStatusTaker.SettleBacking = accountStatusTaker.SettleBacking.Sub(trade.SettleIncentive)
-        keeper.SetAccountStatus(ctx, trade.Taker, accountStatusTaker)
-        keeper.DeleteActiveTrade(ctx, trade.Id)
+        mtKeeper.SetAccountStatus(ctx, trade.Taker, accountStatusTaker)
+        mtKeeper.DeleteActiveTrade(ctx, trade.Id)
         
     } else {
         

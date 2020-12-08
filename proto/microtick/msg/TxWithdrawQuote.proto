@@ -17,8 +17,7 @@ message TxWithdrawQuote {
     (gogoproto.jsontag) = "requester"
   ];
   
-  cosmos.base.v1beta1.DecCoin withdraw = 3 [
-    (gogoproto.nullable) = false,
+  string withdraw = 3 [
     (gogoproto.jsontag) = "withdraw"
   ];
   

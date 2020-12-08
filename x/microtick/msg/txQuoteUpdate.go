@@ -36,10 +36,10 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams, 
+func HandleTxUpdateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
     msg TxUpdateQuote) (*sdk.Result, error) {
         
-    quote, err := keeper.GetActiveQuote(ctx, msg.Id)
+    quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
@@ -54,7 +54,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     
     commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
     
-    dataMarket, err := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
         return nil, mt.ErrInvalidMarket
     }
@@ -84,8 +84,8 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     orderBook := dataMarket.GetOrderBook(quote.DurationName)
     adjustment := sdk.OneDec()
     if len(orderBook.CallAsks.Data) > 0 {
-        bestCallAsk, _ := keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
-        bestPutAsk, _ := keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
+        bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
+        bestPutAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
         average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
         if quote.Ask.Amount.GT(average) {
             adjustment = average.Quo(quote.Ask.Amount)
@@ -97,18 +97,18 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
         return nil, mt.ErrQuoteParams
     }
     
-    keeper.SetDataMarket(ctx, dataMarket)
-    keeper.SetActiveQuote(ctx, quote)
+    mtKeeper.SetDataMarket(ctx, dataMarket)
+    mtKeeper.SetActiveQuote(ctx, quote)
     
     // Subtract coins from requester
-    err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
     
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
     if err != nil {
         return nil, err
     }

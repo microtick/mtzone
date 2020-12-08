@@ -79,13 +79,13 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     if msg.OrderType == mt.MicrotickOrderBuyCall || msg.OrderType == mt.MicrotickOrderSellCall ||
         msg.OrderType == mt.MicrotickOrderBuyPut || msg.OrderType == mt.MicrotickOrderSellPut {
             
-        err = matcher.MatchByQuantity(&market, msg.OrderType, msg.Quantity)
+        err = matcher.MatchByQuantity(mtKeeper, &market, msg.OrderType, msg.Quantity)
         if err != nil {
             return nil, err
         }
     } else {
         syntheticBook := mtKeeper.GetSyntheticBook(ctx, &market, msg.Duration, &msg.Taker)
-        err = matcher.MatchSynthetic(&syntheticBook, &market, msg.Quantity)
+        err = matcher.MatchSynthetic(mtKeeper, &syntheticBook, &market, msg.Quantity)
         if err != nil {
             return nil, err
         }

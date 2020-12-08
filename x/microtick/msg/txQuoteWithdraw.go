@@ -33,10 +33,12 @@ func (msg TxWithdrawQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams, 
+func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
     msg TxWithdrawQuote) (*sdk.Result, error) {
         
-    quote, err := keeper.GetActiveQuote(ctx, msg.Id)
+    withdraw := mt.NewMicrotickCoinFromString(msg.Withdraw)
+        
+    quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
@@ -50,34 +52,34 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micr
     }
     
     // Withdraw amount must be strictly less than quote backing (to withdraw the full amount, use CancelQUote)
-    if msg.Withdraw.IsGTE(quote.Backing) {
+    if withdraw.IsGTE(quote.Backing) {
         return nil, mt.ErrQuoteBacking
     }
     
-    commission := mt.NewMicrotickCoinFromDec(msg.Withdraw.Amount.Mul(params.CommissionQuotePercent))
+    commission := mt.NewMicrotickCoinFromDec(withdraw.Amount.Mul(params.CommissionQuotePercent))
     
-    total := msg.Withdraw.Sub(commission)
+    total := withdraw.Sub(commission)
     
     // Add coins from requester
-    err = keeper.DepositMicrotickCoin(ctx, msg.Requester, total)
+    err = mtKeeper.DepositMicrotickCoin(ctx, msg.Requester, total)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
     // Add commission to pool
     //fmt.Printf("Withdraw Commission: %s\n", commission.String())
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, false, sdk.ZeroDec())
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, false, sdk.ZeroDec())
     if err != nil {
         return nil, err
     }
     
-    dataMarket, err := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
         return nil, mt.ErrInvalidMarket
     }
     
     dataMarket.FactorOut(quote)
     
-    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Sub(msg.Withdraw.Amount))
+    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Sub(withdraw.Amount))
     quote.ComputeQuantity()
     
     // But we do freeze the new backing from any other updates
@@ -87,14 +89,14 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micr
     if !dataMarket.FactorIn(quote, true) {
         return nil, mt.ErrQuoteParams
     }
-    keeper.SetDataMarket(ctx, dataMarket)
-    keeper.SetActiveQuote(ctx, quote)
+    mtKeeper.SetDataMarket(ctx, dataMarket)
+    mtKeeper.SetActiveQuote(ctx, quote)
     
      // DataAccountStatus
     
-    accountStatus := keeper.GetAccountStatus(ctx, msg.Requester)
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(msg.Withdraw)
-    keeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
+    accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Requester)
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(withdraw)
+    mtKeeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
     // Data
     data := WithdrawQuoteData {
@@ -103,7 +105,7 @@ func HandleTxWithdrawQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Micr
       Market: dataMarket.Market,
       Consensus: dataMarket.Consensus,
       Time: now.Unix(),
-      Backing: msg.Withdraw,
+      Backing: withdraw,
       QuoteBacking: quote.Backing,
       Commission: commission,
     }

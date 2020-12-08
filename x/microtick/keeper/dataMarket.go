@@ -17,7 +17,7 @@ func NewDataMarket(market mt.MicrotickMarket, description string, durs []mt.Micr
         Description: description,
         Consensus: mt.NewMicrotickSpotFromInt(0),
         OrderBooks: orderBooks,
-        TotalBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
+        TotalBacking: mt.NewMicrotickCoinFromInt(0),
         TotalSpots: sdk.ZeroDec(),
         TotalWeight: mt.NewMicrotickQuantityFromInt(0),
     }
@@ -30,7 +30,7 @@ func newOrderBook(name mt.MicrotickDurationName) DataOrderBook {
         CallBids: NewOrderedList(),
         PutAsks: NewOrderedList(),
         PutBids: NewOrderedList(),
-        SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
+        SumBacking: mt.NewMicrotickCoinFromInt(0),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }
 }

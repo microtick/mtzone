@@ -17,8 +17,7 @@ message TxDepositQuote {
     (gogoproto.jsontag) = "requester"
   ];
   
-  cosmos.base.v1beta1.DecCoin deposit = 3 [
-    (gogoproto.nullable) = false,
+  string deposit = 3 [
     (gogoproto.jsontag) = "deposit"
   ];
   

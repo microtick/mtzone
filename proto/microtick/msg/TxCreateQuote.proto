@@ -21,8 +21,7 @@ message TxCreateQuote {
     (gogoproto.jsontag) = "provider"
   ];
   
-  cosmos.base.v1beta1.DecCoin backing = 4 [
-    (gogoproto.nullable) = false,
+  string backing = 4 [
     (gogoproto.jsontag) = "backing"
   ];  
   

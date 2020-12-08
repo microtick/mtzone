@@ -9,9 +9,9 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-const ExtTokenType = "udai"
-const IntTokenType = "dai"
-const ExtPerInt = 1000000
+//const ExtTokenType = "udai"
+//const ExtPerInt = 1000000
+const IntTokenType = "backing"
 
 const Leverage = 10
 
@@ -127,51 +127,26 @@ func parseDecCoin(coinStr string, allowNegativeValue bool) (coin sdk.DecCoin, er
 	return sdk.NewDecCoinFromDec(denomStr, amount), nil
 }
 
-// Input is in ExtToken units i.e. 1234000 -> 1.234 IntTokenType
-func NewMicrotickCoinFromExtCoinInt(b int64) MicrotickCoin {
-    result := sdk.NewInt64DecCoin(IntTokenType, b)
-    result.Amount = result.Amount.QuoInt64(ExtPerInt)
+func NewMicrotickCoinFromInt(b int64) MicrotickCoin {
+    result := sdk.NewInt64DecCoin(IntTokenType, b) 
+    result.Amount = result.Amount.MulInt64(1000000).TruncateDec().QuoInt64(1000000)
     return result
 }
 
-// Input string can be IntTokenType or ExtTokenType
-// "1.234IntTokenType" -> 1.234 IntTokenType
-// "1234000ExtTokenType" -> 1.234 ExtTokenType
 func NewMicrotickCoinFromString(str string) MicrotickCoin {
     result, err := parseDecCoin(str, false)
-    if err != nil || (result.Denom != IntTokenType && result.Denom != ExtTokenType) {
+    if err != nil || (result.Denom != IntTokenType) {
         panic(fmt.Sprintf("Invalid coin amount or token type: %s", str))
     }
-    if result.Denom == ExtTokenType {
-        result.Amount = result.Amount.TruncateDec().QuoInt64(ExtPerInt)
-        result.Denom = IntTokenType
-    } else {
-        result.Amount = result.Amount.MulInt64(ExtPerInt).TruncateDec().QuoInt64(ExtPerInt)
-    }
+    result.Amount = result.Amount.MulInt64(1000000).TruncateDec().QuoInt64(1000000)
     //fmt.Printf("Parsed: %s\n", result.String())
     return result
 }
 
 func NewMicrotickCoinFromDec(d sdk.Dec) MicrotickCoin {
     result := sdk.NewDecCoinFromDec(IntTokenType, d)
-    result.Amount = result.Amount.MulInt64(ExtPerInt).TruncateDec().QuoInt64(ExtPerInt)
+    result.Amount = result.Amount.MulInt64(1000000).TruncateDec().QuoInt64(1000000)
     return result
-}
-
-func MicrotickCoinToExtCoin(mc MicrotickCoin) ExtCoin {
-    if mc.Denom != IntTokenType {
-        panic(fmt.Sprintf("Not internal token type: %s", mc.Denom))
-    }
-    mc.Amount = mc.Amount.MulInt64(ExtPerInt)
-    extCoin, _ := mc.TruncateDecimal()
-    extCoin.Denom = ExtTokenType
-    return extCoin
-}
-
-func ExtCoinToMicrotickCoin(ext sdk.Coin) MicrotickCoin {
-    var amt = ext.Amount.Int64()
-    var mc MicrotickCoin = NewMicrotickCoinFromExtCoinInt(amt)
-    return mc
 }
 
 // Quantity
