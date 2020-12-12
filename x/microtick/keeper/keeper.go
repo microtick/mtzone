@@ -232,7 +232,6 @@ func (k Keeper) IterateDurations(ctx sdk.Context, process func(mt.MicrotickDurat
 	}	
 }
 
-
 // DataMarket
 
 func (k Keeper) HasDataMarket(ctx sdk.Context, market mt.MicrotickMarket) bool {
@@ -251,6 +250,38 @@ func (k Keeper) GetDataMarket(ctx sdk.Context, market mt.MicrotickMarket) (DataM
 	bz := store.Get(key)
 	k.Codec.MustUnmarshalJSON(bz, &dataMarket)
 	return dataMarket, nil
+}
+
+func (k Keeper) AssertDataMarketHasDuration(ctx sdk.Context, market mt.MicrotickMarket, name mt.MicrotickDurationName) {
+	var found bool = false
+	dataMarket, _ := k.GetDataMarket(ctx, market)
+	for i := range dataMarket.OrderBooks {
+		// test
+		if dataMarket.OrderBooks[i].Name == name {
+			found = true
+		}
+	}
+	if found {
+		return
+	} else {
+		seconds := k.DurationFromName(ctx, name)
+		// insert
+		orderBooks := make([]DataOrderBook, 0)
+		var added bool = false
+	  for i := range dataMarket.OrderBooks {
+	  	curSeconds := k.DurationFromName(ctx, dataMarket.OrderBooks[i].Name)
+	  	if seconds < curSeconds && !added {
+	  		orderBooks = append(orderBooks, NewOrderBook(name))
+	  		added = true
+	  	}
+	  	orderBooks = append(orderBooks, dataMarket.OrderBooks[i])
+	  }
+	  if !added {
+	  	orderBooks = append(orderBooks, NewOrderBook(name))
+	  }
+		dataMarket.OrderBooks = orderBooks
+		k.SetDataMarket(ctx, dataMarket)
+	}
 }
 
 func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {

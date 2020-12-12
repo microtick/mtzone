@@ -10,12 +10,13 @@ import (
 	"gitlab.com/microtick/mtzone/x/microtick/msg"
 )
 
-func DenomChangeProposalHandler(k keeper.Keeper) govtypes.Handler {
+func MicrotickProposalHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
 		case *msg.DenomChangeProposal:
 			return handleDenomChangeProposal(ctx, k, c)
-
+		case *msg.AddMarketsProposal:
+			return handleAddMarketsProposal(ctx, k, c)
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized software upgrade proposal content type: %T", c)
 		}
@@ -33,6 +34,17 @@ func handleDenomChangeProposal(ctx sdk.Context, k keeper.Keeper, dcp *msg.DenomC
 	
 	k.SetExtTokenType(ctx, dcp.ExtDenom)
 	k.SetExtPerInt(ctx, uint32(dcp.ExtPerInt))
+	
+    return nil
+}
+
+func handleAddMarketsProposal(ctx sdk.Context, k keeper.Keeper, amp *msg.AddMarketsProposal) error {
+	logger := k.Logger(ctx)
+	logger.Info("Add Markets Proposal:")
+	for i := range amp.Markets {
+	  k.SetDataMarket(ctx, keeper.NewDataMarket(amp.Markets[i].Name, amp.Markets[i].Description))
+      logger.Info(fmt.Sprintf("  %s: %s", amp.Markets[i].Name, amp.Markets[i].Description))
+	}
 	
     return nil
 }

@@ -22,7 +22,9 @@ func (msg TxCreateQuote) ValidateBasic() error {
     if msg.Provider.Empty() {
         return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Provider.String())
     }
-    if msg.Bid.Amount.GT(msg.Ask.Amount) {
+    bid := mt.NewMicrotickPremiumFromString(msg.Bid)
+    ask := mt.NewMicrotickPremiumFromString(msg.Ask)
+    if bid.Amount.GT(ask.Amount) {
         return sdkerrors.Wrap(mt.ErrInvalidQuote, "bid > ask")
     }
     return nil
@@ -42,6 +44,9 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     msg TxCreateQuote) (*sdk.Result, error) {
         
     backing := mt.NewMicrotickCoinFromString(msg.Backing)
+    bid := mt.NewMicrotickPremiumFromString(msg.Bid)
+    ask := mt.NewMicrotickPremiumFromString(msg.Ask)
+    spot := mt.NewMicrotickSpotFromString(msg.Spot)
         
     if !mtKeeper.ValidDurationName(ctx, msg.Duration) {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
@@ -57,7 +62,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     now := ctx.BlockHeader().Time
     dataActiveQuote := keeper.NewDataActiveQuote(now, id, msg.Market, 
         mtKeeper.DurationFromName(ctx, msg.Duration), msg.Duration, msg.Provider,
-        backing, msg.Spot, msg.Ask, msg.Bid)
+        backing, spot, ask, bid)
     dataActiveQuote.ComputeQuantity()
     dataActiveQuote.Freeze(now, params)
     mtKeeper.SetActiveQuote(ctx, dataActiveQuote)
@@ -70,7 +75,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(backing)
     
     // DataMarket
-    
+    mtKeeper.AssertDataMarketHasDuration(ctx, msg.Market, msg.Duration)
     dataMarket, err := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
@@ -116,9 +121,9 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
       Id: id,
       Market: msg.Market,
       Duration: msg.Duration,
-      Spot: msg.Spot,
-      Ask: msg.Ask,
-      Bid: msg.Bid,
+      Spot: spot,
+      Ask: ask,
+      Bid: bid,
       Consensus: dataMarket.Consensus,
       Time: now.Unix(),
       Backing: backing,

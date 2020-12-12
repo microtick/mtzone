@@ -25,18 +25,15 @@ message TxCreateQuote {
     (gogoproto.jsontag) = "backing"
   ];  
   
-  cosmos.base.v1beta1.DecCoin spot = 5 [
-    (gogoproto.nullable) = false,
+  string spot = 5 [
     (gogoproto.jsontag) = "spot"
-  ];  
+  ];
   
-  cosmos.base.v1beta1.DecCoin ask = 6 [
-    (gogoproto.nullable) = false,
+  string ask = 6 [
     (gogoproto.jsontag) = "ask"
-  ];  
+  ];
   
-  cosmos.base.v1beta1.DecCoin bid = 7 [
-    (gogoproto.nullable) = false,
+  string bid = 7 [
     (gogoproto.jsontag) = "bid"
   ];  
   

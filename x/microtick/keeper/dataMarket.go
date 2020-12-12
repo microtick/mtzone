@@ -7,11 +7,8 @@ import (
     mt "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
-func NewDataMarket(market mt.MicrotickMarket, description string, durs []mt.MicrotickDurationName) DataMarket {
-    orderBooks := make([]DataOrderBook, len(durs))
-    for i := 0; i < len(durs); i++ {
-        orderBooks[i] = newOrderBook(durs[i])
-    }
+func NewDataMarket(market mt.MicrotickMarket, description string) DataMarket {
+    orderBooks := make([]DataOrderBook, 0)
     return DataMarket {
         Market: market,
         Description: description,
@@ -23,7 +20,7 @@ func NewDataMarket(market mt.MicrotickMarket, description string, durs []mt.Micr
     }
 }
 
-func newOrderBook(name mt.MicrotickDurationName) DataOrderBook {
+func NewOrderBook(name mt.MicrotickDurationName) DataOrderBook {
     return DataOrderBook {
         Name: name,
         CallAsks: NewOrderedList(),

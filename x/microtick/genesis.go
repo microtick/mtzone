@@ -33,17 +33,14 @@ func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data mt.GenesisMicroti
         mtKeeper.SetAccountStatus(ctx, acct.Account, status)
     }
     
-	durArray := make([]string, len(data.Durations))
-	
     for i, dur := range data.Durations {
         logger.Info(fmt.Sprintf("Genesis Duration %d: %s %d\n", i, dur.Name, dur.Seconds))
-        durArray[i] = dur.Name
         mtKeeper.AddDuration(ctx, dur.Name, dur.Seconds)
     }
     
 	for _, market := range data.Markets {
         logger.Info(fmt.Sprintf("Genesis Market: %s \"%s\"\n", market.Name, market.Description))
-	    mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(market.Name, market.Description, durArray))
+	    mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(market.Name, market.Description))
 	}
 }
 

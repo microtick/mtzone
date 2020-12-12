@@ -6,3 +6,4 @@ import (
 )
 
 var DenomChangeProposalHandler = govclient.NewProposalHandler(cli.NewCmdSubmitDenomChangeProposal, nil)
+var AddMarketsProposalHandler = govclient.NewProposalHandler(cli.NewCmdSubmitAddMarketsProposal, nil)

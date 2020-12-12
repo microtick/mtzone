@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"fmt"
+	"strings"
+	
   "github.com/cosmos/cosmos-sdk/client"
   "github.com/cosmos/cosmos-sdk/client/flags"
   "github.com/cosmos/cosmos-sdk/client/tx"
@@ -10,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
   "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
  	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
+ 	"github.com/cosmos/cosmos-sdk/version"
 	
 	mt "gitlab.com/microtick/mtzone/x/microtick/types"
 	"gitlab.com/microtick/mtzone/x/microtick/msg"
@@ -81,9 +85,9 @@ func cmdQuoteCreate() *cobra.Command {
 				Duration: args[1],
 				Provider: clientCtx.GetFromAddress(),
 				Backing: args[2],
-				Spot: mt.NewMicrotickSpotFromString(args[3]),
-				Ask: mt.NewMicrotickPremiumFromString(args[4]),
-				Bid: mt.NewMicrotickPremiumFromString(args[5]),
+				Spot: args[3],
+				Ask: args[4],
+				Bid: args[5],
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
@@ -137,9 +141,9 @@ func cmdQuoteUpdate() *cobra.Command {
 			message := msg.TxUpdateQuote {
 				Id: mt.NewMicrotickIdFromString(args[0]),
 				Requester: clientCtx.GetFromAddress(),
-				NewSpot: mt.NewMicrotickSpotFromString(args[1]),
-				NewAsk: mt.NewMicrotickPremiumFromString(args[2]),
-				NewBid: mt.NewMicrotickPremiumFromString(args[3]),
+				NewSpot: args[1],
+				NewAsk: args[2],
+				NewBid: args[3],
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
@@ -195,7 +199,7 @@ func cmdTradeMarket() *cobra.Command {
 				Duration: args[1],
 				Taker: clientCtx.GetFromAddress(),
 				OrderType: args[2] + "-" + args[3],
-				Quantity: mt.NewMicrotickQuantityFromString(args[4]),
+				Quantity: args[4],
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
@@ -275,7 +279,7 @@ func NewCmdSubmitDenomChangeProposal() *cobra.Command {
 			}
 
 			extDenom := args[0]
-			content, err := parseArgsToContent(cmd, extDenom)
+			content, err := parseDenomChangeArgsToContent(cmd, extDenom)
 			if err != nil {
 				return err
 			}
@@ -313,7 +317,7 @@ func NewCmdSubmitDenomChangeProposal() *cobra.Command {
 	return cmd
 }
 
-func parseArgsToContent(cmd *cobra.Command, extDenom string) (gov.Content, error) {
+func parseDenomChangeArgsToContent(cmd *cobra.Command, extDenom string) (gov.Content, error) {
 	title, err := cmd.Flags().GetString(cli.FlagTitle)
 	if err != nil {
 		return nil, err
@@ -331,4 +335,80 @@ func parseArgsToContent(cmd *cobra.Command, extDenom string) (gov.Content, error
 	
 	content := msg.NewDenomChangeProposal(title, description, extDenom, extPerInt)
 	return content, nil
+}
+
+func NewCmdSubmitAddMarketsProposal() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "microtick-add-markets --proposal=[proposal-file] [flags]",
+		Args:  cobra.ExactArgs(0),
+		Short: "Submit a proposal to add markets in the microtick module",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit the new proposal along with an initial deposit. 
+The proposal details must be supplied via a JSON file.FlagExtPerInt
+
+Example:
+$ %s tx gov submit-proposal microtick-add-markets --proposal=<path/to/proposal.json> --from=<key_or_address>
+
+Where proposal.json contains:
+
+{
+  "title": "Proposal Name Goes Here",
+  "description": "Fill in with the proposal description",
+  "markets": [
+    {
+    	"name": "XBTUSD",
+    	"description": "XBTUSD: Crypto - Bitcoin / USD"
+    },
+    {
+    	"name": ETHUSD",
+    	"description": "ETHUSD: Crypto - Ethereum / USD"
+    }
+  ]
+}
+`,
+			version.AppName)),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.ReadTxCommandFlags(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			from := clientCtx.GetFromAddress()
+
+			depositStr, err := cmd.Flags().GetString(cli.FlagDeposit)
+			if err != nil {
+				return err
+			}
+			
+			deposit, err := sdk.ParseCoins(depositStr)
+			if err != nil {
+				return err
+			}
+			
+			file, _ := cmd.Flags().GetString(cli.FlagProposal)
+			content, err := msg.NewAddMarketsProposal(file)
+			if err != nil {
+				return err
+			}
+
+			msg, err := gov.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+			
+			if err = msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
+	cmd.Flags().String(cli.FlagProposal, "", "proposal filename")
+
+	return cmd
 }
