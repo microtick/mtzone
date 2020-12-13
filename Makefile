@@ -48,13 +48,21 @@ endif
 	
 .PHONY: proto
 proto: $(PROTOC) protovendor
-	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
-	./scripts/protocgen.sh
+	@echo "Installing protoc-gen-gocosmos..."
+	@go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
+	@echo "Installing protoc-gen-grpc-gateway"
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 google.golang.org/protobuf/cmd/protoc-gen-go google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	@echo "Creating protobuf classes"
+	@PATH=$(PATH):$(shell go env GOPATH)/bin ./scripts/protocgen.sh
 
 .PHONY: js
 js: $(PROTOC) protovendor
-	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
-	./scripts/protocjs.sh
+	@echo "Installing protoc-gen-gocosmos..."
+	@go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
+	@echo "Installing protoc-gen-grpc-gateway"
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 google.golang.org/protobuf/cmd/protoc-gen-go google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	@echo "Creating javascript archive"
+	@PATH=$(PATH):$(shell go env GOPATH)/bin ./scripts/protocjs.sh
 	
 .PHONY: protovendor
 protovendor: modsensure $(MODVENDOR)
@@ -120,4 +128,4 @@ test-docker:
 	@docker push ${TEST_DOCKER_REPO}:latest
 
 clean:
-	rm -rf .cache vendor
+	rm -rf .cache vendor js

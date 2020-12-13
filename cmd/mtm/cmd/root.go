@@ -53,11 +53,17 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		Use:   "mtm",
 		Short: "Microtick Stargate App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
+		  err := server.InterceptConfigsPreRunHandler(cmd)
+		  if err != nil {
+		  	return err
+		  }
+		  
+			err = client.SetCmdClientContextHandler(initClientCtx, cmd)
+			if err != nil {
 				return err
 			}
-
-			return server.InterceptConfigsPreRunHandler(cmd)
+			
+			return nil
 		},
 	}
 
