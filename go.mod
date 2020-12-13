@@ -5,10 +5,11 @@ go 1.14
 require (
 	github.com/cosmos/cosmos-sdk v0.40.0-rc3
 	github.com/gogo/protobuf v1.3.1
+	github.com/golang/protobuf v1.4.3
+	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/google/gofuzz v1.1.1-0.20200604201612-c04b05f3adfa // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.15.2
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/regen-network/cosmos-proto v0.3.0
