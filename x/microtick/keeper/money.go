@@ -15,20 +15,20 @@ const MTPoolName = "commissionPool"
 
 func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin, doRebate bool, ratioAdjust sdk.Dec) (*sdk.Coin, error) {
 	params := k.GetParams(ctx)
-    extCoins := mt.MicrotickCoinToExtCoin(amount)
+    extCoins := k.MicrotickCoinToExtCoin(ctx, amount)
     
 	store := ctx.KVStore(k.AppGlobalsKey)
 	
 	// Get current pool amount
 	key := []byte(MTPoolName)
 	var pool CommissionPool = CommissionPool {
-		Pool: sdk.NewInt64DecCoin(mt.ExtTokenType, 0),
+		Pool: sdk.NewInt64DecCoin(k.GetExtTokenType(ctx), 0),
 	}
 	if store.Has(key) {
 		bz := store.Get(key)
 		k.Codec.MustUnmarshalJSON(bz, &pool)
 	}
-	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(mt.ExtTokenType, extCoins.Amount))
+	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(k.GetExtTokenType(ctx), extCoins.Amount))
 	store.Set(key, k.Codec.MustMarshalJSON(&pool))
 	
     // Mint stake and award to commission payer
@@ -69,7 +69,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 	// Get current pool amount
 	key := []byte(MTPoolName)
 	var pool CommissionPool = CommissionPool {
-		Pool: sdk.NewInt64DecCoin(mt.ExtTokenType, 0),
+		Pool: sdk.NewInt64DecCoin(k.GetExtTokenType(ctx), 0),
 	}
 	if store.Has(key) {
 		bz := store.Get(key)
@@ -86,7 +86,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
         }
 	}
     	
-    pool.Pool = sdk.NewInt64DecCoin(mt.ExtTokenType, 0)
+    pool.Pool = sdk.NewInt64DecCoin(k.GetExtTokenType(ctx), 0)
     store.Set(key, k.Codec.MustMarshalJSON(&pool))
     
     ctx.EventManager().EmitEvent(
@@ -102,7 +102,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
 func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress, 
     withdrawAmount mt.MicrotickCoin) error {
     	
-    extCoins := mt.MicrotickCoinToExtCoin(withdrawAmount)
+    extCoins := k.MicrotickCoinToExtCoin(ctx, withdrawAmount)
     
     //fmt.Printf("Withdraw account %s: %s\n", account.String(), extCoins.String())
     
@@ -118,7 +118,7 @@ func (k Keeper) WithdrawMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 	depositAmount mt.MicrotickCoin) error {
 		
-	extCoins := mt.MicrotickCoinToExtCoin(depositAmount)	
+	extCoins := k.MicrotickCoinToExtCoin(ctx, depositAmount)	
 	
 	//fmt.Printf("Requested: %s\n", depositAmount.String())
     //fmt.Printf("Deposit account %s: %s\n", account.String(), extCoins.String())
@@ -134,16 +134,16 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 
 func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) (sdk.Dec, sdk.Dec) {
 	params := k.GetParams(ctx)
-	udai := k.BankKeeper.GetBalance(ctx, addr, mt.ExtTokenType)
-	utick := k.BankKeeper.GetBalance(ctx, addr, params.MintDenom)
-    dai := sdk.NewDecFromInt(udai.Amount).QuoInt64(1000000)
-    tick := sdk.NewDecFromInt(utick.Amount).QuoInt64(1000000)
-    return dai, tick
+	extBacking := k.BankKeeper.GetBalance(ctx, addr, k.GetExtTokenType(ctx))
+    backing := sdk.NewDecFromInt(extBacking.Amount).QuoInt64(int64(k.GetExtPerInt(ctx)))
+	ustake := k.BankKeeper.GetBalance(ctx, addr, params.MintDenom)
+    stake := sdk.NewDecFromInt(ustake.Amount).QuoInt64(1000000)
+    return backing, stake
 }
 
 func (k Keeper) RefundBacking(ctx sdk.Context) {
     k.IterateAccountStatus(ctx, 
-        func(acct DataAccountStatus) (stop bool) {
+        func(acct *DataAccountStatus) (stop bool) {
         	err := k.DepositMicrotickCoin(ctx, acct.Account, acct.QuoteBacking)
         	if err != nil {
         		fmt.Fprintf(os.Stderr, "Could not refund quote backing for account: %s\n", acct.Account.String())

@@ -26,8 +26,7 @@ message TxMarketTrade {
     (gogoproto.jsontag) = "order_type"
   ];
   
-  cosmos.base.v1beta1.DecCoin quantity = 5 [
-    (gogoproto.nullable) = false,
+  string quantity = 5 [
     (gogoproto.jsontag) = "quantity"
   ];
   

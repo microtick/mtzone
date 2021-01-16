@@ -22,10 +22,9 @@ func (msg TxCreateQuote) ValidateBasic() error {
     if msg.Provider.Empty() {
         return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Provider.String())
     }
-    if !msg.Backing.IsPositive() {
-        return mt.ErrQuoteBacking
-    }
-    if msg.Bid.Amount.GT(msg.Ask.Amount) {
+    bid := mt.NewMicrotickPremiumFromString(msg.Bid)
+    ask := mt.NewMicrotickPremiumFromString(msg.Ask)
+    if bid.Amount.GT(ask.Amount) {
         return sdkerrors.Wrap(mt.ErrInvalidQuote, "bid > ask")
     }
     return nil
@@ -44,17 +43,17 @@ func (msg TxCreateQuote) GetSigners() []sdk.AccAddress {
 func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
     msg TxCreateQuote) (*sdk.Result, error) {
         
-    // Do not create since markets are now a governance question
-    //if !mtKeeper.HasDataMarket(ctx, msg.Market) {
-        //mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(msg.Market))
-    //}
-    
+    backing := mt.NewMicrotickCoinFromString(msg.Backing)
+    bid := mt.NewMicrotickPremiumFromString(msg.Bid)
+    ask := mt.NewMicrotickPremiumFromString(msg.Ask)
+    spot := mt.NewMicrotickSpotFromString(msg.Spot)
+        
     if !mtKeeper.ValidDurationName(ctx, msg.Duration) {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
-    commission := mt.NewMicrotickCoinFromDec(msg.Backing.Amount.Mul(params.CommissionQuotePercent))
-    total := msg.Backing.Add(commission)
+    commission := mt.NewMicrotickCoinFromDec(backing.Amount.Mul(params.CommissionQuotePercent))
+    total := backing.Add(commission)
         
 	// DataActiveQuote
 	
@@ -63,7 +62,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     now := ctx.BlockHeader().Time
     dataActiveQuote := keeper.NewDataActiveQuote(now, id, msg.Market, 
         mtKeeper.DurationFromName(ctx, msg.Duration), msg.Duration, msg.Provider,
-        msg.Backing, msg.Spot, msg.Ask, msg.Bid)
+        backing, spot, ask, bid)
     dataActiveQuote.ComputeQuantity()
     dataActiveQuote.Freeze(now, params)
     mtKeeper.SetActiveQuote(ctx, dataActiveQuote)
@@ -73,10 +72,10 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Provider)
     accountStatus.ActiveQuotes.Insert(keeper.NewListItem(id, sdk.NewDec(int64(id))))
     accountStatus.PlacedQuotes++
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(msg.Backing)
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(backing)
     
     // DataMarket
-    
+    mtKeeper.AssertDataMarketHasDuration(ctx, msg.Market, msg.Duration)
     dataMarket, err := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
@@ -122,12 +121,12 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
       Id: id,
       Market: msg.Market,
       Duration: msg.Duration,
-      Spot: msg.Spot,
-      Ask: msg.Ask,
-      Bid: msg.Bid,
+      Spot: spot,
+      Ask: ask,
+      Bid: bid,
       Consensus: dataMarket.Consensus,
       Time: now.Unix(),
-      Backing: msg.Backing,
+      Backing: backing,
       Commission: commission,
     }
     bz, err := proto.Marshal(&data)

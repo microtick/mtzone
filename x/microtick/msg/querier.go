@@ -2,8 +2,10 @@ package msg
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"gitlab.com/microtick/mtzone/x/microtick/keeper"
 )
 
@@ -12,10 +14,11 @@ type Querier struct {
 	keeper.Keeper
 }
 
-var _ GRPCServer = Querier{}
-
-func NewQuerier(keeper keeper.Keeper) sdk.Querier {
+func NewQuerier(keeper keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
-		return []byte{}, sdkerrors.ErrUnknownRequest
+		switch path[0] {
+			default:
+			  return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown %s query endpoint: %s", types.ModuleName, path[0])
+		}
 	}
 }

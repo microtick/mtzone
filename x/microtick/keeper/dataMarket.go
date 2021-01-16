@@ -7,30 +7,27 @@ import (
     mt "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
-func NewDataMarket(market mt.MicrotickMarket, description string, durs []mt.MicrotickDurationName) DataMarket {
-    orderBooks := make([]DataOrderBook, len(durs))
-    for i := 0; i < len(durs); i++ {
-        orderBooks[i] = newOrderBook(durs[i])
-    }
+func NewDataMarket(market mt.MicrotickMarket, description string) DataMarket {
+    orderBooks := make([]DataOrderBook, 0)
     return DataMarket {
         Market: market,
         Description: description,
         Consensus: mt.NewMicrotickSpotFromInt(0),
         OrderBooks: orderBooks,
-        TotalBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
+        TotalBacking: mt.NewMicrotickCoinFromInt(0),
         TotalSpots: sdk.ZeroDec(),
         TotalWeight: mt.NewMicrotickQuantityFromInt(0),
     }
 }
 
-func newOrderBook(name mt.MicrotickDurationName) DataOrderBook {
+func NewOrderBook(name mt.MicrotickDurationName) DataOrderBook {
     return DataOrderBook {
         Name: name,
         CallAsks: NewOrderedList(),
         CallBids: NewOrderedList(),
         PutAsks: NewOrderedList(),
         PutBids: NewOrderedList(),
-        SumBacking: mt.NewMicrotickCoinFromExtCoinInt(0),
+        SumBacking: mt.NewMicrotickCoinFromInt(0),
         SumWeight: mt.NewMicrotickQuantityFromInt(0),
     }
 }

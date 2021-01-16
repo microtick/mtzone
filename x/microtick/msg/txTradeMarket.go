@@ -45,6 +45,8 @@ func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
 
 func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
     msg TxMarketTrade) (*sdk.Result, error) {
+        
+    quantity := mt.NewMicrotickQuantityFromString(msg.Quantity)
      
     if !mtKeeper.HasDataMarket(ctx, msg.Market) {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
@@ -64,7 +66,7 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     now := ctx.BlockHeader().Time
     seconds := mtKeeper.DurationFromName(ctx, msg.Duration)
     trade := keeper.NewDataActiveTrade(now, msg.Market, msg.Duration, seconds,
-        msg.OrderType, msg.Taker, msg.Quantity, market.Consensus, commission, settleIncentive)
+        msg.OrderType, msg.Taker, quantity, market.Consensus, commission, settleIncentive)
         
     matcher := keeper.NewMatcher(trade, func (id mt.MicrotickId) keeper.DataActiveQuote {
         quote, err := mtKeeper.GetActiveQuote(ctx, id)
@@ -79,13 +81,13 @@ func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     if msg.OrderType == mt.MicrotickOrderBuyCall || msg.OrderType == mt.MicrotickOrderSellCall ||
         msg.OrderType == mt.MicrotickOrderBuyPut || msg.OrderType == mt.MicrotickOrderSellPut {
             
-        err = matcher.MatchByQuantity(&market, msg.OrderType, msg.Quantity)
+        err = matcher.MatchByQuantity(mtKeeper, &market, msg.OrderType, quantity)
         if err != nil {
             return nil, err
         }
     } else {
         syntheticBook := mtKeeper.GetSyntheticBook(ctx, &market, msg.Duration, &msg.Taker)
-        err = matcher.MatchSynthetic(&syntheticBook, &market, msg.Quantity)
+        err = matcher.MatchSynthetic(mtKeeper, &syntheticBook, &market, quantity)
         if err != nil {
             return nil, err
         }

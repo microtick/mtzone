@@ -17,6 +17,13 @@ func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) mt.Genesi
 }
 
 func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data mt.GenesisMicrotick) {
+    logger := mtKeeper.Logger(ctx)
+    
+   	mtKeeper.SetExtTokenType(ctx, data.ExtDenom)
+	mtKeeper.SetExtPerInt(ctx, data.ExtPerInt)
+    logger.Info(fmt.Sprintf("External token type: %s", mtKeeper.GetExtTokenType(ctx)))
+    logger.Info(fmt.Sprintf("ExtPerInt: %d", mtKeeper.GetExtPerInt(ctx)))
+	
     mtKeeper.SetParams(ctx, data.Params)
     
     for _, acct := range data.Accounts {
@@ -26,17 +33,14 @@ func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data mt.GenesisMicroti
         mtKeeper.SetAccountStatus(ctx, acct.Account, status)
     }
     
-	durArray := make([]string, len(data.Durations))
-	
     for i, dur := range data.Durations {
-        fmt.Printf("Genesis Duration %d: %s %d\n", i, dur.Name, dur.Seconds)
-        durArray[i] = dur.Name
+        logger.Info(fmt.Sprintf("Genesis Duration %d: %s %d\n", i, dur.Name, dur.Seconds))
         mtKeeper.AddDuration(ctx, dur.Name, dur.Seconds)
     }
     
 	for _, market := range data.Markets {
-        fmt.Printf("Genesis Market: %s \"%s\"\n", market.Name, market.Description)
-	    mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(market.Name, market.Description, durArray))
+        logger.Info(fmt.Sprintf("Genesis Market: %s \"%s\"\n", market.Name, market.Description))
+	    mtKeeper.SetDataMarket(ctx, keeper.NewDataMarket(market.Name, market.Description))
 	}
 }
 
@@ -45,8 +49,8 @@ func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) mt.GenesisMicrotick 
     
     var accounts []mt.GenesisAccount
     mtKeeper.IterateAccountStatus(ctx, 
-        func(acct keeper.DataAccountStatus) (stop bool) {
-            genAcct := GenesisAccountFromDataAccountStatus(acct)
+        func(acct *keeper.DataAccountStatus) (stop bool) {
+            genAcct := GenesisAccountFromDataAccountStatus(*acct)
             accounts = append(accounts, genAcct)
             return false
         },
@@ -63,7 +67,7 @@ func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) mt.GenesisMicrotick 
     )
     
     var markets []mt.GenesisMarket
-    mtKeeper.IterateMarkets(ctx, func(market keeper.DataMarket) (stop bool) {
+    mtKeeper.IterateMarkets(ctx, func(market *keeper.DataMarket) (stop bool) {
             markets = append(markets, mt.GenesisMarket{
                 Name: market.Market,
                 Description: market.Description,
@@ -72,5 +76,6 @@ func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) mt.GenesisMicrotick 
         },
     )
     
-    return mt.NewGenesisState(params, accounts, markets, durations)
+    return mt.NewGenesisState(mtKeeper.GetExtTokenType(ctx), uint32(mtKeeper.GetExtPerInt(ctx)), 
+      params, accounts, markets, durations)
 }

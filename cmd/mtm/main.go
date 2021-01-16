@@ -10,10 +10,7 @@ import (
 	"gitlab.com/microtick/mtzone/cmd/mtm/cmd"
 )
 
-// In main we set the custom version info and call the rootCmd
 func main() {
-	app.SetAppVersion()
-	
 	rootCmd, _ := cmd.NewRootCmd()
 	if err := svrcmd.Execute(rootCmd, app.DefaultHome); err != nil {
     switch e := err.(type) {

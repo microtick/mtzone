@@ -50,7 +50,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   "mtm",
-		Short: "Stargate Cosmos Hub App",
+		Short: "Microtick Stargate App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
 				return err
@@ -64,6 +64,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	return rootCmd, encodingConfig
 }
+
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	authclient.Codec = encodingConfig.Marshaler

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 	
+	"github.com/tendermint/tendermint/libs/log"
+	
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -17,6 +19,13 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	
 	mt "gitlab.com/microtick/mtzone/x/microtick/types"
+)
+
+const (
+	AppGlobalTermination = "termination"
+	AppGlobalExtTokenType = "ExtTokenType"
+	AppGlobalIntTokenType = "IntTokenType"
+	AppGlobalExtPerInt = "ExtPerInt"
 )
 
 type Keeper struct {
@@ -67,12 +76,61 @@ func NewKeeper(
 	}
 }
 
+// Logger returns a module-specific logger.
+func (keeper Keeper) Logger(ctx sdk.Context) log.Logger {
+  return ctx.Logger().With("module", fmt.Sprintf("x/%s", mt.ModuleName))
+}
+
 // Keeper as used here contains access methods for data structures only - business logic
 // is maintained in the tx handlers
 
+func (k Keeper) SetExtTokenType(ctx sdk.Context, extTokenType string) {
+	store := ctx.KVStore(k.AppGlobalsKey)
+	key := []byte(AppGlobalExtTokenType)
+	store.Set(key, []byte(extTokenType))
+}
+
+func (k Keeper) SetExtPerInt(ctx sdk.Context, extPerInt uint32) {
+	store := ctx.KVStore(k.AppGlobalsKey)
+	key := []byte(AppGlobalExtPerInt)
+	val := make([]byte, 4)
+	binary.LittleEndian.PutUint32(val, extPerInt)
+	store.Set(key, val)
+}
+
+func (k Keeper) GetExtTokenType(ctx sdk.Context) string {
+	store := ctx.KVStore(k.AppGlobalsKey)
+	key := []byte(AppGlobalExtTokenType)
+	if store.Has(key) {
+		return string(store.Get(key))
+	}
+	return "udai"
+}
+
+func (k Keeper) GetExtPerInt(ctx sdk.Context) uint32 {
+	store := ctx.KVStore(k.AppGlobalsKey)
+	key := []byte(AppGlobalExtPerInt)
+	if store.Has(key) {
+		return binary.LittleEndian.Uint32(store.Get(key))
+	}
+	return 1000000
+}
+
+func (k Keeper) MicrotickCoinToExtCoin(ctx sdk.Context, mc mt.MicrotickCoin) mt.ExtCoin {
+	extPerInt := k.GetExtPerInt(ctx)
+	extTokenType := k.GetExtTokenType(ctx)
+	if mc.Denom != mt.IntTokenType {
+    panic(fmt.Sprintf("Not internal token type: %s", mc.Denom))
+  }
+  mc.Amount = mc.Amount.MulInt64(int64(extPerInt))
+  extCoin, _ := mc.TruncateDecimal()
+  extCoin.Denom = extTokenType
+  return extCoin
+}
+
 func (k Keeper) GetHaltTime(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.AppGlobalsKey)
-	key := []byte("termination")
+	key := []byte(AppGlobalTermination)
 	bz := store.Get(key)
 	var termination Termination
 	k.Codec.MustUnmarshalJSON(bz, &termination)
@@ -100,21 +158,17 @@ func (k Keeper) SetAccountStatus(ctx sdk.Context, acct mt.MicrotickAccount, stat
 	store.Set(key, k.Codec.MustMarshalJSON(&status))
 }
 
-func (k Keeper) IterateAccountStatus(ctx sdk.Context, process func(DataAccountStatus) (stop bool)) {
+func (k Keeper) IterateAccountStatus(ctx sdk.Context, process func(*DataAccountStatus) (stop bool)) {
 	store := ctx.KVStore(k.accountStatusKey)
 	iter := sdk.KVStorePrefixIterator(store, nil) 
 	defer iter.Close()
-	for {
-		if !iter.Valid() {
-			return
-		}
+	for ; iter.Valid(); iter.Next() {
 		bz := iter.Value()
 		var acctStatus DataAccountStatus
 		k.Codec.MustUnmarshalJSON(bz, &acctStatus)
-		if process(acctStatus) {
-			return
+		if process(&acctStatus) {
+			store.Set(iter.Key(), k.Codec.MustMarshalJSON(&acctStatus))
 		}
-		iter.Next()
 	}
 }
 
@@ -165,10 +219,7 @@ func (k Keeper) IterateDurations(ctx sdk.Context, process func(mt.MicrotickDurat
 	store := ctx.KVStore(k.durationsKey)
 	iter := sdk.KVStorePrefixIterator(store, nil) 
 	defer iter.Close()
-	for {
-		if !iter.Valid() {
-			return
-		}
+	for ; iter.Valid(); iter.Next() {
 		key := iter.Key()
 		if strings.HasPrefix(string(key), "name:") {
 		  bz := iter.Value()
@@ -178,10 +229,8 @@ func (k Keeper) IterateDurations(ctx sdk.Context, process func(mt.MicrotickDurat
 			  return
 		  }
 		}
-		iter.Next()
 	}	
 }
-
 
 // DataMarket
 
@@ -203,27 +252,55 @@ func (k Keeper) GetDataMarket(ctx sdk.Context, market mt.MicrotickMarket) (DataM
 	return dataMarket, nil
 }
 
+func (k Keeper) AssertDataMarketHasDuration(ctx sdk.Context, market mt.MicrotickMarket, name mt.MicrotickDurationName) {
+	var found bool = false
+	dataMarket, _ := k.GetDataMarket(ctx, market)
+	for i := range dataMarket.OrderBooks {
+		// test
+		if dataMarket.OrderBooks[i].Name == name {
+			found = true
+		}
+	}
+	if found {
+		return
+	} else {
+		seconds := k.DurationFromName(ctx, name)
+		// insert
+		orderBooks := make([]DataOrderBook, 0)
+		var added bool = false
+	  for i := range dataMarket.OrderBooks {
+	  	curSeconds := k.DurationFromName(ctx, dataMarket.OrderBooks[i].Name)
+	  	if seconds < curSeconds && !added {
+	  		orderBooks = append(orderBooks, NewOrderBook(name))
+	  		added = true
+	  	}
+	  	orderBooks = append(orderBooks, dataMarket.OrderBooks[i])
+	  }
+	  if !added {
+	  	orderBooks = append(orderBooks, NewOrderBook(name))
+	  }
+		dataMarket.OrderBooks = orderBooks
+		k.SetDataMarket(ctx, dataMarket)
+	}
+}
+
 func (k Keeper) SetDataMarket(ctx sdk.Context, dataMarket DataMarket) {
 	store := ctx.KVStore(k.marketsKey)
 	key := []byte(dataMarket.Market)
 	store.Set(key, k.Codec.MustMarshalJSON(&dataMarket))
 }
 
-func (k Keeper) IterateMarkets(ctx sdk.Context, process func(DataMarket) (stop bool)) {
+func (k Keeper) IterateMarkets(ctx sdk.Context, process func(*DataMarket) (stop bool)) {
 	store := ctx.KVStore(k.marketsKey)
 	iter := sdk.KVStorePrefixIterator(store, nil) 
 	defer iter.Close()
-	for {
-		if !iter.Valid() {
-			return
-		}
+	for ; iter.Valid(); iter.Next() {
 		bz := iter.Value()
 		var market DataMarket
 		k.Codec.MustUnmarshalJSON(bz, &market)
-		if process(market) {
-			return
+		if process(&market) {
+			store.Set(iter.Key(), k.Codec.MustMarshalJSON(&market))
 		}
-		iter.Next()
 	}	
 }
 
@@ -278,6 +355,22 @@ func (k Keeper) DeleteActiveQuote(ctx sdk.Context, id mt.MicrotickId) {
 	store.Delete(key)
 }
 
+func (k Keeper) IterateQuotes(ctx sdk.Context, process func(DataActiveQuote) (stop bool)) {
+	store := ctx.KVStore(k.activeQuotesKey)
+	iter := sdk.KVStorePrefixIterator(store, nil) 
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		if string(iter.Key()) != "nextQuoteId" {
+		  bz := iter.Value()
+		  var activeQuote DataActiveQuote
+		  k.Codec.MustUnmarshalJSON(bz, &activeQuote)
+		  if process(activeQuote) {
+			  store.Delete(iter.Key())
+		  }
+		}
+	}	
+}
+
 // DataActiveTrade
 
 func (k Keeper) GetNextActiveTradeId(ctx sdk.Context) mt.MicrotickId {
@@ -329,6 +422,22 @@ func (k Keeper) DeleteActiveTrade(ctx sdk.Context, id mt.MicrotickId) {
 	store.Delete(key)
 }
 
+func (k Keeper) IterateTrades(ctx sdk.Context, process func(DataActiveTrade) (stop bool)) {
+	store := ctx.KVStore(k.activeTradesKey)
+	iter := sdk.KVStorePrefixIterator(store, nil) 
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		if string(iter.Key()) != "nextTradeId" {
+		  bz := iter.Value()
+		  var activeTrade DataActiveTrade
+		  k.Codec.MustUnmarshalJSON(bz, &activeTrade)
+		  if process(activeTrade) {
+			  store.Delete(iter.Key())
+		  }
+		}
+	}	
+}
+
 // SetParams sets the module's parameters.
 func (keeper Keeper) SetParams(ctx sdk.Context, params mt.MicrotickParams) {
 	keeper.paramSubspace.SetParamSet(ctx, &params)
@@ -338,7 +447,7 @@ func (keeper Keeper) SetParams(ctx sdk.Context, params mt.MicrotickParams) {
 		HaltTime: haltTime.Unix(),
 	}
 	store := ctx.KVStore(keeper.AppGlobalsKey)
-	key := []byte("termination")
+	key := []byte(AppGlobalTermination)
 	store.Set(key, keeper.Codec.MustMarshalJSON(&termination))
 }
 
@@ -346,4 +455,55 @@ func (keeper Keeper) SetParams(ctx sdk.Context, params mt.MicrotickParams) {
 func (keeper Keeper) GetParams(ctx sdk.Context) (params mt.MicrotickParams) {
 	keeper.paramSubspace.GetParamSet(ctx, &params)
 	return params
+}
+
+// Clear markets, quotes, trades
+
+func (keeper Keeper) ClearMarkets(ctx sdk.Context) {
+	// Clear all quotes
+	keeper.IterateQuotes(ctx, 
+	  func(quote DataActiveQuote) bool {
+	   	return true
+	  },
+	)
+	
+	// Clear all trades
+	keeper.IterateTrades(ctx, 
+	  func(trade DataActiveTrade) bool {
+	  	return true
+	  },
+	)
+	
+	// Update markets
+	keeper.IterateMarkets(ctx, 
+		func(market *DataMarket) bool {
+			market.TotalBacking = mt.NewMicrotickCoinFromInt(0)
+			market.TotalSpots = sdk.ZeroDec()
+			market.TotalWeight = mt.NewMicrotickQuantityFromInt(0)
+			for i := 0; i < len(market.OrderBooks); i++ {
+				market.OrderBooks[i].CallAsks = NewOrderedList()
+				market.OrderBooks[i].CallBids = NewOrderedList()
+				market.OrderBooks[i].PutAsks = NewOrderedList()
+				market.OrderBooks[i].PutBids = NewOrderedList()
+				market.OrderBooks[i].SumBacking = mt.NewMicrotickCoinFromInt(0)
+				market.OrderBooks[i].SumWeight = mt.NewMicrotickQuantityFromInt(0)
+			}
+			return true
+		},
+	)
+	
+	// Update accounts
+	keeper.IterateAccountStatus(ctx, 
+	  func(account *DataAccountStatus) bool {
+	  	account.ActiveQuotes = NewOrderedList()
+	  	account.ActiveTrades = NewOrderedList()
+	  	keeper.DepositMicrotickCoin(ctx, account.Account, account.QuoteBacking)
+	  	keeper.DepositMicrotickCoin(ctx, account.Account, account.TradeBacking)
+	  	keeper.DepositMicrotickCoin(ctx, account.Account, account.SettleBacking)
+	  	account.QuoteBacking = mt.NewMicrotickCoinFromInt(0)
+	  	account.TradeBacking = mt.NewMicrotickCoinFromInt(0)
+	  	account.SettleBacking = mt.NewMicrotickCoinFromInt(0)
+	  	return true
+	  },
+	)
 }

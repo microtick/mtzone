@@ -2,15 +2,26 @@ package msg
 
 import (
     "github.com/cosmos/cosmos-sdk/codec"
+   	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
     sdk "github.com/cosmos/cosmos-sdk/types"
     cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+    govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 var (
-    ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
+    //ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
+    amino = codec.NewLegacyAmino()
+    ModuleCdc = codec.NewAminoCodec(amino)
+    
 	_, _, _, _ sdk.Msg = &TxCancelQuote{}, &TxCreateQuote{}, &TxUpdateQuote{}, &TxDepositQuote{}
 	_, _, _, _ sdk.Msg = &TxWithdrawQuote{}, &TxMarketTrade{}, &TxPickTrade{}, &TxSettleTrade{}
 )
+
+func init() {
+    RegisterLegacyAminoCodec(amino)
+    cryptocodec.RegisterCrypto(amino)
+    amino.Seal()
+}
 
 // Register concrete types on codec codec
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
@@ -22,6 +33,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
     cdc.RegisterConcrete(TxMarketTrade{}, "microtick/TradeMarket", nil)
     cdc.RegisterConcrete(TxPickTrade{}, "mic rotick/TradePick", nil)
     cdc.RegisterConcrete(TxSettleTrade{}, "microtick/TradeSettle", nil)
+    cdc.RegisterConcrete(DenomChangeProposal{}, "microtick/DenomChangeProposal", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
@@ -34,5 +46,10 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
     &TxMarketTrade{},
     &TxPickTrade{},
     &TxSettleTrade{},
+  )
+  registry.RegisterImplementations(
+    (*govtypes.Content)(nil),
+    &DenomChangeProposal{},
+    &AddMarketsProposal{},
   )
 }

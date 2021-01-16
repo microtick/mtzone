@@ -17,18 +17,15 @@ message TxUpdateQuote {
     (gogoproto.jsontag) = "requester"
   ];
   
-  cosmos.base.v1beta1.DecCoin new_spot = 3 [
-    (gogoproto.nullable) = false,
+  string new_spot = 3 [
     (gogoproto.jsontag) = "new_spot"
   ];
   
-  cosmos.base.v1beta1.DecCoin new_ask = 4 [
-    (gogoproto.nullable) = false,
+  string new_ask = 4 [
     (gogoproto.jsontag) = "new_ask"
   ];
   
-  cosmos.base.v1beta1.DecCoin new_bid = 5 [
-    (gogoproto.nullable) = false,
+  string new_bid = 5 [
     (gogoproto.jsontag) = "new_bid"
   ];
   

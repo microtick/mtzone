@@ -21,6 +21,8 @@ require (
 	golang.org/x/tools v0.0.0-20200616133436-c1934b75d054
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
 	google.golang.org/grpc v1.33.2
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
+	google.golang.org/protobuf v1.25.0
 	k8s.io/code-generator v0.20.2
 	sigs.k8s.io/kind v0.9.0
 )

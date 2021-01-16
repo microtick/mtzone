@@ -20,7 +20,9 @@ func (msg TxUpdateQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
         return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
     }
-    if msg.NewBid.Amount.GT(msg.NewAsk.Amount) {
+    newBid := mt.NewMicrotickPremiumFromString(msg.NewBid)
+    newAsk := mt.NewMicrotickPremiumFromString(msg.NewAsk)
+    if newBid.Amount.GT(newAsk.Amount) {
         return sdkerrors.Wrap(mt.ErrInvalidQuote, "bid > ask")
     }
     return nil
@@ -36,10 +38,14 @@ func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
 
 // Handler
 
-func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.MicrotickParams, 
+func HandleTxUpdateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
     msg TxUpdateQuote) (*sdk.Result, error) {
         
-    quote, err := keeper.GetActiveQuote(ctx, msg.Id)
+    newSpot := mt.NewMicrotickSpotFromString(msg.NewSpot)
+    newBid := mt.NewMicrotickPremiumFromString(msg.NewBid)
+    newAsk := mt.NewMicrotickPremiumFromString(msg.NewAsk)
+    
+    quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
     }
@@ -54,7 +60,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     
     commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
     
-    dataMarket, err := keeper.GetDataMarket(ctx, quote.Market)
+    dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
         return nil, mt.ErrInvalidMarket
     }
@@ -64,18 +70,18 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     
     now := ctx.BlockHeader().Time
     
-    if msg.NewSpot.Amount.IsPositive() {
-        quote.Spot = msg.NewSpot
+    if newSpot.Amount.IsPositive() {
+        quote.Spot = newSpot
         quote.Freeze(now, params)
     }
     
-    if msg.NewAsk.Amount.IsPositive() {
-        quote.Ask = msg.NewAsk
+    if newAsk.Amount.IsPositive() {
+        quote.Ask = newAsk
         quote.Freeze(now, params)
     }
     
-    if msg.NewBid.Amount.GTE(sdk.ZeroDec()) {
-        quote.Bid = msg.NewBid
+    if newBid.Amount.GTE(sdk.ZeroDec()) {
+        quote.Bid = newBid
     }
     
     // Recompute quantity
@@ -84,8 +90,8 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
     orderBook := dataMarket.GetOrderBook(quote.DurationName)
     adjustment := sdk.OneDec()
     if len(orderBook.CallAsks.Data) > 0 {
-        bestCallAsk, _ := keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
-        bestPutAsk, _ := keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
+        bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
+        bestPutAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
         average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
         if quote.Ask.Amount.GT(average) {
             adjustment = average.Quo(quote.Ask.Amount)
@@ -97,18 +103,18 @@ func HandleTxUpdateQuote(ctx sdk.Context, keeper keeper.Keeper, params mt.Microt
         return nil, mt.ErrQuoteParams
     }
     
-    keeper.SetDataMarket(ctx, dataMarket)
-    keeper.SetActiveQuote(ctx, quote)
+    mtKeeper.SetDataMarket(ctx, dataMarket)
+    mtKeeper.SetActiveQuote(ctx, quote)
     
     // Subtract coins from requester
-    err = keeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
     
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    reward, err := keeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
     if err != nil {
         return nil, err
     }
