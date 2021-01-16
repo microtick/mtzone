@@ -1,7 +1,7 @@
 VERSIONFILE=app/version.go
 TEST_DOCKER_REPO=microtick/mtzonetest
 
-GO := GO111MODULE=on go
+GO := go
 
 UNAME_OS              := $(shell uname -s)
 UNAME_ARCH            := $(shell uname -m)

@@ -39,8 +39,7 @@ func cmdAccountStatus() *cobra.Command {
 		Short: "Query account details",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
@@ -60,7 +59,7 @@ func cmdAccountStatus() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)
+			return clientCtx.PrintProto(res)
 		},
 	}
 
@@ -75,8 +74,7 @@ func cmdMarketStatus() *cobra.Command {
 		Short: "Query market status",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
@@ -91,7 +89,7 @@ func cmdMarketStatus() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)
+			return clientCtx.PrintProto(res)
 		},
 	}
 	
@@ -106,8 +104,7 @@ func cmdMarketConsensus() *cobra.Command {
 		Short: "Query market consensus",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}			
@@ -122,7 +119,7 @@ func cmdMarketConsensus() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)
+			return clientCtx.PrintProto(res)
 		},
 	}
 	
@@ -137,8 +134,7 @@ func cmdOrderBook() *cobra.Command {
 		Short: "Query market orderbook",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}			
@@ -154,7 +150,7 @@ func cmdOrderBook() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)
+			return clientCtx.PrintProto(res)
 		},
 	}
 	
@@ -169,8 +165,7 @@ func cmdSyntheticBook() *cobra.Command {
 		Short: "Query market synthetic orderbook",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}			
@@ -186,7 +181,7 @@ func cmdSyntheticBook() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)			
+			return clientCtx.PrintProto(res)			
 		},
 	}
 	
@@ -201,8 +196,7 @@ func cmdQuote() *cobra.Command {
 		Short: "Query quote",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}			
@@ -218,7 +212,7 @@ func cmdQuote() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)			
+			return clientCtx.PrintProto(res)			
 		},
 	}
 	
@@ -233,8 +227,7 @@ func cmdTrade() *cobra.Command {
 		Short: "Query trade",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}			
@@ -250,7 +243,7 @@ func cmdTrade() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)			
+			return clientCtx.PrintProto(res)			
 		},
 	}
 	
@@ -264,8 +257,7 @@ func cmdParams() *cobra.Command {
 		Use:   "params",
 		Short: "Query Microtick params",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, err := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}	
@@ -278,7 +270,7 @@ func cmdParams() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintOutput(res)			
+			return clientCtx.PrintProto(res)			
 		},
 	}
 	
