@@ -351,7 +351,7 @@ Where proposal.json contains:
     	"description": "XBTUSD: Crypto - Bitcoin / USD"
     },
     {
-    	"name": ETHUSD",
+    	"name": "ETHUSD",
     	"description": "ETHUSD: Crypto - Ethereum / USD"
     }
   ]
