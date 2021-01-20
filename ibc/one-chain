@@ -78,9 +78,9 @@ $BINARY --home $CHAINDIR/$CHAINID keys add user $KEYRING --output json > $CHAIND
 sleep 1
 if [ ! -z "$9" ]; then
   echo "Funding: $COINS"
-  redirect $BINARY --home $CHAINDIR/$CHAINID add-genesis-account $($BINARY --home $CHAINDIR/$CHAINID keys $KEYRING show user -a) $COINS,20000000stake
+  redirect $BINARY --home $CHAINDIR/$CHAINID add-genesis-account $($BINARY --home $CHAINDIR/$CHAINID keys $KEYRING show user -a) $COINS,50000000stake
 else 
-  redirect $BINARY --home $CHAINDIR/$CHAINID add-genesis-account $($BINARY --home $CHAINDIR/$CHAINID keys $KEYRING show user -a) 20000000stake
+  redirect $BINARY --home $CHAINDIR/$CHAINID add-genesis-account $($BINARY --home $CHAINDIR/$CHAINID keys $KEYRING show user -a) 50000000stake
 fi
 sleep 1
 echo "Delegating: $STAKE"
@@ -99,7 +99,9 @@ sed -i 's#"localhost:6060"#"localhost:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config
 sed -i 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
 sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
 sed -i 's/index_all_keys = false/index_all_keys = true/g' $CHAINDIR/$CHAINID/config/config.toml
+echo "Change settings in genesis.json file..."
 sed -i 's#"voting_period": "172800s"#"voting_period": "300s"#g' $CHAINDIR/$CHAINID/config/genesis.json
+sed -i 's#"durations": \[\]#"durations": \[{"name":"12hour","seconds":43200}\]#g' $CHAINDIR/$CHAINID/config/genesis.json
 
 # Start the chain
 redirect $BINARY --home $CHAINDIR/$CHAINID start --pruning=nothing --grpc.address="0.0.0.0:$GRPCPORT" > $CHAINDIR/$CHAINID.log &

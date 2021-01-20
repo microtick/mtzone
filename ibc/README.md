@@ -1,3 +1,5 @@
+## Setting up a Microtick chain with a gaiad feeder chain
+
 To demo IBC token backing for Microtick, complete the following steps:
 
 1.  Ensure gaiad and rly are built and in your path. There is a bug fixed relayer version here: https://github.com/mjackson001/relayer
@@ -54,7 +56,7 @@ $ ./change-backing-proposal
 And before 5 minutes are finished, vote "yes" for the new proposal:
 
 ```
-$ mtm tx gov vote 1 yes --from validator --home ./data/microtick --keyring-backend test --chain-id microtick
+$ mtm tx gov vote 1 yes --from validator --home ./data/microtick --keyring-backend test --chain-id microtick -y
 ```
 
 Finally, wait 5 minutes for the proposal to pass and re-query the microtick account to see your funds from the gaiad chain available as token backing and ready to trade on Microtick!

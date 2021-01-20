@@ -47,8 +47,10 @@ chainid1=microtick
 
 echo "Generating gaia configurations..."
 mkdir -p $CHAIN_DATA && cd $CHAIN_DATA && cd ../
-./one-chain gaiad $chainid0 ./data 26557 26556 6061 9091 100000000000stake 1000000000udai
+# start a microtick chain with only stake
 ./one-chain mtm $chainid1 ./data 26657 26656 6060 9090 100000000000stake
+# start a gaiad chain with a million DAI 
+./one-chain gaiad $chainid0 ./data 26557 26556 6062 9092 100000000000stake 1000000000000udai
 
 echo "Generating rly configurations..."
 rly config init
