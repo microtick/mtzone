@@ -37,7 +37,8 @@ me
 You should now see that the XBTUSD market has a consensus spot price:
 
 ```
-$ mtm query microtick market XBTUSDconsensus:
+$ mtm query microtick market XBTUSD:
+consensus:
   amount: "35000.000000000000000000"
   denom: spot
 ```
