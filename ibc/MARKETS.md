@@ -31,7 +31,6 @@ Assuming you followed the instructions in the README, the "user" account should 
 
 ```
 $ mtm tx microtick create XBTUSD 12hour 0.5backing 35000spot 1000premium 0premium --from user --home ./data/microtick --keyring-backend test --chain-id microtick --gas 1000000 -y
-me
 ```
 
 You should now see that the XBTUSD market has a consensus spot price:
