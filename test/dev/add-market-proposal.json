@@ -1,0 +1,14 @@
+{
+  "title": "Add XBTUSD market",
+  "description": "We need an XBTUSD market - everyone vote yes!",
+  "markets": [
+    {
+        "name": "XBTUSD",
+        "description": "XBTUSD: Crypto - Bitcoin / USD"
+    },
+    {
+        "name": "ETHUSD",
+        "description": "ETHUSD: Crypto - Ethereum / USD"
+    }
+  ]
+}
