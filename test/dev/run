@@ -1,0 +1,74 @@
+#!/bin/bash
+
+SILENT=1
+redirect() {
+  if [ "$SILENT" -eq 1 ]; then
+    "$@" > /dev/null 2>&1
+  else
+    "$@"
+  fi
+}
+
+echo "=========================="
+echo "Configuring new test setup"
+echo "=========================="
+echo
+
+# Display software version for testers
+GAIA_VERSION=`gaiad version`
+echo "GAIA VERSION INFO: $GAIA_VERSION"
+MTM_VERSION=`mtm version`
+echo "MICROTICK VERSION INFO: $MTM_VERSION"
+echo
+
+DATA=$PWD/data
+KEYS=$PWD/keys.json
+
+# Ensure user understands what will be deleted
+if [[ -d $DATA ]] && [[ ! "$1" == "skip" ]]; then
+  echo "$(basename $0) will delete:"
+  echo
+  echo "- $HOME/.relayer"
+  echo "- $DATA"
+  echo "- $KEYS"
+  echo
+  read -p "Do you wish to continue? (y/n): " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      exit 1
+  fi
+  echo
+fi
+
+killall gaiad &> /dev/null
+killall mtm &> /dev/null
+
+# Delete data from old runs
+rm -rf $CHAIN_DATA &> /dev/null
+rm -rf $HOME/.relayer &> /dev/null
+
+# Setup chains
+node setup-chain.js $DATA ./gaiad.json
+node seal-chain.js $DATA ./gaiad.json
+redirect gaiad start --home $DATA/gaiad &
+
+node setup-chain.js $DATA ./microtick.json
+node seal-chain.js $DATA ./microtick.json
+redirect mtm start --home $DATA/microtick &
+
+rly config init
+rly config add-dir ./relayer
+
+GAIAD_MNEMONIC=$(jq -r '.gaiad.relayer.mnemonic' ./keys.json)
+GAIAD_CHAIN=$(jq -r '.chain_id' ./gaiad.json)
+echo "Importing key $(rly keys restore $GAIAD_CHAIN testkey "$GAIAD_MNEMONIC")"
+
+MTM_MNEMONIC=$(jq -r '.microtick.relayer.mnemonic' ./keys.json)
+MTM_CHAIN=$(jq -r '.chain_id' ./microtick.json)
+echo "Importing key $(rly keys restore $MTM_CHAIN testkey "$MTM_MNEMONIC")"
+
+sleep 10
+rly light init $GAIAD_CHAIN -f
+rly light init $MTM_CHAIN -f
+
+rly tx link funding -d -o 3s

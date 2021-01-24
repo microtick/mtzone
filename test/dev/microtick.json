@@ -1,0 +1,14 @@
+{
+  "executable": "mtm",
+  "chain_id": "microtick",
+  "accounts": {
+    "user": "1000000stake",
+    "relayer": "10000000stake"
+  },
+  "app": {
+    "pruning": "everything",
+    "api": {
+      "enable": "true"
+    }
+  }
+}

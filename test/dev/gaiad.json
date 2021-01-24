@@ -1,0 +1,27 @@
+{
+  "executable": "gaiad",
+  "chain_id": "gaiad",
+  "accounts": {
+    "bank": "1000000000000udai,1000000000stake",
+    "relayer": "10000000stake"
+  },
+  "config": {
+    "rpc": {
+      "laddr": "tcp://0.0.0.0:26557",
+      "pprof_laddr": "localhost:6062"
+    },
+    "p2p": {
+      "laddr": "tcp://0.0.0.0:26556"
+    }
+  },
+  "app": {
+    "pruning": "everything",
+    "api": {
+      "enable": "true",
+      "address": "tcp://0.0.0.0:1318"
+    },
+    "grpc": {
+      "address": "0.0.0.0:9092"
+    }
+  }
+}
