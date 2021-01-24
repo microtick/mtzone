@@ -45,12 +45,12 @@ set -e
 chainid0=gaiad
 chainid1=microtick
 
-echo "Generating gaia configurations..."
+echo "Generating chain configurations..."
 mkdir -p $CHAIN_DATA && cd $CHAIN_DATA && cd ../
 # start a microtick chain with only stake
-./one-chain mtm $chainid1 ./data 26657 26656 6060 9090 100000000000stake
+./one-chain mtm $chainid1 ./data 26657 26656 6060 9090 1317 100000000000stake
 # start a gaiad chain with a million DAI 
-./one-chain gaiad $chainid0 ./data 26557 26556 6062 9092 100000000000stake 1000000000000udai
+./one-chain gaiad $chainid0 ./data 26557 26556 6062 9092 1318 100000000000stake 1000000000000udai
 
 echo "Generating rly configurations..."
 rly config init
@@ -60,7 +60,7 @@ SEED0=$(jq -r '.mnemonic' $CHAIN_DATA/$chainid0/key_seed.json)
 SEED1=$(jq -r '.mnemonic' $CHAIN_DATA/$chainid1/key_seed.json)
 echo "Key $(rly keys restore $chainid0 testkey "$SEED0") imported from $chainid0 to relayer..."
 echo "Key $(rly keys restore $chainid1 testkey "$SEED1") imported from $chainid1 to relayer..."
+sleep 10 
 echo "Creating light clients..."
-sleep 3
 rly light init $chainid0 -f
 rly light init $chainid1 -f

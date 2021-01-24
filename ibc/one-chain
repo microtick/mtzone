@@ -2,8 +2,8 @@
 
 display_usage() {
 	echo "Missing $1 parameter. Please check if all parameters were specified."
-	echo "Usage: ./one-chain [BINARY] [CHAIN_ID] [CHAIN_DIR] [RPC_PORT] [P2P_PORT] [PROFILING_PORT] [GRPC_PORT] [STAKE] [COINS]"
-  echo "Example: ./one-chain $BINARY test-chain-id ./data 26657 26656 6060 9090 100000000000stake 100000000000samoleans"
+	echo "Usage: ./one-chain [BINARY] [CHAIN_ID] [CHAIN_DIR] [RPC_PORT] [P2P_PORT] [PROFILING_PORT] [GRPC_PORT] [REST_PORT] [STAKE] [COINS]"
+  echo "Example: ./one-chain $BINARY test-chain-id ./data 26657 26656 6060 9090 1317 100000000000stake 100000000000samoleans"
   exit 1
 }
 
@@ -25,8 +25,9 @@ RPCPORT=$4
 P2PPORT=$5
 PROFPORT=$6
 GRPCPORT=$7
-STAKE=$8
-COINS=$9
+RESTPORT=$8
+STAKE=$9
+COINS=${10}
 
 if [ -z "$1" ]; then
   display_usage "[BINARY]"
@@ -57,10 +58,14 @@ if [ -z "$7" ]; then
 fi
 
 if [ -z "$8" ]; then
+  display_usage "[REST_PORT]"
+fi
+
+if [ -z "$9" ]; then
   display_usage "[STAKE]"
 fi
 
-echo "Creating $BINARY instance: home=$CHAINDIR | chain-id=$CHAINID | p2p=:$P2PPORT | rpc=:$RPCPORT | profiling=:$PROFPORT | grpc=:$GRPCPORT"
+echo "Creating $BINARY instance: home=$CHAINDIR | chain-id=$CHAINID | p2p=:$P2PPORT | rpc=:$RPCPORT | profiling=:$PROFPORT | grpc=:$GRPCPORT | rest=:$RESTPORT"
 
 # Add dir for chain, exit if error
 if ! mkdir -p $CHAINDIR/$CHAINID 2>/dev/null; then
@@ -76,7 +81,7 @@ $BINARY --home $CHAINDIR/$CHAINID keys add validator $KEYRING --output json > $C
 sleep 1
 $BINARY --home $CHAINDIR/$CHAINID keys add user $KEYRING --output json > $CHAINDIR/$CHAINID/key_seed.json 2> /dev/null
 sleep 1
-if [ ! -z "$9" ]; then
+if [ ! -z "$COINS" ]; then
   echo "Funding: $COINS"
   redirect $BINARY --home $CHAINDIR/$CHAINID add-genesis-account $($BINARY --home $CHAINDIR/$CHAINID keys $KEYRING show user -a) $COINS,50000000stake
 else 
@@ -95,10 +100,13 @@ sleep 1
 echo "Change settings in config.toml file..."
 sed -i 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPCPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
 sed -i 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
-sed -i 's#"localhost:6060"#"localhost:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
-sed -i 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
-sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
+sed -i 's#"localhost:6060"#"localhost:'"$PROFPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
+#sed -i 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
+#sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
 sed -i 's/index_all_keys = false/index_all_keys = true/g' $CHAINDIR/$CHAINID/config/config.toml
+echo "Change settings in app.toml file..."
+sed -i 's/enable = false/enable = true/g' $CHAINDIR/$CHAINID/config/app.toml
+sed -i 's#address = "tcp://0.0.0.0:1317"#address = "tcp://0.0.0.0:'"$RESTPORT"'"#g' $CHAINDIR/$CHAINID/config/app.toml
 echo "Change settings in genesis.json file..."
 sed -i 's#"voting_period": "172800s"#"voting_period": "300s"#g' $CHAINDIR/$CHAINID/config/genesis.json
 sed -i 's#"durations": \[\]#"durations": \[{"name":"12hour","seconds":43200}\]#g' $CHAINDIR/$CHAINID/config/genesis.json
