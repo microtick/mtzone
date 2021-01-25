@@ -6,6 +6,24 @@
     "relayer": "10000000stake",
     "governance": "50000000stake"
   },
+  "genesis": {
+    "app_state": {
+      "gov": {
+        "voting_params": {
+          "voting_period": "300s"
+        }
+      },
+      "microtick": {
+        "durations": [
+           { "name": "5minute", "seconds": 300 },
+           { "name": "15minute", "seconds": 900 },
+           { "name": "1hour", "seconds": 3600 },
+           { "name": "4hour", "seconds": 14400 },
+           { "name": "12hour", "seconds": 43200 }
+        ]
+      }
+    }
+  },
   "app": {
     "pruning": "everything",
     "api": {
