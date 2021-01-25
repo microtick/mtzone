@@ -10,7 +10,7 @@
     "app_state": {
       "gov": {
         "voting_params": {
-          "voting_period": "300s"
+          "voting_period": "60s"
         }
       },
       "microtick": {
@@ -25,7 +25,7 @@
     }
   },
   "app": {
-    "pruning": "everything",
+    "pruning": "nothing",
     "api": {
       "enable": "true"
     }
