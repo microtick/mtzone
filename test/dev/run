@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DATA=$PWD/data
+KEYS=$PWD/keys.json
+
 SILENT=1
 redirect() {
   if [ "$SILENT" -eq 1 ]; then
@@ -20,9 +23,6 @@ echo "GAIA VERSION INFO: $GAIA_VERSION"
 MTM_VERSION=`mtm version`
 echo "MICROTICK VERSION INFO: $MTM_VERSION"
 echo
-
-DATA=$PWD/data
-KEYS=$PWD/keys.json
 
 # Ensure user understands what will be deleted
 if [[ -d $DATA ]] && [[ ! "$1" == "skip" ]]; then

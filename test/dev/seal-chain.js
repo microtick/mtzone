@@ -2,7 +2,6 @@
   
   const cp = require('child_process')
   const fs = require('fs')
-  const path = require('path')
   
   const HOME=process.argv[2]
   const CONFIG=process.argv[3]

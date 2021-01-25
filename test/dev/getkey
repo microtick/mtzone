@@ -1,0 +1,9 @@
+#!/bin/sh
+
+KEYFILE=./keys.json
+
+CHAIN=$1
+KEYNAME=$2
+
+address=$(jq -r ".$CHAIN.$KEYNAME.address" $KEYFILE)
+echo "$address"
