@@ -48,6 +48,9 @@ rm -rf $CHAIN_DATA &> /dev/null
 rm -rf $HOME/.relayer &> /dev/null
 
 # Setup chains
+echo "Chains"
+echo "------"
+
 node setup-chain.js $DATA ./gaiad.json
 node seal-chain.js $DATA ./gaiad.json
 redirect gaiad start --home $DATA/gaiad &
@@ -60,6 +63,7 @@ redirect mtm start --home $DATA/microtick &
 
 echo
 echo "Governance"
+echo "----------"
 
 sleep 10
 # backing change
@@ -77,6 +81,7 @@ redirect mtm tx gov vote 2 yes --from validator --home ./data/microtick --keyrin
 
 echo
 echo "Relayer"
+echo "-------"
 
 rly config init
 rly config add-dir ./relayer

@@ -54,8 +54,6 @@ message QueryQuoteResponse {
   ];
   
   string unit_backing = 9 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "unit_backing"
   ];  
   
@@ -70,8 +68,6 @@ message QueryQuoteResponse {
   ];
   
   string delta = 12 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "delta"
   ];
   

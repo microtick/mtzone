@@ -26,8 +26,6 @@ message ResponseQuotedParams {
   ];
   
   string unit_backing = 3 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "unit_backing"
   ];
   
@@ -84,8 +82,6 @@ message ResponseTradeLeg {
   ];
   
   string current_value = 10 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "current_value"
   ];  
   
@@ -153,8 +149,6 @@ message QueryTradeResponse {
   ];
   
   string current_value = 14 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "current_value"
   ];  
   

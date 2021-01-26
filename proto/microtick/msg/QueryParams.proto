@@ -14,38 +14,26 @@ message QueryParamsResponse {
   ];
   
   string commission_quote_percent = 2 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "commission_quote_percent"
   ];  
   
   string commission_trade_fixed = 3 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "commission_trade_fixed"
   ];  
   
   string commission_update_percent = 4 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "commission_update_percent"
   ];  
   
   string commission_settle_fixed = 5 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "commission_settle_fixed"
   ];  
   
   string commission_cancel_percent = 6 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "commission_cancel_percent"
   ];  
   
   string settle_incentive = 7 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "settle_incentive"
   ];  
   
@@ -62,16 +50,16 @@ message QueryParamsResponse {
   ];
   
   string mint_ratio = 11 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "mint_ratio"
   ];  
   
   string cancel_slash_rate = 12 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "cancel_slash_rate"
   ]; 
+  
+  string backing_denom = 13 [
+    (gogoproto.jsontag) = "backing_denom"
+  ];
   
 }
 

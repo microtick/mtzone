@@ -68,36 +68,6 @@ func cmdAccountStatus() *cobra.Command {
 	return cmd
 }
 
-func cmdMarketStatus() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "market [name]",
-		Short: "Query market status",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			message := &msg.QueryMarketRequest {
-				Market: args[0],
-			}
-			
-			queryClient := msg.NewGRPCClient(clientCtx)
-			res, err := queryClient.Market(context.Background(), message)
-			if err != nil {
-				return err
-			}
-			
-			return clientCtx.PrintProto(res)
-		},
-	}
-	
-	flags.AddQueryFlagsToCmd(cmd)
-	
-	return cmd
-}
-
 func cmdMarketConsensus() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consensus [market]",
@@ -115,6 +85,36 @@ func cmdMarketConsensus() *cobra.Command {
 
 			queryClient := msg.NewGRPCClient(clientCtx)
 			res, err := queryClient.Consensus(context.Background(), message)
+			if err != nil {
+				return err
+			}
+			
+			return clientCtx.PrintProto(res)
+		},
+	}
+	
+	flags.AddQueryFlagsToCmd(cmd)
+	
+	return cmd
+}
+
+func cmdMarketStatus() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "market [name]",
+		Short: "Query market status",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			message := &msg.QueryMarketRequest {
+				Market: args[0],
+			}
+			
+			queryClient := msg.NewGRPCClient(clientCtx)
+			res, err := queryClient.Market(context.Background(), message)
 			if err != nil {
 				return err
 			}
@@ -162,7 +162,7 @@ func cmdOrderBook() *cobra.Command {
 func cmdSyntheticBook() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "synthetic [market] [dur]",
-		Short: "Query market synthetic orderbook",
+		Short: "Query synthetic orderbook",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -201,7 +201,11 @@ func cmdQuote() *cobra.Command {
 				return err
 			}			
 			
-			id, _ := strconv.ParseUint(args[0], 10, 32)
+			id, err := strconv.ParseUint(args[0], 10, 32)
+			if err != nil {
+				return err
+			}			
+			
 			message := &msg.QueryQuoteRequest {
 				Id: mt.MicrotickId(id),
 			}
@@ -232,7 +236,11 @@ func cmdTrade() *cobra.Command {
 				return err
 			}			
 			
-			id, _ := strconv.ParseUint(args[0], 10, 32)
+			id, err := strconv.ParseUint(args[0], 10, 32)
+			if err != nil {
+				return err
+			}			
+			
 			message := &msg.QueryTradeRequest {
 				Id: mt.MicrotickId(id),
 			}
@@ -255,7 +263,7 @@ func cmdTrade() *cobra.Command {
 func cmdParams() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "params",
-		Short: "Query Microtick params",
+		Short: "Query module params",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -270,7 +278,7 @@ func cmdParams() *cobra.Command {
 				return err
 			}
 			
-			return clientCtx.PrintProto(res)			
+			return clientCtx.PrintProto(res)	
 		},
 	}
 	

@@ -3,14 +3,19 @@ package msg
 import (
     "context"
     sdk "github.com/cosmos/cosmos-sdk/types"
+    "gitlab.com/microtick/mtzone/x/microtick/keeper"
     mt "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
 func (querier Querier) Account(c context.Context, req *QueryAccountRequest) (*QueryAccountResponse, error) {
     ctx := sdk.UnwrapSDKContext(c)
+    return baseQueryAccount(ctx, querier.Keeper, req)
+}
+
+func baseQueryAccount(ctx sdk.Context, keeper keeper.Keeper, req* QueryAccountRequest) (*QueryAccountResponse, error) {
     address := req.Account
-    backing, tick := querier.Keeper.GetTotalBalance(ctx, address)
-    data := querier.Keeper.GetAccountStatus(ctx, address)
+    backing, tick := keeper.GetTotalBalance(ctx, address)
+    data := keeper.GetAccountStatus(ctx, address)
     activeQuotes := make([]mt.MicrotickId, len(data.ActiveQuotes.Data))
     activeTrades := make([]mt.MicrotickId, len(data.ActiveTrades.Data))
     for i := 0; i < len(data.ActiveQuotes.Data); i++ {

@@ -19,8 +19,8 @@
       shell: true
     })
     const ret = {
-      stdout: bufs.stdout,
-      stderr: bufs.stderr
+      stdout: bufs.stdout.toString(),
+      stderr: bufs.stderr.toString()
     }
     return ret
   }

@@ -3,7 +3,19 @@
 # This script creates an IBC transaction from the "bank" account on the gaiad chain and funds the
 # destination account on the microtick chain with the requested amount of tokens
 
+usage() {
+  echo "fund [account] [amount]"
+  exit 1
+}
+
+if [ -z "$1" ]; then
+  usage
+fi
 ACCOUNT=$1
+
+if [ -z "$2" ]; then
+  usage
+fi
 AMOUNT=$2
 
 SILENT=1

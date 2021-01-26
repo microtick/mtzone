@@ -33,6 +33,7 @@
   await cp.exec("rm -rf " + CHAINHOME)
   
   const chainexec = cmd => {
+    console.log(cmd)
     const bufs = cp.spawnSync(config.executable, [
       "--home " + CHAINHOME,
       cmd
@@ -40,8 +41,8 @@
       shell: true
     })
     const ret = {
-      stdout: bufs.stdout,
-      stderr: bufs.stderr
+      stdout: bufs.stdout.toString(),
+      stderr: bufs.stderr.toString()
     }
     return ret
   }

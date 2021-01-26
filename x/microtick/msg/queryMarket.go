@@ -6,13 +6,18 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
+    "gitlab.com/microtick/mtzone/x/microtick/keeper"
     mt "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
 func (querier Querier) Market(c context.Context, req *QueryMarketRequest) (*QueryMarketResponse, error) {
     ctx := sdk.UnwrapSDKContext(c)
+    return baseQueryMarket(ctx, querier.Keeper, req)
+}
+
+func baseQueryMarket(ctx sdk.Context, keeper keeper.Keeper, req *QueryMarketRequest) (*QueryMarketResponse, error) {
     market := req.Market
-    data, err := querier.Keeper.GetDataMarket(ctx, market)
+    data, err := keeper.GetDataMarket(ctx, market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
@@ -20,10 +25,10 @@ func (querier Querier) Market(c context.Context, req *QueryMarketRequest) (*Quer
     var orderbookStatus []*MarketOrderBookStatus
     for k := 0; k < len(data.OrderBooks); k++ {
         if data.OrderBooks[k].SumBacking.Amount.GT(sdk.ZeroDec()) {
-            callask, _ := querier.Keeper.GetActiveQuote(ctx, data.OrderBooks[k].CallAsks.First().Id)
-            callbid, _ := querier.Keeper.GetActiveQuote(ctx, data.OrderBooks[k].CallBids.Last().Id)
-            putask, _ := querier.Keeper.GetActiveQuote(ctx, data.OrderBooks[k].PutAsks.First().Id)
-            putbid, _ := querier.Keeper.GetActiveQuote(ctx, data.OrderBooks[k].PutBids.Last().Id)
+            callask, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].CallAsks.First().Id)
+            callbid, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].CallBids.Last().Id)
+            putask, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].PutAsks.First().Id)
+            putbid, _ := keeper.GetActiveQuote(ctx, data.OrderBooks[k].PutBids.Last().Id)
             CA := callask.CallAsk(data.Consensus)
             CB := callbid.CallBid(data.Consensus)
             PA := putask.PutAsk(data.Consensus)

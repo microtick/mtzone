@@ -6,15 +6,20 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
+    "gitlab.com/microtick/mtzone/x/microtick/keeper"
     mt "gitlab.com/microtick/mtzone/x/microtick/types"
 )
 
 func (querier Querier) OrderBook(c context.Context, req *QueryOrderBookRequest) (*QueryOrderBookResponse, error) {
     ctx := sdk.UnwrapSDKContext(c)    
+    return baseQueryOrderBook(ctx, querier.Keeper, req)
+}
+
+func baseQueryOrderBook(ctx sdk.Context, keeper keeper.Keeper, req *QueryOrderBookRequest) (*QueryOrderBookResponse, error) {
     market := req.Market
     durName := req.Duration
     
-    dataMarket, err := querier.Keeper.GetDataMarket(ctx, market)
+    dataMarket, err := keeper.GetDataMarket(ctx, market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
@@ -26,7 +31,7 @@ func (querier Querier) OrderBook(c context.Context, req *QueryOrderBookRequest) 
     putasks := make([]*OrderBookQuote, len(orderBook.PutAsks.Data))
     putbids := make([]*OrderBookQuote, len(orderBook.PutBids.Data))
     for i := 0; i < len(orderBook.CallAsks.Data); i++ {
-        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[i].Id)
+        quote, _ := keeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[i].Id)
         callasks[i] = &OrderBookQuote {
             Id: quote.Id,
             Premium: quote.CallAsk(dataMarket.Consensus),
@@ -35,7 +40,7 @@ func (querier Querier) OrderBook(c context.Context, req *QueryOrderBookRequest) 
     }
     for i := 0; i < len(orderBook.CallBids.Data); i++ {
         j := len(orderBook.CallBids.Data) - i - 1
-        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.CallBids.Data[j].Id)
+        quote, _ := keeper.GetActiveQuote(ctx, orderBook.CallBids.Data[j].Id)
         callbids[i] = &OrderBookQuote {
             Id: quote.Id,
             Premium: quote.CallBid(dataMarket.Consensus),
@@ -43,7 +48,7 @@ func (querier Querier) OrderBook(c context.Context, req *QueryOrderBookRequest) 
         }
     }
     for i := 0; i < len(orderBook.PutAsks.Data); i++ {
-        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[i].Id)
+        quote, _ := keeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[i].Id)
         putasks[i] = &OrderBookQuote {
             Id: quote.Id,
             Premium: quote.PutAsk(dataMarket.Consensus),
@@ -52,7 +57,7 @@ func (querier Querier) OrderBook(c context.Context, req *QueryOrderBookRequest) 
     }
     for i := 0; i < len(orderBook.PutBids.Data); i++ {
         j := len(orderBook.PutBids.Data) - i - 1
-        quote, _ := querier.Keeper.GetActiveQuote(ctx, orderBook.PutBids.Data[j].Id)
+        quote, _ := keeper.GetActiveQuote(ctx, orderBook.PutBids.Data[j].Id)
         putbids[i] = &OrderBookQuote {
             Id: quote.Id,
             Premium: quote.PutBid(dataMarket.Consensus),

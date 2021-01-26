@@ -166,7 +166,7 @@ func (matcher *Matcher) MatchByQuantity(k Keeper, dm *DataMarket, order mt.Micro
 }
 
 func (matcher *Matcher) MatchSynthetic(k Keeper, sob *DataSyntheticBook, dm *DataMarket, totalQuantity mt.MicrotickQuantity) error {
-    if totalQuantity.Amount.GT(sob.Weight.Amount) {
+    if totalQuantity.Amount.GT(sob.SumWeight.Amount) {
         return sdkerrors.Wrap(mt.ErrTradeMatch, "insufficient quantity")
     }
     quantityToMatch := totalQuantity.Amount

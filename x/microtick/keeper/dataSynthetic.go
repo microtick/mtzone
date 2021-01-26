@@ -23,7 +23,8 @@ type DataSyntheticQuote struct {
 
 type DataSyntheticBook struct {
     Name string `json:"name"`
-    Weight mt.MicrotickQuantity `json:"weight"`
+    SumBacking mt.MicrotickCoin `json:"sum_backing"`
+    SumWeight mt.MicrotickQuantity `json:"sum_weight"`
     Asks []DataSyntheticQuote `json:"asks"`
     Bids []DataSyntheticQuote `json:"bids"`
 }
@@ -162,7 +163,8 @@ func (k Keeper) GetSyntheticBook(ctx sdk.Context, dm *DataMarket, name string,
             
             return DataSyntheticBook {
                 Name: name,
-                Weight: mt.NewMicrotickQuantityFromDec(orderBook.SumWeight.Amount.QuoInt64(2)),
+                SumBacking: orderBook.SumBacking,
+                SumWeight: mt.NewMicrotickQuantityFromDec(orderBook.SumWeight.Amount.QuoInt64(2)),
                 Asks: asks,
                 Bids: bids,
             }

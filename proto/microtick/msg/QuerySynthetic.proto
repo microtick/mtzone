@@ -20,22 +20,6 @@ message QuerySyntheticRequest {
 
 message SyntheticQuote {
   
-  uint32 ask_id = 1 [
-    (gogoproto.jsontag) = "ask_id"
-  ];
-  
-  bool ask_fill = 2 [
-    (gogoproto.jsontag) = "ask_fill"
-  ];
-  
-  uint32 bid_id = 3 [
-    (gogoproto.jsontag) = "bid_id"
-  ];
-  
-  bool bid_fill = 4 [
-    (gogoproto.jsontag) = "bid_fill"
-  ];
-  
   cosmos.base.v1beta1.DecCoin spot = 5 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "spot"
@@ -55,16 +39,21 @@ message QuerySyntheticResponse {
     (gogoproto.jsontag) = "consensus"
   ];
 
-  cosmos.base.v1beta1.DecCoin weight = 2 [
+  cosmos.base.v1beta1.DecCoin sum_backing = 2 [
     (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "weight"
+    (gogoproto.jsontag) = "sum_backing"
   ];
   
-  repeated SyntheticQuote asks = 3 [
+  cosmos.base.v1beta1.DecCoin sum_weight = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sum_weight"
+  ];
+  
+  repeated SyntheticQuote asks = 4 [
     (gogoproto.jsontag) = "asks"
   ];
   
-  repeated SyntheticQuote bids = 4 [
+  repeated SyntheticQuote bids = 5 [
     (gogoproto.jsontag) = "bids"
   ];
 
