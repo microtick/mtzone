@@ -3,10 +3,13 @@ package rest
 import (
 		"fmt"
 		"net/http"
+		"strconv"
 	
 		"github.com/gorilla/mux"
 		"github.com/cosmos/cosmos-sdk/types/rest"
 		"github.com/cosmos/cosmos-sdk/client"
+		
+		"gitlab.com/microtick/mtzone/x/microtick/msg"
 )
 
 func RegisterRoutes(cliCtx client.Context, r *mux.Router) {
@@ -88,13 +91,22 @@ func queryMarketOrderbookHandler(cliCtx client.Context) http.HandlerFunc {
 		vars := mux.Vars(r)
 		market := vars["market"]
 		duration := vars["duration"]
-
+		
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {
 			return
 		}
+		
+		offset, _ := strconv.Atoi(r.FormValue("offset"))
+		limit, _ := strconv.Atoi(r.FormValue("limit"))
+		params := msg.NewQueryBooksParams(offset, limit)
+		
+		bz, err := cliCtx.LegacyAmino.MarshalJSON(params)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
 
-		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/orderbook/%s/%s", market, duration))
+		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/orderbook/%s/%s", market, duration), bz)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -115,8 +127,17 @@ func queryMarketSyntheticHandler(cliCtx client.Context) http.HandlerFunc {
 		if !ok {
 			return
 		}
+		
+		offset, _ := strconv.Atoi(r.FormValue("offset"))
+		limit, _ := strconv.Atoi(r.FormValue("limit"))
+		params := msg.NewQueryBooksParams(offset, limit)
+		
+		bz, err := cliCtx.LegacyAmino.MarshalJSON(params)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
 
-		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/synthetic/%s/%s", market, duration))
+		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/synthetic/%s/%s", market, duration), bz)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return

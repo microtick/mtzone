@@ -19,6 +19,13 @@ func baseQuerySynthetic(ctx sdk.Context, keeper keeper.Keeper, req *QuerySynthet
     market := req.Market
     durName := req.Duration
     
+    if req.Limit == 0 {
+        req.Limit = 10
+    }
+    if req.Limit > 100 {
+        req.Limit = 100
+    }
+    
     dataMarket, err := keeper.GetDataMarket(ctx, market)
     if err != nil {
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
@@ -26,19 +33,25 @@ func baseQuerySynthetic(ctx sdk.Context, keeper keeper.Keeper, req *QuerySynthet
     
     syntheticBook := keeper.GetSyntheticBook(ctx, &dataMarket, durName, nil)
     
-    asks := make([]*SyntheticQuote, len(syntheticBook.Asks))
-    bids := make([]*SyntheticQuote, len(syntheticBook.Bids))
-    for i := 0; i < len(syntheticBook.Asks); i++ {
-        asks[i] = &SyntheticQuote {
+    asks := make([]*SyntheticQuote, 0)
+    bids := make([]*SyntheticQuote, 0)
+    var count uint32
+    var i int
+    count = 0
+    for i = int(req.Offset); i < len(syntheticBook.Asks) && count < req.Limit; i++ {
+        count = count + 1
+        asks = append(asks, &SyntheticQuote {
             Spot: syntheticBook.Asks[i].Spot,
             Quantity: syntheticBook.Asks[i].Quantity,
-        }
+        })
     }
-    for i := 0; i < len(syntheticBook.Bids); i++ {
-        bids[i] = &SyntheticQuote {
+    count = 0
+    for i = int(req.Offset); i < len(syntheticBook.Bids) && count < req.Limit; i++ {
+        count = count + 1
+        bids = append(bids, &SyntheticQuote {
             Spot: syntheticBook.Bids[i].Spot,
             Quantity: syntheticBook.Bids[i].Quantity,
-        }
+        })
     }
     response := QuerySyntheticResponse {
         Consensus:  dataMarket.Consensus,

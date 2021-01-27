@@ -28,6 +28,18 @@ const (
 	QueryParams = "params"
 )
 
+type QueryBooksParams struct {
+	Offset int `json:"offset"`
+	Limit int `json:"limit"`
+}
+
+func NewQueryBooksParams(offset, limit int) QueryBooksParams {
+	return QueryBooksParams {
+		Offset: offset,
+		Limit: limit,
+	}
+}
+
 func NewQuerier(keeper keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
 		switch path[0] {
@@ -113,9 +125,20 @@ func queryMarket(ctx sdk.Context, path []string, req abci.RequestQuery, keeper k
 }
 
 func queryOrderbook(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	var params QueryBooksParams
+	
+	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
+	if err != nil {
+		// defaults
+		params.Offset = 0
+		params.Limit = 10
+	}
+	
 	pbReq := QueryOrderBookRequest {
 		Market: path[0],
 		Duration: path[1],
+		Offset: uint32(params.Offset),
+		Limit: uint32(params.Limit),
 	}
 	
 	pbRes, err := baseQueryOrderBook(ctx, keeper, &pbReq)
@@ -132,9 +155,20 @@ func queryOrderbook(ctx sdk.Context, path []string, req abci.RequestQuery, keepe
 }
 
 func querySynthetic(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	var params QueryBooksParams
+	
+	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
+	if err != nil {
+		// defaults
+		params.Offset = 0
+		params.Limit = 10
+	}
+	
 	pbReq := QuerySyntheticRequest {
 		Market: path[0],
 		Duration: path[1],
+		Offset: uint32(params.Offset),
+		Limit: uint32(params.Limit),
 	}
 	
 	pbRes, err := baseQuerySynthetic(ctx, keeper, &pbReq)

@@ -16,6 +16,14 @@ message QueryOrderBookRequest {
     (gogoproto.jsontag) = "duration"
   ];
   
+  uint32 offset = 3 [
+    (gogoproto.jsontag) = "offset"
+  ];
+  
+  uint32 limit = 4 [
+    (gogoproto.jsontag) = "limit"
+  ];
+  
 }
 
 message OrderBookQuote {

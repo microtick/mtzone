@@ -9,6 +9,7 @@ import (
   "github.com/spf13/cobra"
     
   sdk "github.com/cosmos/cosmos-sdk/types"
+  
   mt "gitlab.com/microtick/mtzone/x/microtick/types"
   "gitlab.com/microtick/mtzone/x/microtick/msg"
 )
@@ -137,11 +138,16 @@ func cmdOrderBook() *cobra.Command {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
-			}			
+			}
+			
+			offset, _ := cmd.Flags().GetUint32("offset")
+			limit, _ := cmd.Flags().GetUint32("limit")
 			
 			message := &msg.QueryOrderBookRequest {
 				Market: args[0],
 				Duration: args[1],
+				Offset: offset,
+				Limit: limit,
 			}
 
 			queryClient := msg.NewGRPCClient(clientCtx)
@@ -155,6 +161,8 @@ func cmdOrderBook() *cobra.Command {
 	}
 	
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().Uint32("offset", 0, "offset of quotes to query for")
+	cmd.Flags().Uint32("limit", 10, "pagination limit of quotes to query for")
 	
 	return cmd
 }
@@ -168,11 +176,16 @@ func cmdSyntheticBook() *cobra.Command {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
-			}			
+			}
+			
+			offset, _ := cmd.Flags().GetUint32("offset")
+			limit, _ := cmd.Flags().GetUint32("limit")
 			
 			message := &msg.QuerySyntheticRequest {
 				Market: args[0],
 				Duration: args[1],
+				Offset: offset,
+				Limit: limit, 
 			}
 			
 			queryClient := msg.NewGRPCClient(clientCtx)
@@ -186,6 +199,8 @@ func cmdSyntheticBook() *cobra.Command {
 	}
 	
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().Uint32("offset", 0, "offset of quotes to query for")
+	cmd.Flags().Uint32("limit", 10, "pagination limit of quotes to query for")
 	
 	return cmd
 }
@@ -199,7 +214,7 @@ func cmdQuote() *cobra.Command {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
-			}			
+			}
 			
 			id, err := strconv.ParseUint(args[0], 10, 32)
 			if err != nil {

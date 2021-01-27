@@ -1,0 +1,3 @@
+Command to run grpcui (browser-based GPRC client) from mtzone root directory:
+
+$ grpcui -proto ./proto/microtick/msg/GRPC.proto -import-path ./vendor/github.com/cosmos/cosmos-sdk/third_party/proto -import-path ./proto -import-path ./vendor/github.com/cosmos/cosmos-sdk/proto -plaintext localhost:9090
