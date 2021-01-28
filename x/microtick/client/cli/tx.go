@@ -69,14 +69,16 @@ func cmdQuoteCancel() *cobra.Command {
 
 func cmdQuoteCreate() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create [market] [duration] [backing] [spot] [ask_premium] [bid_premium]",
+		Use:   "create [market] [duration] [backing] [spot] [premium]",
 		Short: "Create a new quote",
-		Args:  cobra.ExactArgs(6),
+		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
+			
+			bid, _ := cmd.Flags().GetString("bid")
 			
 			message := msg.TxCreateQuote {
 				Market: args[0],
@@ -85,7 +87,7 @@ func cmdQuoteCreate() *cobra.Command {
 				Backing: args[2],
 				Spot: args[3],
 				Ask: args[4],
-				Bid: args[5],
+				Bid: bid,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
@@ -93,6 +95,7 @@ func cmdQuoteCreate() *cobra.Command {
 	}
 	
 	flags.AddTxFlagsToCmd(cmd)
+	cmd.Flags().String("bid", "0premium", "bid premium")
 	
 	return cmd
 }
@@ -125,21 +128,23 @@ func cmdQuoteDeposit() *cobra.Command {
 
 func cmdQuoteUpdate() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update [id] [newspot] [new_ask_premium] [new_bid_premium]",
+		Use:   "update [id] [spot] [premium]",
 		Short: "Update a quote",
-		Args:  cobra.ExactArgs(4),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 			
+			bid, _ := cmd.Flags().GetString("bid")
+			
 			message := msg.TxUpdateQuote {
 				Id: mt.NewMicrotickIdFromString(args[0]),
 				Requester: clientCtx.GetFromAddress(),
 				NewSpot: args[1],
 				NewAsk: args[2],
-				NewBid: args[3],
+				NewBid: bid,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)
@@ -147,6 +152,7 @@ func cmdQuoteUpdate() *cobra.Command {
 	}
 	
 	flags.AddTxFlagsToCmd(cmd)
+	cmd.Flags().String("bid", "0premium", "bid premium")
 	
 	return cmd
 }

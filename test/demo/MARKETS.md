@@ -25,12 +25,11 @@ Assuming you followed the instructions in the README, the "user" account should 
 
 * Use the current price as your spot price.  Example: 35000spot
 * Use the difference between the daily high / low divided by two to approximate a 12-hour volatility. (Don't use this algorithm in production please!).  Example: 1000premium
-* We'll use a bid premium of 0premium
 
 3.  Create a quote:
 
 ```
-$ mtm tx microtick create XBTUSD 12hour 0.5backing 35000spot 1000premium 0premium --from user --home ./data/microtick --keyring-backend test --chain-id microtick --gas 1000000 -y
+$ mtm tx microtick create XBTUSD 12hour 0.5backing 35000spot 1000premium --from user --home ./data/microtick --keyring-backend test --chain-id microtick --gas 1000000 -y
 ```
 
 You should now see that the XBTUSD market has a consensus spot price:
