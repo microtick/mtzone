@@ -28,12 +28,13 @@
   const CHAINHOME=HOME + "/" + config.chain_id
   const NODE=config.executable + "." + config.chain_id
   
-  console.log("Setting up chain: " + config.chain_id + " in " + CHAINHOME)
+  console.log("Setting up chain: " + config.chain_id)
+  console.log("home: " + CHAINHOME)
   await cp.exec("pkill " + config.executable)
   await cp.exec("rm -rf " + CHAINHOME)
   
   const chainexec = cmd => {
-    console.log(cmd)
+    console.log("  $ " + config.executable + " --home " + CHAINHOME + " " + cmd)
     const bufs = cp.spawnSync(config.executable, [
       "--home " + CHAINHOME,
       cmd

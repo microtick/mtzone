@@ -40,28 +40,33 @@ if [[ -d $DATA ]] && [[ ! "$1" == "skip" ]]; then
   echo
 fi
 
-killall gaiad &> /dev/null
-killall mtm &> /dev/null
+echo "Stopping running processes"
+echo "--------------------------"
+
+redirect killall gaiad 
+redirect killall mtm 
 
 # Delete data from old runs
-rm -rf $CHAIN_DATA &> /dev/null
-rm -rf $HOME/.relayer &> /dev/null
+redirect rm -rf $CHAIN_DATA 
+redirect rm -rf $HOME/.relayer 
 
 # Setup chains
+echo
 echo "Chains"
 echo "------"
 
 node setup-chain.js $DATA ./gaiad.json
 node seal-chain.js $DATA ./gaiad.json
 redirect gaiad start --home $DATA/gaiad &
+echo
 
 node setup-chain.js $DATA ./microtick.json
 node seal-chain.js $DATA ./microtick.json
 redirect mtm start --home $DATA/microtick &
+echo
 
 # Governance
 
-echo
 echo "Governance"
 echo "----------"
 
@@ -97,4 +102,7 @@ echo "Importing key $(rly keys restore $MTM_CHAIN testkey "$MTM_MNEMONIC")"
 rly light init $GAIAD_CHAIN -f
 rly light init $MTM_CHAIN -f
 
-rly tx link funding -d -o 3s
+echo
+echo "Linking chains"
+echo "--------------"
+rly tx link funding --timeout 10s
