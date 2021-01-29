@@ -224,7 +224,7 @@ func NewApp(
 ) *MicrotickApp {
 	
 	// Check MTROOT version.lock file for correct version, if not, print a warning
-	filename := fmt.Sprintf("%s/version.lock", homePath)
+	filename := fmt.Sprintf("%s/version.lock", DefaultHome)
 	versionRead, err := os.Open(filename)
 	if err != nil {
 		versionWrite, err := os.Create(filename)

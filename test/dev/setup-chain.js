@@ -28,8 +28,8 @@
   const CHAINHOME=HOME + "/" + config.chain_id
   const NODE=config.executable + "." + config.chain_id
   
+  console.log()
   console.log("Setting up chain: " + config.chain_id)
-  console.log("home: " + CHAINHOME)
   await cp.exec("pkill " + config.executable)
   await cp.exec("rm -rf " + CHAINHOME)
   

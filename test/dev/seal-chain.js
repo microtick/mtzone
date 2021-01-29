@@ -9,9 +9,11 @@
   
   const CHAINHOME=HOME + "/" + config.chain_id
   
+  console.log()
   console.log("Sealing chain: " + config.chain_id)
   
   const chainexec = cmd => {
+    console.log("  $ " + config.executable + " --home " + CHAINHOME + " " + cmd)
     const bufs = cp.spawnSync(config.executable, [
       "--home " + CHAINHOME,
       cmd

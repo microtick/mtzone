@@ -15,6 +15,7 @@ func (querier Querier) Params(c context.Context, req *QueryParamsRequest) (*Quer
 func baseQueryParams(ctx sdk.Context, keeper keeper.Keeper, req *QueryParamsRequest) (*QueryParamsResponse, error) {
     params := keeper.GetParams(ctx)
     extDenom := keeper.GetExtTokenType(ctx)
+    extPerInt := keeper.GetExtPerInt(ctx)
     
     response := QueryParamsResponse {
         EuropeanOptions: params.EuropeanOptions,
@@ -30,6 +31,7 @@ func baseQueryParams(ctx sdk.Context, keeper keeper.Keeper, req *QueryParamsRequ
         MintRatio: params.MintRatio.String(),
         CancelSlashRate: params.CancelSlashRate.String(),
         BackingDenom: extDenom,
+        BackingRatio: extPerInt,
     }
     
     return &response, nil

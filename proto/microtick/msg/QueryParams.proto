@@ -61,5 +61,9 @@ message QueryParamsResponse {
     (gogoproto.jsontag) = "backing_denom"
   ];
   
+  uint32 backing_ratio = 14 [
+    (gogoproto.jsontag) = "backing_ratio"
+  ];
+  
 }
 
