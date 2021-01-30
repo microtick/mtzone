@@ -14,6 +14,9 @@
         }
       },
       "microtick": {
+        "params": {
+           "mint_denom": "stake"
+         },
         "durations": [
            { "name": "5minute", "seconds": 300 },
            { "name": "15minute", "seconds": 900 },
