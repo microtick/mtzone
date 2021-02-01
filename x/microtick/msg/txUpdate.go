@@ -1,7 +1,6 @@
 package msg
 
 import (
-    "fmt"
     "time"
     
     "github.com/gogo/protobuf/proto"
@@ -12,32 +11,39 @@ import (
     "gitlab.com/microtick/mtzone/x/microtick/keeper"
 )
 
-func (msg TxDepositQuote) Route() string { return "microtick" }
+func (msg TxUpdateQuote) Route() string { return "microtick" }
 
-func (msg TxDepositQuote) Type() string { return "quote_deposit" }
+func (msg TxUpdateQuote) Type() string { return "update" }
 
-func (msg TxDepositQuote) ValidateBasic() error {
+func (msg TxUpdateQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
         return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
+    }
+    newBid := mt.NewMicrotickPremiumFromString(msg.NewBid)
+    newAsk := mt.NewMicrotickPremiumFromString(msg.NewAsk)
+    if newBid.Amount.GT(newAsk.Amount) {
+        return sdkerrors.Wrap(mt.ErrInvalidQuote, "bid > ask")
     }
     return nil
 }
 
-func (msg TxDepositQuote) GetSignBytes() []byte {
+func (msg TxUpdateQuote) GetSignBytes() []byte {
     return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
-func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
+func (msg TxUpdateQuote) GetSigners() []sdk.AccAddress {
     return []sdk.AccAddress{ msg.Requester }
 }
 
 // Handler
 
-func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
-    msg TxDepositQuote) (*sdk.Result, error) {
+func HandleTxUpdateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
+    msg TxUpdateQuote) (*sdk.Result, error) {
         
-    deposit := mt.NewMicrotickCoinFromString(msg.Deposit)
-        
+    newSpot := mt.NewMicrotickSpotFromString(msg.NewSpot)
+    newBid := mt.NewMicrotickPremiumFromString(msg.NewBid)
+    newAsk := mt.NewMicrotickPremiumFromString(msg.NewAsk)
+    
     quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
         return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
@@ -51,15 +57,7 @@ func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mic
         return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
-    commission := mt.NewMicrotickCoinFromDec(deposit.Amount.Mul(params.CommissionQuotePercent))
-    
-    total := deposit.Add(commission)
-    
-    // Subtract coins from requester
-    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
-    if err != nil {
-        return nil, mt.ErrInsufficientFunds
-    }
+    commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
     
     dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
@@ -67,6 +65,26 @@ func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mic
     }
     
     dataMarket.FactorOut(quote)
+    dataMarket.DeleteQuote(quote)
+    
+    now := ctx.BlockHeader().Time
+    
+    if newSpot.Amount.IsPositive() {
+        quote.Spot = newSpot
+        quote.Freeze(now, params)
+    }
+    
+    if newAsk.Amount.IsPositive() {
+        quote.Ask = newAsk
+        quote.Freeze(now, params)
+    }
+    
+    if newBid.Amount.GTE(sdk.ZeroDec()) {
+        quote.Bid = newBid
+    }
+    
+    // Recompute quantity
+    quote.ComputeQuantity()
     
     orderBook := dataMarket.GetOrderBook(quote.DurationName)
     adjustment := sdk.OneDec()
@@ -77,44 +95,37 @@ func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mic
         if quote.Ask.Amount.GT(average) {
             adjustment = average.Quo(quote.Ask.Amount)
         }
+    }    
+    
+    dataMarket.AddQuote(quote)
+    if !dataMarket.FactorIn(quote, true) {
+        return nil, mt.ErrQuoteParams
+    }
+    
+    mtKeeper.SetDataMarket(ctx, dataMarket)
+    mtKeeper.SetActiveQuote(ctx, quote)
+    
+    // Subtract coins from requester
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
+    if err != nil {
+        return nil, mt.ErrInsufficientFunds
     }
     
     // Add commission to pool
-    //fmt.Printf("Deposit Commission: %s\n", commission.String())
+    //fmt.Printf("Update Commission: %s\n", commission.String())
     reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
     if err != nil {
         return nil, err
     }
     
-    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Add(deposit.Amount))
-    quote.ComputeQuantity()
-    
-    // But we do freeze the new backing from any other updates
-    now := ctx.BlockHeader().Time
-    quote.Freeze(now, params)
-    
-    if !dataMarket.FactorIn(quote, true) {
-        return nil, mt.ErrQuoteParams
-    }
-    mtKeeper.SetDataMarket(ctx, dataMarket)
-    mtKeeper.SetActiveQuote(ctx, quote)
-    
-     // DataAccountStatus
-    
-    accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Requester)
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(deposit)
-    mtKeeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
-    
     // Data
-    data := DepositQuoteData {
-      Account: msg.Requester,
-      Id: quote.Id,
-      Market: dataMarket.Market,
-      Consensus: dataMarket.Consensus,
+    data := UpdateQuoteData {
       Time: now.Unix(),
-      Backing: deposit,
-      QuoteBacking: quote.Backing,
+      Market: quote.Market,
+      Duration: quote.DurationName,
+      Consensus: dataMarket.Consensus,
       Commission: commission,
+      Reward: *reward,
     }
     bz, err := proto.Marshal(&data)
     
@@ -122,15 +133,6 @@ func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mic
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.deposit"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.deposit"),
-        sdk.NewAttribute("mtm.MarketTick", quote.Market),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute("commission", commission.String()),
-        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

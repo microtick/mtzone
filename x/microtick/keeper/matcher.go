@@ -390,6 +390,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
         )
         
         // Append this counter party fill to the trade counterparty list
+        matcher.Trade.Quantity.Amount = matcher.Trade.Quantity.Amount.Add(thisFill.Quantity.Amount)
         matcher.Trade.Legs = append(matcher.Trade.Legs, NewDataTradeLeg(mt.MicrotickId(i), thisFill.LegType, thisFill.Backing, 
             thisFill.Premium, thisFill.Cost, thisFill.Quantity, long, short, quotedParams,
         ))

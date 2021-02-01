@@ -41,55 +41,27 @@ message TxCreateQuote {
 
 message CreateQuoteData {
   
-  uint32 id = 1 [
+  int64 time = 1 [
+    (gogoproto.jsontag) = "time"
+  ];
+  
+  uint32 id = 2 [
     (gogoproto.jsontag) = "id"
   ];
   
-  bytes account = 2 [
-    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "account"
-  ];
-  
-  string market = 3 [
-    (gogoproto.jsontag) = "market"
-  ];
-  
-  string duration = 4 [
-    (gogoproto.jsontag) = "duration"
-  ];
-  
-  cosmos.base.v1beta1.DecCoin spot = 5 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "spot"
-  ];  
-  
-  cosmos.base.v1beta1.DecCoin ask = 6 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "ask"
-  ];  
-  
-  cosmos.base.v1beta1.DecCoin bid = 7 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "bid"
-  ];  
-  
-  cosmos.base.v1beta1.DecCoin consensus = 8 [
+  cosmos.base.v1beta1.DecCoin consensus = 3 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "consensus"
   ];  
   
-  int64 time = 9 [
-    (gogoproto.jsontag) = "time"
-  ];
-  
-  cosmos.base.v1beta1.DecCoin backing = 10 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "backing"
-  ];  
-  
-  cosmos.base.v1beta1.DecCoin commission = 11 [
+  cosmos.base.v1beta1.DecCoin commission = 4 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "commission"
   ];  
+  
+  cosmos.base.v1beta1.Coin reward = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "reward"
+  ];
   
 }

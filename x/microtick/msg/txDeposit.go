@@ -1,7 +1,6 @@
 package msg
 
 import (
-    "fmt"
     "time"
     
     "github.com/gogo/protobuf/proto"
@@ -12,31 +11,31 @@ import (
     "gitlab.com/microtick/mtzone/x/microtick/keeper"
 )
 
-func (msg TxWithdrawQuote) Route() string { return "microtick" }
+func (msg TxDepositQuote) Route() string { return "microtick" }
 
-func (msg TxWithdrawQuote) Type() string { return "quote_withdraw" }
+func (msg TxDepositQuote) Type() string { return "deposit" }
 
-func (msg TxWithdrawQuote) ValidateBasic() error {
+func (msg TxDepositQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
         return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Requester.String())
     }
     return nil
 }
 
-func (msg TxWithdrawQuote) GetSignBytes() []byte {
+func (msg TxDepositQuote) GetSignBytes() []byte {
     return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
-func (msg TxWithdrawQuote) GetSigners() []sdk.AccAddress {
+func (msg TxDepositQuote) GetSigners() []sdk.AccAddress {
     return []sdk.AccAddress{ msg.Requester }
 }
 
 // Handler
 
-func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
-    msg TxWithdrawQuote) (*sdk.Result, error) {
+func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams, 
+    msg TxDepositQuote) (*sdk.Result, error) {
         
-    withdraw := mt.NewMicrotickCoinFromString(msg.Withdraw)
+    deposit := mt.NewMicrotickCoinFromString(msg.Deposit)
         
     quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
     if err != nil {
@@ -51,25 +50,14 @@ func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mi
         return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
-    // Withdraw amount must be strictly less than quote backing (to withdraw the full amount, use CancelQUote)
-    if withdraw.IsGTE(quote.Backing) {
-        return nil, mt.ErrQuoteBacking
-    }
+    commission := mt.NewMicrotickCoinFromDec(deposit.Amount.Mul(params.CommissionQuotePercent))
     
-    commission := mt.NewMicrotickCoinFromDec(withdraw.Amount.Mul(params.CommissionQuotePercent))
+    total := deposit.Add(commission)
     
-    total := withdraw.Sub(commission)
-    
-    // Add coins from requester
-    err = mtKeeper.DepositMicrotickCoin(ctx, msg.Requester, total)
+    // Subtract coins from requester
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
-    }
-    // Add commission to pool
-    //fmt.Printf("Withdraw Commission: %s\n", commission.String())
-    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, false, sdk.ZeroDec())
-    if err != nil {
-        return nil, err
     }
     
     dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
@@ -79,7 +67,25 @@ func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mi
     
     dataMarket.FactorOut(quote)
     
-    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Sub(withdraw.Amount))
+    orderBook := dataMarket.GetOrderBook(quote.DurationName)
+    adjustment := sdk.OneDec()
+    if len(orderBook.CallAsks.Data) > 0 {
+        bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
+        bestPutAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
+        average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
+        if quote.Ask.Amount.GT(average) {
+            adjustment = average.Quo(quote.Ask.Amount)
+        }
+    }
+    
+    // Add commission to pool
+    //fmt.Printf("Deposit Commission: %s\n", commission.String())
+    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
+    if err != nil {
+        return nil, err
+    }
+    
+    quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Add(deposit.Amount))
     quote.ComputeQuantity()
     
     // But we do freeze the new backing from any other updates
@@ -95,19 +101,18 @@ func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mi
      // DataAccountStatus
     
     accountStatus := mtKeeper.GetAccountStatus(ctx, msg.Requester)
-    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Sub(withdraw)
+    accountStatus.QuoteBacking = accountStatus.QuoteBacking.Add(deposit)
     mtKeeper.SetAccountStatus(ctx, msg.Requester, accountStatus)
     
     // Data
-    data := WithdrawQuoteData {
-      Account: msg.Requester,
-      Id: quote.Id,
-      Market: dataMarket.Market,
-      Consensus: dataMarket.Consensus,
+    data := DepositQuoteData {
       Time: now.Unix(),
-      Backing: withdraw,
-      QuoteBacking: quote.Backing,
+      Market: dataMarket.Market,
+      Duration: quote.DurationName,
+      Consensus: dataMarket.Consensus,
+      Backing: quote.Backing,
       Commission: commission,
+      Reward: *reward,
     }
     bz, err := proto.Marshal(&data)
     
@@ -115,15 +120,6 @@ func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mi
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.withdraw"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.withdraw"),
-        sdk.NewAttribute("mtm.MarketTick", quote.Market),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute("commission", commission.String()),
-        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

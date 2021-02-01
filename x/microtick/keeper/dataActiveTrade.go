@@ -10,8 +10,7 @@ import (
 
 func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, 
     dur mt.MicrotickDurationName, durSeconds mt.MicrotickDuration, 
-    otype mt.MicrotickOrderType, taker mt.MicrotickAccount, 
-    quantity mt.MicrotickQuantity, strike mt.MicrotickSpot,
+    otype mt.MicrotickOrderType, taker mt.MicrotickAccount, strike mt.MicrotickSpot,
     commission mt.MicrotickCoin, settleIncentive mt.MicrotickCoin) DataActiveTrade {
         
     expire, err := time.ParseDuration(fmt.Sprintf("%d", durSeconds) + "s")
@@ -24,7 +23,7 @@ func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket,
         Duration: dur,
         Order: otype,
         Taker: taker,
-        Quantity: quantity,
+        Quantity: mt.NewMicrotickQuantityFromInt(0),
         Start: now.Unix(),
         Expiration: now.Add(expire).Unix(),
         Strike: strike,

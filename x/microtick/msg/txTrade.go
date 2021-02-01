@@ -1,8 +1,6 @@
 package msg
 
 import (
-    "fmt"
-    
     "github.com/gogo/protobuf/proto"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -11,16 +9,21 @@ import (
     "gitlab.com/microtick/mtzone/x/microtick/keeper"
 )
 
-func (msg TxPickTrade) Route() string { return "microtick" }
+func (msg TxMarketTrade) Route() string { return "microtick" }
 
-func (msg TxPickTrade) Type() string { return "trade_pick" }
+func (msg TxMarketTrade) Type() string { return "trade" }
 
-func (msg TxPickTrade) ValidateBasic() error {
+func (msg TxMarketTrade) ValidateBasic() error {
     if msg.OrderType != mt.MicrotickOrderBuyCall &&
         msg.OrderType != mt.MicrotickOrderSellCall &&
         msg.OrderType != mt.MicrotickOrderBuyPut &&
-        msg.OrderType != mt.MicrotickOrderSellPut {
+        msg.OrderType != mt.MicrotickOrderSellPut &&
+        msg.OrderType != mt.MicrotickOrderBuySyn &&
+        msg.OrderType != mt.MicrotickOrderSellSyn {
         return sdkerrors.Wrap(mt.ErrInvalidOrderType, msg.OrderType)
+    }
+    if msg.Market == "" {
+        return sdkerrors.Wrap(mt.ErrMissingParam, "market")
     }
     if msg.Taker.Empty() {
         return sdkerrors.Wrap(mt.ErrInvalidAddress, msg.Taker.String())
@@ -28,45 +31,65 @@ func (msg TxPickTrade) ValidateBasic() error {
     return nil
 }
 
-func (msg TxPickTrade) GetSignBytes() []byte {
+func (msg TxMarketTrade) GetSignBytes() []byte {
     return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
-func (msg TxPickTrade) GetSigners() []sdk.AccAddress {
+func (msg TxMarketTrade) GetSigners() []sdk.AccAddress {
     return []sdk.AccAddress{ msg.Taker }
 }
 
 // Handler
 
-func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
-    msg TxPickTrade) (*sdk.Result, error) {
+func HandleTxMarketTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.MicrotickParams,
+    msg TxMarketTrade) (*sdk.Result, error) {
+        
+    quantity := mt.NewMicrotickQuantityFromString(msg.Quantity)
+     
+    if !mtKeeper.HasDataMarket(ctx, msg.Market) {
+        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, msg.Market)
+    }
     
-    quote, err := mtKeeper.GetActiveQuote(ctx, msg.Id)
-    if err != nil {
-        return nil, sdkerrors.Wrapf(mt.ErrInvalidQuote, "%d", msg.Id)
+    if !mtKeeper.ValidDurationName(ctx, msg.Duration) {
+        return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
     // Step 1 - Obtain the strike spot price and create trade struct
-    market, err := mtKeeper.GetDataMarket(ctx, quote.Market)
+    market, err := mtKeeper.GetDataMarket(ctx, msg.Market)
     if err != nil {
-        return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, quote.Market)
+        return nil, mt.ErrInvalidMarket
     }
-    
-    if quote.Provider.Equals(msg.Taker) {
-        return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "already owner")
-    }
-    
     commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
     settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
     now := ctx.BlockHeader().Time
-    durName := mtKeeper.NameFromDuration(ctx, quote.Duration)
-    trade := keeper.NewDataActiveTrade(now, quote.Market, durName, mtKeeper.DurationFromName(ctx, durName),
-        msg.OrderType, msg.Taker, quote.Quantity, market.Consensus, commission, settleIncentive)
+    seconds := mtKeeper.DurationFromName(ctx, msg.Duration)
+    trade := keeper.NewDataActiveTrade(now, msg.Market, msg.Duration, seconds,
+        msg.OrderType, msg.Taker, market.Consensus, commission, settleIncentive)
         
-    matcher := keeper.NewMatcher(trade, nil)
-    
-    // Step 2 - Compute premium and cost
-    matcher.MatchQuote(mtKeeper, msg.OrderType, quote)
+    matcher := keeper.NewMatcher(trade, func (id mt.MicrotickId) keeper.DataActiveQuote {
+        quote, err := mtKeeper.GetActiveQuote(ctx, id)
+        if err != nil {
+            // This function should always be called with an active quote
+            panic("Invalid quote ID")
+        }
+        return quote
+    })
+        
+    // Step 2 - Compute premium for quantity requested
+    if msg.OrderType == mt.MicrotickOrderBuyCall || msg.OrderType == mt.MicrotickOrderSellCall ||
+        msg.OrderType == mt.MicrotickOrderBuyPut || msg.OrderType == mt.MicrotickOrderSellPut {
+            
+        err = matcher.MatchByQuantity(mtKeeper, &market, msg.OrderType, quantity)
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        syntheticBook := mtKeeper.GetSyntheticBook(ctx, &market, msg.Duration, &msg.Taker)
+        err = matcher.MatchSynthetic(mtKeeper, &syntheticBook, &market, quantity)
+        if err != nil {
+            return nil, err
+        }
+    }
     
     if matcher.HasQuantity {
         
@@ -100,13 +123,12 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
         mtKeeper.SetActiveTrade(ctx, matcher.Trade)
         
         // Data
-        data := PickTradeData {
-            Market: quote.Market,
-            Duration: quote.DurationName,
+        data := MarketTradeData {
             Consensus: market.Consensus,
             Time: now.Unix(),
             Trade: matcher.Trade,
             Commission: commission,
+            Reward: *reward,
         }
         bz, err := proto.Marshal(&data)
         
@@ -114,36 +136,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
         events = append(events, sdk.NewEvent(
             sdk.EventTypeMessage,
             sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
-        ), sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute("mtm.NewTrade", fmt.Sprintf("%d", matcher.Trade.Id)),
-            sdk.NewAttribute(fmt.Sprintf("trade.%d", matcher.Trade.Id), "event.create"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Taker), "trade.start"),
-            sdk.NewAttribute("mtm.MarketTick", quote.Market),
-        ), sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute("commission", commission.String()),
-            sdk.NewAttribute("reward", reward.String()),
         ))
-        
-        for _, leg := range trade.Legs {
-            var maker mt.MicrotickAccount
-            if leg.Long.Equals(msg.Taker) {
-                maker = leg.Short
-            } else {
-                maker = leg.Long
-            }
-            quoteKey := fmt.Sprintf("quote.%d", leg.Quoted.Id)
-            matchType := "event.match"
-            if leg.Quoted.Final {
-                matchType = "event.final"
-            }
-            events = append(events, sdk.NewEvent(
-                sdk.EventTypeMessage,
-                sdk.NewAttribute(fmt.Sprintf("acct.%s", maker), "trade.start"),
-                sdk.NewAttribute(quoteKey, matchType),
-            ))
-        }
         
         ctx.EventManager().EmitEvents(events)
             
@@ -153,7 +146,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
         }, nil
         
     }
-       
+    
     // No liquidity available
     return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "no liquidity available")
 }

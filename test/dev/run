@@ -88,6 +88,7 @@ echo
 echo "Relayer"
 echo "-------"
 
+sleep 10
 rly config init
 rly config add-dir ./relayer
 

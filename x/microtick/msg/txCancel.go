@@ -1,7 +1,6 @@
 package msg
 
 import (
-    "fmt"
     "time"
     
     "github.com/gogo/protobuf/proto"
@@ -21,7 +20,7 @@ func NewTxCancelQuote(id mt.MicrotickId, requester sdk.AccAddress) TxCancelQuote
 
 func (msg TxCancelQuote) Route() string { return "microtick" }
 
-func (msg TxCancelQuote) Type() string { return "quote_cancel" }
+func (msg TxCancelQuote) Type() string { return "cancel" }
 
 func (msg TxCancelQuote) ValidateBasic() error {
     if msg.Requester.Empty() {
@@ -75,7 +74,7 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
         if !quote.Stale(ctx.BlockHeader().Time) {
             return nil, mt.ErrQuoteNotStale
         }
-        slash := quote.Backing.Amount.Mul(params.CancelSlashRate)
+        slash = quote.Backing.Amount.Mul(params.CancelSlashRate)
         backing.Amount = backing.Amount.Sub(slash)
         err = mtKeeper.DepositMicrotickCoin(ctx, msg.Requester, mt.NewMicrotickCoinFromDec(slash))
         if err != nil {
@@ -107,13 +106,12 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     
     // Data
     data := CancelQuoteData {
-      Account: msg.Requester,
-      Id: quote.Id,
+      Time: ctx.BlockHeader().Time.Unix(),
+      Account: quote.Provider,
       Market: quote.Market,
       Duration: quote.DurationName,
       Consensus: dataMarket.Consensus,
-      Time: ctx.BlockHeader().Time.Unix(),
-      Refund: quote.Backing,
+      Refund: backing,
       Slash: mt.NewMicrotickCoinFromDec(slash),
       Commission: commission,
     }
@@ -123,22 +121,7 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute(fmt.Sprintf("quote.%d", quote.Id), "event.cancel"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester.String()), "quote.cancel"),
-        sdk.NewAttribute("mtm.MarketTick", quote.Market),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute("commission", commission.String()),
     ))
-    
-    if quote.Provider.String() != msg.Requester.String() {
-        events = append(events, sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", quote.Provider.String()), "quote.cancel"),
-        ))
-    }
     
     ctx.EventManager().EmitEvents(events)
     

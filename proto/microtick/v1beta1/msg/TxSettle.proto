@@ -19,7 +19,7 @@ message TxSettleTrade {
    
 }
 
-message SettlementData {
+message SettleLegData {
   
   uint32 leg_id = 1 [
     (gogoproto.jsontag) = "leg_id"
@@ -47,24 +47,24 @@ message SettlementData {
   
 }
 
-message TradeSettlementData {
+message SettleTradeData {
 
-  uint32 id = 1 [
-    (gogoproto.jsontag) = "id"
-  ];  
-  
-  int64 time = 2 [
+  int64 time = 1 [
     (gogoproto.jsontag) = "time"
   ];
+  
+  uint32 id = 2 [
+    (gogoproto.jsontag) = "id"
+  ];  
   
   cosmos.base.v1beta1.DecCoin final = 3 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "final"
   ];
   
-  repeated SettlementData settlements = 4 [
+  repeated SettleLegData legs = 4 [
     (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "settlements"
+    (gogoproto.jsontag) = "legs"
   ];
   
   cosmos.base.v1beta1.DecCoin incentive = 5 [
@@ -72,14 +72,19 @@ message TradeSettlementData {
     (gogoproto.jsontag) = "incentive"
   ];
   
-  cosmos.base.v1beta1.DecCoin commission = 6 [
+  bytes settler = 6 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag) = "settler"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin commission = 7 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "commission"
   ];
   
-  bytes settler = 7 [
-    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "settler"
+  cosmos.base.v1beta1.Coin reward = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "reward"
   ];
    
 }

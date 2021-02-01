@@ -6,7 +6,7 @@ import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "gitlab.com/microtick/mtzone/x/microtick/msg";
 
-message TxUpdateQuote {
+message TxCancelQuote {
   
   uint32 id = 1 [
     (gogoproto.jsontag) = "id"
@@ -17,24 +17,12 @@ message TxUpdateQuote {
     (gogoproto.jsontag) = "requester"
   ];
   
-  string new_spot = 3 [
-    (gogoproto.jsontag) = "new_spot"
-  ];
-  
-  string new_ask = 4 [
-    (gogoproto.jsontag) = "new_ask"
-  ];
-  
-  string new_bid = 5 [
-    (gogoproto.jsontag) = "new_bid"
-  ];
-  
 }
 
-message UpdateQuoteData {
+message CancelQuoteData {
   
-  uint32 id = 1 [
-    (gogoproto.jsontag) = "id"
+  int64 time = 1 [
+    (gogoproto.jsontag) = "time"
   ];
   
   bytes account = 2 [
@@ -50,31 +38,22 @@ message UpdateQuoteData {
     (gogoproto.jsontag) = "duration"
   ];
   
-  cosmos.base.v1beta1.DecCoin spot = 5 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "spot"
-  ];
-  
-  cosmos.base.v1beta1.DecCoin ask = 6 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "ask"
-  ];
-  
-  cosmos.base.v1beta1.DecCoin bid = 7 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "bid"
-  ];
-  
-  cosmos.base.v1beta1.DecCoin consensus = 8 [
+  cosmos.base.v1beta1.DecCoin consensus = 5 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "consensus"
   ];
   
-  int64 time = 9 [
-    (gogoproto.jsontag) = "time"
+  cosmos.base.v1beta1.DecCoin refund = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "refund"
   ];
   
-  cosmos.base.v1beta1.DecCoin commission = 10 [
+  cosmos.base.v1beta1.DecCoin slash = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "slash"
+  ];
+  
+  cosmos.base.v1beta1.DecCoin commission = 8 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "commission"
   ];

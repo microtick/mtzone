@@ -1,8 +1,6 @@
 package msg
 
 import (
-    "fmt"
-    
    	"github.com/gogo/protobuf/proto"
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -13,7 +11,7 @@ import (
 
 func (msg TxCreateQuote) Route() string { return "microtick" }
 
-func (msg TxCreateQuote) Type() string { return "quote_create" }
+func (msg TxCreateQuote) Type() string { return "create" }
 
 func (msg TxCreateQuote) ValidateBasic() error {
     if msg.Market == "" {
@@ -117,17 +115,11 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     
     // Data
     data := CreateQuoteData {
-      Account: msg.Provider,
-      Id: id,
-      Market: msg.Market,
-      Duration: msg.Duration,
-      Spot: spot,
-      Ask: ask,
-      Bid: bid,
-      Consensus: dataMarket.Consensus,
       Time: now.Unix(),
-      Backing: backing,
+      Id: id,
+      Consensus: dataMarket.Consensus,
       Commission: commission,
+      Reward: *reward,
     }
     bz, err := proto.Marshal(&data)
     
@@ -135,16 +127,6 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute("mtm.NewQuote", fmt.Sprintf("%d", id)),
-        sdk.NewAttribute(fmt.Sprintf("quote.%d", id), "event.create"),
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Provider.String()), "quote.create"),
-        sdk.NewAttribute("mtm.MarketTick", msg.Market),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute("commission", commission.String()),
-        sdk.NewAttribute("reward", reward.String()),
     ))
     
     ctx.EventManager().EmitEvents(events)

@@ -56,6 +56,8 @@ func cmdQuoteCancel() *cobra.Command {
 			}
 			
 			message := msg.TxCancelQuote {
+				Id: mt.NewMicrotickIdFromString(args[0]),
+				Requester: clientCtx.GetFromAddress(),				
 			}
 			
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &message)

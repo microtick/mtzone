@@ -3,7 +3,7 @@ package microtick.keeper;
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
-import "microtick/keeper/OrderedList.proto";
+import "microtick/v1beta1/keeper/OrderedList.proto";
 
 option go_package = "gitlab.com/microtick/mtzone/x/microtick/keeper";
 

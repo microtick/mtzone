@@ -2,7 +2,7 @@ syntax = "proto3";
 package microtick.types;
 
 import "gogoproto/gogo.proto";
-import "microtick/types/Params.proto";
+import "microtick/v1beta1/types/Params.proto";
 
 option go_package = "gitlab.com/microtick/mtzone/x/microtick/types";
 

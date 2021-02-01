@@ -1,7 +1,6 @@
 package msg
 
 import (
-    "fmt"
     "time"
     
     "github.com/gogo/protobuf/proto"
@@ -24,7 +23,7 @@ import (
 
 func (msg TxSettleTrade) Route() string { return "microtick" }
 
-func (msg TxSettleTrade) Type() string { return "trade_settle" }
+func (msg TxSettleTrade) Type() string { return "settle" }
 
 func (msg TxSettleTrade) ValidateBasic() error {
     if msg.Requester.Empty() {
@@ -51,7 +50,7 @@ func HandleTxSettleTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
         return nil, sdkerrors.Wrapf(mt.ErrInvalidTrade, "%d", msg.Id)
     }
     
-    var settleData []SettlementData
+    var settleLegData []SettleLegData
     
     // check if trade has expired
     now := ctx.BlockHeader().Time
@@ -117,7 +116,7 @@ func HandleTxSettleTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
             accountStatus.ActiveTrades.Delete(trade.Id)
             mtKeeper.SetAccountStatus(ctx, pair.SettleAccount, accountStatus)
             
-            settleData = append(settleData, SettlementData {
+            settleLegData = append(settleLegData, SettleLegData {
                 LegId: pair.LegId,
                 SettleAccount: pair.SettleAccount,
                 Settle: pair.Settle,
@@ -138,14 +137,15 @@ func HandleTxSettleTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
         
     }
     
-    data := TradeSettlementData {
+    data := SettleTradeData {
         Id: trade.Id,
         Time: now.Unix(),
         Final: dataMarket.Consensus,
-        Settlements: settleData,
+        Legs: settleLegData,
         Incentive: trade.SettleIncentive,
-        Commission: commission,
         Settler: msg.Requester,
+        Commission: commission,
+        Reward: *reward,
     }
     bz, err := proto.Marshal(&data)
 
@@ -153,26 +153,6 @@ func HandleTxSettleTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     events = append(events, sdk.NewEvent(
         sdk.EventTypeMessage,
         sdk.NewAttribute(sdk.AttributeKeyModule, mt.ModuleKey),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute(fmt.Sprintf("trade.%d", trade.Id), "event.settle"),
-    ), sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute("commission", commission.String()),
-        sdk.NewAttribute("reward", reward.String()),
-    ))
-    
-    for _, leg := range trade.Legs {
-        events = append(events, sdk.NewEvent(
-            sdk.EventTypeMessage,
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", leg.Long), "trade.end"),
-            sdk.NewAttribute(fmt.Sprintf("acct.%s", leg.Short), "trade.end"),
-        ))
-    }
-    
-    events = append(events, sdk.NewEvent(
-        sdk.EventTypeMessage,
-        sdk.NewAttribute(fmt.Sprintf("acct.%s", msg.Requester), "settle.finalize"),
     ))
     
     ctx.EventManager().EmitEvents(events)
