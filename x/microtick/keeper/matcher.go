@@ -385,7 +385,7 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             thisQuote.Id,
             finalFill,
             quotedPremium,
-            thisQuote.ComputeUnitBacking(),
+            thisQuote.Backing,
             thisQuote.Spot,
         )
         

@@ -25,8 +25,8 @@ message ResponseQuotedParams {
     (gogoproto.jsontag) = "premium"
   ];
   
-  string unit_backing = 3 [
-    (gogoproto.jsontag) = "unit_backing"
+  string remain_backing = 3 [
+    (gogoproto.jsontag) = "remain_backing"
   ];
   
   cosmos.base.v1beta1.DecCoin spot = 4 [

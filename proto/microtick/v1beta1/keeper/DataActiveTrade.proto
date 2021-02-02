@@ -21,10 +21,9 @@ message DataQuotedParams {
     (gogoproto.jsontag) = "premium"
   ];
   
-  string unit_backing = 4 [
+  cosmos.base.v1beta1.DecCoin remain_backing = 4 [
     (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.jsontag) = "unit_backing"
+    (gogoproto.jsontag) = "remain_backing"
   ];
   
   cosmos.base.v1beta1.DecCoin spot = 5 [

@@ -40,7 +40,7 @@ func baseQueryTrade(ctx sdk.Context, keeper keeper.Keeper, req *QueryTradeReques
             Quoted: ResponseQuotedParams {
                 Id: leg.Quoted.Id,
                 Premium: leg.Quoted.Premium,
-                UnitBacking: leg.Quoted.UnitBacking.String(),
+                RemainBacking: leg.Quoted.RemainBacking.String(),
                 Spot: leg.Quoted.Spot,
             },
             CurrentValue: leg.CalculateValue(dataMarket.Consensus.Amount, data.Strike.Amount).String(),
