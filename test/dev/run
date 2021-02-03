@@ -70,7 +70,9 @@ echo
 echo "Governance"
 echo "----------"
 
-sleep 10
+echo "Letting chains stabilize..."
+sleep 15
+
 # backing change
 echo "Submitting backing change proposal..."
 redirect mtm tx gov submit-proposal microtick-denom-change --title "New backing proposal" --description "Use hub backing" ibc/BC599B88586F8C22E408569D7F6FAD40AEBF808A67D2051B86958CBB5F0A16B0 --home ./data/microtick --from governance --keyring-backend test --chain-id microtick --deposit 10000000stake -y 

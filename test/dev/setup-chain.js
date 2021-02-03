@@ -41,6 +41,10 @@
     ],{
       shell: true
     })
+    if (bufs.status !== 0) {
+      throw new Error("Command failed")
+      process.exit()
+    }
     const ret = {
       stdout: bufs.stdout.toString(),
       stderr: bufs.stderr.toString()
