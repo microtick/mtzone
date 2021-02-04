@@ -2,9 +2,9 @@ Gopkg.lock
 vendor
 *.swp
 .cache
-./mtm
-./mtd
-./mtcli
+/mtm
+/mtd
+/mtcli
 *.pb.go
 *.pb.gw.go
 js
