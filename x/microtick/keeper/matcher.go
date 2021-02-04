@@ -162,6 +162,7 @@ func (matcher *Matcher) MatchByQuantity(k Keeper, dm *DataMarket, order mt.Micro
         }
         index++
     }
+    //matcher.DebugMatcherFillInfo()
     return nil
 }
 
@@ -307,7 +308,6 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             short = matcher.Trade.Taker
         }
         
-        
         longAccountStatus := keeper.GetAccountStatus(ctx, long)
         shortAccountStatus := keeper.GetAccountStatus(ctx, short)
         var quoteProviderAccountStatus *DataAccountStatus
@@ -329,16 +329,21 @@ func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, mar
             }
         }
         
-        // Refund quote backing to quote provider
-        err = keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Refund)
-        if err != nil {
-            return err
-        }
+        // If Refund == Backing and the Provider is the Short account, skip!
+        if (!thisQuote.Provider.Equals(short) || !thisFill.Refund.IsEqual(thisFill.Backing)) {
+            
+          // Refund quote backing to quote provider
+          err = keeper.DepositMicrotickCoin(ctx, thisQuote.Provider, thisFill.Refund)
+          if err != nil {
+              return err
+          }
         
-        // Back trade from short account
-        err = keeper.WithdrawMicrotickCoin(ctx, short, thisFill.Backing)
-        if err != nil {
-            return err
+          // Back trade from short account
+          err = keeper.WithdrawMicrotickCoin(ctx, short, thisFill.Backing)
+          if err != nil {
+              return err
+          }
+          
         }
         
         // Adjust quote
