@@ -11,7 +11,7 @@
       path.basename(process.argv[1]) + " " +
       "<home> " +
       "<config>")
-    process.exit()
+    process.exit(-1)
   }
   
   const HOME=process.argv[2]
@@ -34,7 +34,8 @@
   await cp.exec("rm -rf " + CHAINHOME)
   
   const chainexec = cmd => {
-    console.log("  $ " + config.executable + " --home " + CHAINHOME + " " + cmd)
+    const cmdstring = config.executable + " --home " + CHAINHOME + " " + cmd
+    console.log("  $ " + cmd)
     const bufs = cp.spawnSync(config.executable, [
       "--home " + CHAINHOME,
       cmd
@@ -42,8 +43,8 @@
       shell: true
     })
     if (bufs.status !== 0) {
-      throw new Error("Command failed")
-      process.exit()
+      console.error("Command failed: " + cmdstring)
+      process.exit(-1)
     }
     const ret = {
       stdout: bufs.stdout.toString(),

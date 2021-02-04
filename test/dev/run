@@ -61,7 +61,13 @@ redirect gaiad start --home $DATA/gaiad &
 echo
 
 node setup-chain.js $DATA ./microtick.json
+if [ $? -ne 0 ]; then
+  exit -1
+fi
 node seal-chain.js $DATA ./microtick.json
+if [ $? -ne 0 ]; then
+  exit -1
+fi
 redirect mtm start --home $DATA/microtick &
 echo
 

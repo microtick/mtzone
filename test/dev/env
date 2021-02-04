@@ -1,3 +1,4 @@
 export MTROOT=./data/microtick
 export MTM_CHAIN_ID=microtick
 export MTM_KEYRING_BACKEND=test
+export MTM_GAS=500000
