@@ -13,6 +13,7 @@ func (querier Querier) Account(c context.Context, req *QueryAccountRequest) (*Qu
 }
 
 func baseQueryAccount(ctx sdk.Context, keeper keeper.Keeper, req* QueryAccountRequest) (*QueryAccountResponse, error) {
+    params := keeper.GetParams(ctx)
     address := req.Account
     backing, tick := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
@@ -32,7 +33,7 @@ func baseQueryAccount(ctx sdk.Context, keeper keeper.Keeper, req* QueryAccountRe
                 Amount: backing,
             },
             mt.FractCoin {
-                Denom: "tick",
+                Denom: params.MintDenom,
                 Amount: tick,
             },
         },
