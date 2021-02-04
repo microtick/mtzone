@@ -223,39 +223,41 @@ func NewApp(
 	homePath string, invCheckPeriod uint, encodingConfig mtparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *MicrotickApp {
 	
-	// Check MTROOT version.lock file for correct version, if not, print a warning
-	filename := fmt.Sprintf("%s/version.lock", homePath)
-	versionRead, err := os.Open(filename)
-	if err != nil {
-		versionWrite, err := os.Create(filename)
+	if homePath != "!" {
+		// Check MTROOT version.lock file for correct version, if not, print a warning
+		filename := fmt.Sprintf("%s/version.lock", homePath)
+		versionRead, err := os.Open(filename)
 		if err != nil {
-			panic(err)
-		}
-		defer func() {
-			if err := versionWrite.Close(); err != nil {
+			versionWrite, err := os.Create(filename)
+			if err != nil {
 				panic(err)
 			}
-		}()
-		fmt.Fprint(versionWrite, MTAppVersion)
-	} else {
-		// Check version matches
-		defer func() {
-			if err := versionRead.Close(); err != nil {
-				panic(err)
+			defer func() {
+				if err := versionWrite.Close(); err != nil {
+					panic(err)
+				}
+			}()
+			fmt.Fprint(versionWrite, MTAppVersion)
+		} else {
+			// Check version matches
+			defer func() {
+				if err := versionRead.Close(); err != nil {
+					panic(err)
+				}
+			}()
+			var ver string
+			fmt.Fscan(versionRead, &ver)
+			if ver != MTAppVersion {
+		    mtroot := os.Getenv("MTROOT")
+				fmt.Fprintf(os.Stderr, "\nVersion mismatch\n")
+				fmt.Fprintf(os.Stderr, "Executable version: %s\n", MTAppVersion)
+				fmt.Fprintf(os.Stderr, "Version lock: %s\n\n", ver)
+				fmt.Fprintf(os.Stderr, "This warning exists to make sure the Microtick executables are using data and config files " +
+				    "generated with correct settings for the correct software version.\n\n")
+				fmt.Fprintf(os.Stderr, "(remove this warning by deleting %s/version.lock or using a different root directory by " +
+				    "setting the MTROOT environment variable. MTROOT is currently set to '%s')\n\n", homePath, mtroot)
+				os.Exit(1)
 			}
-		}()
-		var ver string
-		fmt.Fscan(versionRead, &ver)
-		if ver != MTAppVersion {
-	    mtroot := os.Getenv("MTROOT")
-			fmt.Fprintf(os.Stderr, "\nVersion mismatch\n")
-			fmt.Fprintf(os.Stderr, "Executable version: %s\n", MTAppVersion)
-			fmt.Fprintf(os.Stderr, "Version lock: %s\n\n", ver)
-			fmt.Fprintf(os.Stderr, "This warning exists to make sure the Microtick executables are using data and config files " +
-			    "generated with correct settings for the correct software version.\n\n")
-			fmt.Fprintf(os.Stderr, "(remove this warning by deleting %s/version.lock or using a different root directory by " +
-			    "setting the MTROOT environment variable. MTROOT is currently set to '%s')\n\n", homePath, mtroot)
-			os.Exit(1)
 		}
 	}
 
