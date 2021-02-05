@@ -25,15 +25,16 @@ func init() {
 
 // Register concrete types on codec codec
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-    cdc.RegisterConcrete(TxCreateQuote{}, "microtick/QuoteCreate", nil)
-    cdc.RegisterConcrete(TxCancelQuote{}, "microtick/QuoteCancel", nil)
-    cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/QuoteUpdate", nil)
-    cdc.RegisterConcrete(TxDepositQuote{}, "microtick/QuoteDeposit", nil)
-    cdc.RegisterConcrete(TxWithdrawQuote{}, "microtick/QuoteWithdraw", nil)
-    cdc.RegisterConcrete(TxMarketTrade{}, "microtick/TradeMarket", nil)
-    cdc.RegisterConcrete(TxPickTrade{}, "mic rotick/TradePick", nil)
-    cdc.RegisterConcrete(TxSettleTrade{}, "microtick/TradeSettle", nil)
+    cdc.RegisterConcrete(TxCreateQuote{}, "microtick/Create", nil)
+    cdc.RegisterConcrete(TxCancelQuote{}, "microtick/Cancel", nil)
+    cdc.RegisterConcrete(TxUpdateQuote{}, "microtick/Update", nil)
+    cdc.RegisterConcrete(TxDepositQuote{}, "microtick/Deposit", nil)
+    cdc.RegisterConcrete(TxWithdrawQuote{}, "microtick/Withdraw", nil)
+    cdc.RegisterConcrete(TxMarketTrade{}, "microtick/Trade", nil)
+    cdc.RegisterConcrete(TxPickTrade{}, "mic rotick/Pick", nil)
+    cdc.RegisterConcrete(TxSettleTrade{}, "microtick/Settle", nil)
     cdc.RegisterConcrete(DenomChangeProposal{}, "microtick/DenomChangeProposal", nil)
+    cdc.RegisterConcrete(AddMarketsProposal{}, "microtick/AddMarketsProposal", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
