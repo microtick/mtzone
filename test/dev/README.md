@@ -10,7 +10,13 @@ This directory contains the code to start up a local test setup of two chains: g
 
 4. If you need to restart the chains, just re-run "./run". It will stop the existing chains and reconfigure / restart. If you need to stop the chains, run "./stop".
 
-5. To move tokens from gaiad to microtick, run "./fund <micro-account> 1000000000udai" where micro-account is your microtick chain account.
+5. To move tokens from gaiad to microtick, run 
+
+```
+./fund <micro-account> 1000000000udai
+```
+
+where micro-account is your microtick chain account.
 
 That's it!
 
