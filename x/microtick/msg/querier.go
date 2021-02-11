@@ -71,8 +71,18 @@ func queryAccount(ctx sdk.Context, path []string, req abci.RequestQuery, keeper 
 		return nil, err
 	}
 	
+	var params QueryBooksParams
+	err = legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
+	if err != nil {
+		// defaults
+		params.Offset = 0
+		params.Limit = 10
+	}	
+	
 	pbReq := QueryAccountRequest {
 		Account: acct,
+		Offset: uint32(params.Offset),
+		Limit: uint32(params.Limit),
 	}
 	
 	pbRes, err := baseQueryAccount(ctx, keeper, &pbReq)
@@ -126,7 +136,6 @@ func queryMarket(ctx sdk.Context, path []string, req abci.RequestQuery, keeper k
 
 func queryOrderbook(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params QueryBooksParams
-	
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
 		// defaults
@@ -156,7 +165,6 @@ func queryOrderbook(ctx sdk.Context, path []string, req abci.RequestQuery, keepe
 
 func querySynthetic(ctx sdk.Context, path []string, req abci.RequestQuery, keeper keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params QueryBooksParams
-	
 	err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params)
 	if err != nil {
 		// defaults

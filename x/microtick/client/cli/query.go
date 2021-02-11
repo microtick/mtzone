@@ -45,6 +45,9 @@ func cmdAccountStatus() *cobra.Command {
 				return err
 			}
 			
+			offset, _ := cmd.Flags().GetUint32("offset")
+			limit, _ := cmd.Flags().GetUint32("limit")
+			
 			acct, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
 				return err
@@ -52,6 +55,8 @@ func cmdAccountStatus() *cobra.Command {
 			
 			message := &msg.QueryAccountRequest {
 				Account: acct,
+				Offset: offset,
+				Limit: limit,
 			}
 			
 			queryClient := msg.NewGRPCClient(clientCtx)
@@ -65,6 +70,8 @@ func cmdAccountStatus() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().Uint32("offset", 0, "offset of active quotes / trades to query for")
+	cmd.Flags().Uint32("limit", 10, "pagination limit of active quotes / trades to query for")
 	
 	return cmd
 }

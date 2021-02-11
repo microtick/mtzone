@@ -33,7 +33,16 @@ func queryAccountStatusHandler(cliCtx client.Context) http.HandlerFunc {
 			return
 		}
 
-		res, height, err := cliCtx.Query(fmt.Sprintf("custom/microtick/account/%s", account))
+		offset, _ := strconv.Atoi(r.FormValue("offset"))
+		limit, _ := strconv.Atoi(r.FormValue("limit"))
+		params := msg.NewQueryBooksParams(offset, limit)
+		bz, err := cliCtx.LegacyAmino.MarshalJSON(params)
+	
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+		
+		res, height, err := cliCtx.QueryWithData(fmt.Sprintf("custom/microtick/account/%s", account), bz)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
 			return
@@ -100,8 +109,8 @@ func queryMarketOrderbookHandler(cliCtx client.Context) http.HandlerFunc {
 		offset, _ := strconv.Atoi(r.FormValue("offset"))
 		limit, _ := strconv.Atoi(r.FormValue("limit"))
 		params := msg.NewQueryBooksParams(offset, limit)
-		
 		bz, err := cliCtx.LegacyAmino.MarshalJSON(params)
+		
 		if rest.CheckBadRequestError(w, err) {
 			return
 		}
@@ -131,8 +140,8 @@ func queryMarketSyntheticHandler(cliCtx client.Context) http.HandlerFunc {
 		offset, _ := strconv.Atoi(r.FormValue("offset"))
 		limit, _ := strconv.Atoi(r.FormValue("limit"))
 		params := msg.NewQueryBooksParams(offset, limit)
-		
 		bz, err := cliCtx.LegacyAmino.MarshalJSON(params)
+		
 		if rest.CheckBadRequestError(w, err) {
 			return
 		}

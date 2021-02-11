@@ -1,5 +1,5 @@
 syntax = "proto3";
-package microtick.msg;
+package microtick.v1beta1.msg;
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
@@ -12,6 +12,14 @@ message QueryAccountRequest {
   bytes account = 1 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag) = "account"
+  ];
+  
+  uint32 offset = 2 [
+    (gogoproto.jsontag) = "offset"
+  ];
+  
+  uint32 limit = 3 [
+    (gogoproto.jsontag) = "limit"
   ];
   
 }

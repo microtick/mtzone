@@ -15,16 +15,32 @@ func (querier Querier) Account(c context.Context, req *QueryAccountRequest) (*Qu
 func baseQueryAccount(ctx sdk.Context, keeper keeper.Keeper, req* QueryAccountRequest) (*QueryAccountResponse, error) {
     params := keeper.GetParams(ctx)
     address := req.Account
+    
+    if req.Limit == 0 {
+        req.Limit = 10
+    }
+    if req.Limit > 100 {
+        req.Limit = 100
+    }
+    
     backing, tick := keeper.GetTotalBalance(ctx, address)
     data := keeper.GetAccountStatus(ctx, address)
-    activeQuotes := make([]mt.MicrotickId, len(data.ActiveQuotes.Data))
-    activeTrades := make([]mt.MicrotickId, len(data.ActiveTrades.Data))
-    for i := 0; i < len(data.ActiveQuotes.Data); i++ {
-        activeQuotes[i] = data.ActiveQuotes.Data[i].Id
+    
+    activeQuotes := make([]mt.MicrotickId, 0)
+    activeTrades := make([]mt.MicrotickId, 0)
+    var count uint32
+    var i int
+    count = 0
+    for i = int(req.Offset); i < len(data.ActiveQuotes.Data) && count < req.Limit; i++ {
+        count = count + 1
+        activeQuotes = append(activeQuotes, data.ActiveQuotes.Data[i].Id)
     }
-    for i := 0; i < len(data.ActiveTrades.Data); i++ {
-        activeTrades[i] = data.ActiveTrades.Data[i].Id
+    count = 0
+    for i = int(req.Offset); i < len(data.ActiveTrades.Data) && count < req.Limit; i++ {
+        count = count + 1
+        activeTrades = append(activeQuotes, data.ActiveTrades.Data[i].Id)
     }
+    
     response := QueryAccountResponse {
         Account: address,
         Balances: []mt.FractCoin {

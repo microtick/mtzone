@@ -1,5 +1,5 @@
 syntax = "proto3";
-package microtick.msg;
+package microtick.v1beta1.msg;
 
 import "gogoproto/gogo.proto";
 

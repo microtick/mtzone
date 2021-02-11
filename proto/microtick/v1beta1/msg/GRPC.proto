@@ -1,5 +1,5 @@
 syntax = "proto3";
-package microtick.msg;
+package microtick.v1beta1.msg;
 
 import "google/api/annotations.proto";
 import "microtick/v1beta1/msg/QueryAccount.proto";

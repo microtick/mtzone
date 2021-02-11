@@ -27,7 +27,7 @@ redirect() {
   fi
 }
 
-echo "Sending tokens..."
+echo "Sending tokens over IBC..."
 redirect gaiad tx ibc-transfer transfer transfer channel-0 $ACCOUNT $AMOUNT --from bank --home ./data/gaiad --keyring-backend test --node tcp://localhost:26557 --chain-id gaiad -y 
 sleep 10
 rly tx relay funding -d
