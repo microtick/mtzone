@@ -38,7 +38,7 @@ func baseQueryAccount(ctx sdk.Context, keeper keeper.Keeper, req* QueryAccountRe
     count = 0
     for i = int(req.Offset); i < len(data.ActiveTrades.Data) && count < req.Limit; i++ {
         count = count + 1
-        activeTrades = append(activeQuotes, data.ActiveTrades.Data[i].Id)
+        activeTrades = append(activeTrades, data.ActiveTrades.Data[i].Id)
     }
     
     response := QueryAccountResponse {
