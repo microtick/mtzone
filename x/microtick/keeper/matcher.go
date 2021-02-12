@@ -17,11 +17,12 @@ type QuoteFillInfo struct {
     Cost mt.MicrotickCoin
     Backing mt.MicrotickCoin
     Refund mt.MicrotickCoin
+    FinalFill bool
 }
 
 func NewQuoteFillInfo(quoteId mt.MicrotickId, buySell bool, legType mt.MicrotickLegType, 
     quantity mt.MicrotickQuantity, premium mt.MicrotickPremium, cost mt.MicrotickCoin, 
-    backing mt.MicrotickCoin, refund mt.MicrotickCoin) QuoteFillInfo {
+    backing mt.MicrotickCoin, refund mt.MicrotickCoin, finalFill bool) QuoteFillInfo {
     return QuoteFillInfo {
         QuoteId: quoteId,
         BuySell: buySell,
@@ -31,6 +32,7 @@ func NewQuoteFillInfo(quoteId mt.MicrotickId, buySell bool, legType mt.Microtick
         Cost: cost,
         Backing: backing,
         Refund: refund,
+        FinalFill: finalFill,
     }
 }
 
@@ -158,7 +160,7 @@ func (matcher *Matcher) MatchByQuantity(k Keeper, dm *DataMarket, order mt.Micro
             
             matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quote.Id, buysell, legType, 
                 mt.NewMicrotickQuantityFromDec(quantity), premium, mt.NewMicrotickCoinFromDec(cost), 
-                backing, refund))
+                backing, refund, finalFill))
         }
         index++
     }
@@ -216,16 +218,19 @@ func (matcher *Matcher) MatchSynthetic(k Keeper, sob *DataSyntheticBook, dm *Dat
         }
         cost := premium.Amount.Mul(quantity)
         backing = mt.NewMicrotickCoinFromDec(quoteAsk.Backing.Amount.Mul(quantity.Quo(quoteAsk.Quantity.Amount)))
+        var finalFill bool
         if synthFill && li.AskFill && !li.BidFill {
             refund = quoteAsk.Backing
+            finalFill = true
         } else {
             refund = backing
+            finalFill = false
         }
         
         // Append ask
         matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quoteAsk.Id, true, legType, 
-            mt.NewMicrotickQuantityFromDec(quantity),
-            premium, mt.NewMicrotickCoinFromDec(cost), backing, refund))
+            mt.NewMicrotickQuantityFromDec(quantity), premium, mt.NewMicrotickCoinFromDec(cost), 
+            backing, refund, finalFill))
             
         if buysell {
             premium = quoteBid.PutBid(matcher.Trade.Strike)
@@ -238,15 +243,17 @@ func (matcher *Matcher) MatchSynthetic(k Keeper, sob *DataSyntheticBook, dm *Dat
         cost = premium.Amount.Mul(quantity)
         if synthFill && li.BidFill {
             backing = quoteBid.Backing
+            finalFill = true
         } else {
             backing = mt.NewMicrotickCoinFromDec(quoteBid.Backing.Amount.Mul(quantity.Quo(quoteBid.Quantity.Amount)))
+            finalFill = false
         }
         refund = backing
         
         // Append bid
         matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quoteBid.Id, false, legType, 
-            mt.NewMicrotickQuantityFromDec(quantity),
-            premium, mt.NewMicrotickCoinFromDec(cost), backing, refund))
+            mt.NewMicrotickQuantityFromDec(quantity), premium, mt.NewMicrotickCoinFromDec(cost), 
+            backing, refund, finalFill))
         
         // At least one time through - we have liquidity
         matcher.HasQuantity = true
@@ -288,7 +295,7 @@ func (matcher *Matcher) MatchQuote(k Keeper, order mt.MicrotickOrderType, quote 
     
     matcher.HasQuantity = true
     matcher.FillInfo = append(matcher.FillInfo, NewQuoteFillInfo(quote.Id, buysell, legType,
-        quote.Quantity, premium, mt.NewMicrotickCoinFromDec(cost), backing, refund))
+        quote.Quantity, premium, mt.NewMicrotickCoinFromDec(cost), backing, refund, true))
 }
 
 func (matcher *Matcher) AssignCounterparties(ctx sdk.Context, keeper Keeper, market *DataMarket) error {

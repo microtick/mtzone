@@ -31,7 +31,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
     cdc.RegisterConcrete(TxDepositQuote{}, "microtick/Deposit", nil)
     cdc.RegisterConcrete(TxWithdrawQuote{}, "microtick/Withdraw", nil)
     cdc.RegisterConcrete(TxMarketTrade{}, "microtick/Trade", nil)
-    cdc.RegisterConcrete(TxPickTrade{}, "mic rotick/Pick", nil)
+    cdc.RegisterConcrete(TxPickTrade{}, "microtick/Pick", nil)
     cdc.RegisterConcrete(TxSettleTrade{}, "microtick/Settle", nil)
     cdc.RegisterConcrete(DenomChangeProposal{}, "microtick/DenomChangeProposal", nil)
     cdc.RegisterConcrete(AddMarketsProposal{}, "microtick/AddMarketsProposal", nil)
