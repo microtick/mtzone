@@ -31,6 +31,9 @@ func baseQueryOrderBook(ctx sdk.Context, keeper keeper.Keeper, req *QueryOrderBo
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
+    if !keeper.ValidDurationName(ctx, durName) {
+        return nil, sdkerrors.Wrap(mt.ErrInvalidDuration, durName)
+    }
     orderBook := dataMarket.GetOrderBook(durName)
     
     callasks := make([]*OrderBookQuote, 0)

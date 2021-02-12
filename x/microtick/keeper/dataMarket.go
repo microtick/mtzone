@@ -38,7 +38,7 @@ func (dm *DataMarket) GetOrderBook(name mt.MicrotickDurationName) DataOrderBook 
             return dm.OrderBooks[i]
         }
     }
-    panic("Invalid duration name")
+    return NewOrderBook(name)
 }
 
 func (dm *DataMarket) SetOrderBook(name mt.MicrotickDurationName, ob DataOrderBook) {
@@ -48,7 +48,8 @@ func (dm *DataMarket) SetOrderBook(name mt.MicrotickDurationName, ob DataOrderBo
             return
         }
     }
-    panic("Invalid duration name")
+    // Orderbook not found in array
+    dm.OrderBooks = append(dm.OrderBooks, ob)
 }
 
 func (dm *DataMarket) FactorIn(quote DataActiveQuote, testInvariants bool) bool {

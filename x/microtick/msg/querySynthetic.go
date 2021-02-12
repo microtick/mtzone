@@ -31,6 +31,9 @@ func baseQuerySynthetic(ctx sdk.Context, keeper keeper.Keeper, req *QuerySynthet
         return nil, sdkerrors.Wrap(mt.ErrInvalidMarket, market)
     }
     
+    if !keeper.ValidDurationName(ctx, durName) {
+        return nil, sdkerrors.Wrap(mt.ErrInvalidDuration, durName)
+    }
     syntheticBook := keeper.GetSyntheticBook(ctx, &dataMarket, durName, nil)
     
     asks := make([]*SyntheticQuote, 0)
