@@ -13,8 +13,8 @@ const MTPoolName = "commissionPool"
 
 // Commissions
 
-func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.MicrotickCoin, doRebate bool, ratioAdjust sdk.Dec) (*sdk.Coin, error) {
-	params := k.GetParams(ctx)
+func (k Keeper) PoolCommission(ctx sdk.Context, commission sdk.Dec) mt.MicrotickCoin {
+	amount := mt.NewMicrotickCoinFromDec(commission)
     extCoins := k.MicrotickCoinToExtCoin(ctx, amount)
     
 	store := ctx.KVStore(k.AppGlobalsKey)
@@ -31,36 +31,26 @@ func (k Keeper) PoolCommission(ctx sdk.Context, addr sdk.AccAddress, amount mt.M
 	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(k.GetExtTokenType(ctx), extCoins.Amount))
 	store.Set(key, k.Codec.MustMarshalJSON(&pool))
 	
-    // Mint stake and award to commission payer
-    if doRebate {
-    	// Limit ratio adjustment to 0 <= adjust <= 1
-    	if ratioAdjust.GT(sdk.OneDec()) {
-    		ratioAdjust = sdk.OneDec()
-    	}
-    	if ratioAdjust.LT(sdk.ZeroDec()) {
-    		ratioAdjust = sdk.ZeroDec()
-    	}
-    	adjustedMintRatio := params.MintRatio.Mul(ratioAdjust)
-        rebate := sdk.NewCoin(params.MintDenom, adjustedMintRatio.MulInt(extCoins.Amount).TruncateInt())
-        if rebate.Amount.IsPositive() {
-            mintCoins := sdk.Coins{ rebate }
-    
-            err := k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
-            if err != nil {
-    	        return nil, err
-            }
-    
-	        err = k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
-	        if err != nil {
-		        return nil, err
-	        }
-	    
-	        return &rebate, nil
-        } else {
-        	return &rebate, nil
+	return amount
+}
+
+func (k Keeper) AwardRebate(ctx sdk.Context, addr sdk.AccAddress, rebate sdk.Dec) (*sdk.Coin, error) {
+	params := k.GetParams(ctx)
+    coin := sdk.NewCoin(params.MintDenom, rebate.TruncateInt())
+    if coin.Amount.IsPositive() {
+        mintCoins := sdk.Coins{ coin }
+
+        err := k.BankKeeper.MintCoins(ctx, MTModuleAccount, mintCoins)
+        if err != nil {
+	        return nil, err
+        }
+
+        err = k.BankKeeper.SendCoinsFromModuleToAccount(ctx, MTModuleAccount, addr, mintCoins)
+        if err != nil {
+	        return nil, err
         }
     }
-	return nil, nil
+    return &coin, nil
 }
 
 func (k Keeper) Sweep(ctx sdk.Context) {

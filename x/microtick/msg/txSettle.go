@@ -79,12 +79,12 @@ func HandleTxSettleTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     }
     
     // Commission
-    commission := mt.NewMicrotickCoinFromDec(params.CommissionSettleFixed)
+    commission := mtKeeper.PoolCommission(ctx, params.CommissionSettleFixed)
     err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
     }
-    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, sdk.OneDec())
+    reward, err := mtKeeper.AwardRebate(ctx, msg.Requester, params.MintRewardSettleFixed)
     if err != nil {
         return nil, err
     }

@@ -52,14 +52,10 @@ func HandleTxCancelQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     }
     
     // Commission
-    commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionCancelPercent))
+    commission := mtKeeper.PoolCommission(ctx, quote.Backing.Amount.Mul(params.CommissionCancelPerunit))
     err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, commission)
     if err != nil {
         return nil, mt.ErrInsufficientFunds
-    }
-    _, err = mtKeeper.PoolCommission(ctx, msg.Requester, commission, false, sdk.ZeroDec())
-    if err != nil {
-        return nil, err
     }
     
     // Time 2x invariant:

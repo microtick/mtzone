@@ -50,9 +50,6 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
         return nil, sdkerrors.Wrapf(mt.ErrInvalidDuration, "%s", msg.Duration)
     }
     
-    commission := mt.NewMicrotickCoinFromDec(backing.Amount.Mul(params.CommissionQuotePercent))
-    total := backing.Add(commission)
-        
 	// DataActiveQuote
 	
     id := mtKeeper.GetNextActiveQuoteId(ctx)
@@ -80,6 +77,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     }
     
     orderBook := dataMarket.GetOrderBook(msg.Duration)
+    
     adjustment := sdk.OneDec()
     if len(orderBook.CallAsks.Data) > 0 {
         bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
@@ -90,6 +88,9 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
         }
     }
     
+    commission := mtKeeper.PoolCommission(ctx, backing.Amount.Mul(params.CommissionCreatePerunit).Quo(adjustment))
+    total := backing.Add(commission)
+        
     dataMarket.AddQuote(dataActiveQuote)
     if !dataMarket.FactorIn(dataActiveQuote, true) {
         return nil, mt.ErrQuoteParams
@@ -108,7 +109,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     }
     
     //fmt.Printf("Create Commission: %s\n", commission.String())
-    reward, err := mtKeeper.PoolCommission(ctx, msg.Provider, commission, true, adjustment)
+    reward, err := mtKeeper.AwardRebate(ctx, msg.Provider, backing.Amount.Mul(params.MintRewardCreatePerunit).Mul(adjustment))
     if err != nil {
         return nil, err
     }
@@ -120,6 +121,7 @@ func HandleTxCreateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
       Consensus: dataMarket.Consensus,
       Commission: commission,
       Reward: *reward,
+      Adjustment: adjustment.String(),
     }
     bz, err := proto.Marshal(&data)
     

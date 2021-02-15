@@ -55,8 +55,7 @@ func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mi
         return nil, mt.ErrQuoteBacking
     }
     
-    commission := mt.NewMicrotickCoinFromDec(withdraw.Amount.Mul(params.CommissionQuotePercent))
-    
+    commission := mtKeeper.PoolCommission(ctx, withdraw.Amount.Mul(params.CommissionCancelPerunit))
     total := withdraw.Sub(commission)
     
     // Add coins to requester
@@ -64,11 +63,6 @@ func HandleTxWithdrawQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mi
     if err != nil {
         // Not sure why this error
         return nil, mt.ErrInsufficientFunds
-    }
-    // Add commission to pool
-    _, err = mtKeeper.PoolCommission(ctx, msg.Requester, commission, false, sdk.ZeroDec())
-    if err != nil {
-        return nil, err
     }
     
     dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)

@@ -49,23 +49,11 @@ func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mic
     if quote.Frozen(ctx.BlockHeader().Time) {
         return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
-    
-    commission := mt.NewMicrotickCoinFromDec(deposit.Amount.Mul(params.CommissionQuotePercent))
-    
-    total := deposit.Add(commission)
-    
-    // Subtract coins from requester
-    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
-    if err != nil {
-        return nil, mt.ErrInsufficientFunds
-    }
-    
+
     dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
         return nil, mt.ErrInvalidMarket
     }
-    
-    dataMarket.FactorOut(quote)
     
     orderBook := dataMarket.GetOrderBook(quote.DurationName)
     adjustment := sdk.OneDec()
@@ -78,12 +66,23 @@ func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mic
         }
     }
     
+    commission := mtKeeper.PoolCommission(ctx, deposit.Amount.Mul(params.CommissionCreatePerunit).Quo(adjustment))
+    total := deposit.Add(commission)
+    
+    // Subtract coins from requester
+    err = mtKeeper.WithdrawMicrotickCoin(ctx, msg.Requester, total)
+    if err != nil {
+        return nil, mt.ErrInsufficientFunds
+    }
+    
     // Add commission to pool
     //fmt.Printf("Deposit Commission: %s\n", commission.String())
-    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
+    reward, err := mtKeeper.AwardRebate(ctx, msg.Requester, deposit.Amount.Mul(params.MintRewardCreatePerunit).Mul(adjustment))
     if err != nil {
         return nil, err
     }
+    
+    dataMarket.FactorOut(quote)
     
     quote.Backing = mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Add(deposit.Amount))
     quote.ComputeQuantity()
@@ -113,6 +112,7 @@ func HandleTxDepositQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Mic
       Backing: quote.Backing,
       Commission: commission,
       Reward: *reward,
+      Adjustment: adjustment.String(),
     }
     bz, err := proto.Marshal(&data)
     

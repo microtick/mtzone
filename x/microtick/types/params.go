@@ -17,31 +17,37 @@ const HaltTimeString = "168h"
 // Default parameter values
 var (
   DefaultEuropeanOptions bool = true
-  DefaultCommissionQuotePercent = sdk.MustNewDecFromStr("0.0004")
+  DefaultCommissionCreatePerunit = sdk.MustNewDecFromStr("0.0004")
   DefaultCommissionTradeFixed = sdk.MustNewDecFromStr("0.025")
-  DefaultCommissionUpdatePercent = sdk.MustNewDecFromStr("0.00005")
-  DefaultSettleIncentive = sdk.MustNewDecFromStr("0.025")
+  DefaultCommissionUpdatePerunit = sdk.MustNewDecFromStr("0.00005")
   DefaultCommissionSettleFixed = sdk.MustNewDecFromStr("0.01")
-  DefaultCommissionCancelPercent = sdk.MustNewDecFromStr("0.0001")
+  DefaultCommissionCancelPerunit = sdk.MustNewDecFromStr("0.0001")
+  DefaultSettleIncentive = sdk.MustNewDecFromStr("0.025")
   DefaultFreezeTime = int32(30)
   DefaultMintDenom = "utick"
-  DefaultMintRatio = sdk.MustNewDecFromStr("0.5")
+  DefaultMintRewardCreatePerunit = sdk.MustNewDecFromStr("200") // utick per unit backing = 0.0004 * 1000000 / 2
+  DefaultMintRewardUpdatePerunit = sdk.MustNewDecFromStr("25") // utick per unit backint = 0.00005 * 1000000 / 2
+  DefaultMintRewardTradeFixed = sdk.MustNewDecFromStr("0")
+  DefaultMintRewardSettleFixed = sdk.MustNewDecFromStr("0")
   DefaultCancelSlashRate = sdk.MustNewDecFromStr("0.01")
 )
 
 // Parameter keys
 var (
   KeyEuropeanOptions = []byte("EuropeanOptions")
-  KeyCommissionQuotePercent = []byte("CommissionQuotePercent")
+  KeyCommissionCreatePerunit = []byte("CommissionCreatePerunit")
   KeyCommissionTradeFixed = []byte("KeyCommissionTradeFixed")
-  KeyCommissionUpdatePercent = []byte("KeyCommissionUpdatePercent")
+  KeyCommissionUpdatePerunit = []byte("KeyCommissionUpdatePerunit")
   KeyCommissionSettleFixed = []byte("KeyCommissionSettleFixed")
-  KeyCommissionCancelPercent = []byte("KeyCommissionCancelPercent")
+  KeyCommissionCancelPerunit = []byte("KeyCommissionCancelPerunit")
   KeySettleIncentive = []byte("KeySettleIncentive")
   KeyFreezeTime = []byte("KeyFreezeTime")
   KeyHaltTime = []byte("KeyHaltTime")
   KeyMintDenom = []byte("KeyMintDenom")
-  KeyMintRatio = []byte("KeyMintRatio")
+  KeyMintRewardCreatePerunit = []byte("KeyMintRewardCreatePerunit")
+  KeyMintRewardUpdatePerunit = []byte("KeyMintRewardUpdatePerunit")
+  KeyMintRewardTradeFixed = []byte("KeyMintRewardTradeFixed")
+  KeyMintRewardSettleFixed = []byte("KeyMintRewardSettleFixed")
   KeyCancelSlashRate = []byte("KeyCancelSlashRate")
 )
 
@@ -56,41 +62,53 @@ func ParamKeyTable() paramtypes.KeyTable {
 func (p *MicrotickParams) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
     {KeyEuropeanOptions, &p.EuropeanOptions, validateEuropeanOptions},
-    {KeyCommissionQuotePercent, &p.CommissionQuotePercent, validatePercent},
+    {KeyCommissionCreatePerunit, &p.CommissionCreatePerunit, validatePerunit},
     {KeyCommissionTradeFixed, &p.CommissionTradeFixed, validateFixed},
-    {KeyCommissionUpdatePercent, &p.CommissionUpdatePercent, validatePercent},
+    {KeyCommissionUpdatePerunit, &p.CommissionUpdatePerunit, validatePerunit},
     {KeyCommissionSettleFixed, &p.CommissionSettleFixed, validateFixed},
-    {KeyCommissionCancelPercent, &p.CommissionCancelPercent, validatePercent},
+    {KeyCommissionCancelPerunit, &p.CommissionCancelPerunit, validatePerunit},
     {KeySettleIncentive, &p.SettleIncentive, validateFixed},
     {KeyFreezeTime, &p.FreezeTime, validateFreezeTime},
     {KeyHaltTime, &p.HaltTime, validateTime},
     {KeyMintDenom, &p.MintDenom, validateMintDenom},
-    {KeyMintRatio, &p.MintRatio, validateMintRatio},
+    {KeyMintRewardCreatePerunit, &p.MintRewardCreatePerunit, validatePerunit},
+    {KeyMintRewardUpdatePerunit, &p.MintRewardUpdatePerunit, validatePerunit},
+    {KeyMintRewardTradeFixed, &p.MintRewardTradeFixed, validateFixed},
+    {KeyMintRewardSettleFixed, &p.MintRewardSettleFixed, validateFixed},
     {KeyCancelSlashRate, &p.CancelSlashRate, validateSlash},
 	}
 }
 
 func (p MicrotickParams) ValidateBasic() error {
-  if p.CommissionQuotePercent.IsNegative() || p.CommissionQuotePercent.GT(sdk.OneDec()) {
-    return fmt.Errorf("invalid quote commission: %s", p.CommissionQuotePercent)
+  if p.CommissionCreatePerunit.IsNegative() || p.CommissionCreatePerunit.GT(sdk.OneDec()) {
+    return fmt.Errorf("invalid create commission: %s", p.CommissionCreatePerunit)
   }
   if p.CommissionTradeFixed.IsNegative() {
     return fmt.Errorf("invalid trade commission: %s", p.CommissionTradeFixed)
   }
-  if p.CommissionUpdatePercent.IsNegative() || p.CommissionUpdatePercent.GT(sdk.OneDec()) {
-    return fmt.Errorf("invalid quote update commission: %s", p.CommissionUpdatePercent)
+  if p.CommissionUpdatePerunit.IsNegative() || p.CommissionUpdatePerunit.GT(sdk.OneDec()) {
+    return fmt.Errorf("invalid update commission: %s", p.CommissionUpdatePerunit)
   }
   if p.CommissionSettleFixed.IsNegative() {
     return fmt.Errorf("invalid settle commission: %s", p.CommissionSettleFixed)
   }
-  if p.CommissionCancelPercent.IsNegative() {
-    return fmt.Errorf("invalid cancel commission: %s", p.CommissionCancelPercent)
+  if p.CommissionCancelPerunit.IsNegative() {
+    return fmt.Errorf("invalid cancel commission: %s", p.CommissionCancelPerunit)
   }
   if p.SettleIncentive.IsNegative() {
     return fmt.Errorf("invalid settle incentive: %s", p.SettleIncentive)
   }
-  if p.MintRatio.IsNegative() {
-    return fmt.Errorf("invalid mint ratio: %s", p.MintRatio)
+  if p.MintRewardCreatePerunit.IsNegative() {
+    return fmt.Errorf("invalid create reward: %s", p.MintRewardCreatePerunit)
+  }
+  if p.MintRewardUpdatePerunit.IsNegative() {
+    return fmt.Errorf("invalid update reward: %s", p.MintRewardUpdatePerunit)
+  }
+  if p.MintRewardTradeFixed.IsNegative() {
+    return fmt.Errorf("invalid trade reward: %s", p.MintRewardTradeFixed)
+  }
+  if p.MintRewardSettleFixed.IsNegative() {
+    return fmt.Errorf("invalid settle reward: %s", p.MintRewardSettleFixed)
   }
   if p.CancelSlashRate.IsNegative() || p.CancelSlashRate.GT(sdk.OneDec()) {
     return fmt.Errorf("invalid cancel slash rate: %s", p.CancelSlashRate)
@@ -106,7 +124,7 @@ func validateEuropeanOptions(i interface{}) error {
 	return nil
 }
 
-func validatePercent(i interface{}) error {
+func validatePerunit(i interface{}) error {
 	_, ok := i.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -123,14 +141,6 @@ func validateFixed(i interface{}) error {
 }
 
 func validateSlash(i interface{}) error {
-	_, ok := i.(sdk.Dec)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
-
-func validateMintRatio(i interface{}) error {
 	_, ok := i.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -177,16 +187,19 @@ func DefaultParams() MicrotickParams {
     defaultHaltTime, _ := time.Parse("2006-Jan-02", "2030-Jan-01")
 	return MicrotickParams{
     EuropeanOptions: DefaultEuropeanOptions,
-    CommissionQuotePercent: DefaultCommissionQuotePercent,
+    CommissionCreatePerunit: DefaultCommissionCreatePerunit,
     CommissionTradeFixed: DefaultCommissionTradeFixed,
-    CommissionUpdatePercent: DefaultCommissionUpdatePercent,
+    CommissionUpdatePerunit: DefaultCommissionUpdatePerunit,
     CommissionSettleFixed: DefaultCommissionSettleFixed,
-    CommissionCancelPercent: DefaultCommissionCancelPercent,
+    CommissionCancelPerunit: DefaultCommissionCancelPerunit,
     SettleIncentive: DefaultSettleIncentive,
     FreezeTime: DefaultFreezeTime,
     HaltTime: defaultHaltTime.Format(TimeFormat),
     MintDenom: DefaultMintDenom,
-    MintRatio: DefaultMintRatio,
+    MintRewardCreatePerunit: DefaultMintRewardCreatePerunit,
+    MintRewardUpdatePerunit: DefaultMintRewardUpdatePerunit,
+    MintRewardTradeFixed: DefaultMintRewardTradeFixed,
+    MintRewardSettleFixed: DefaultMintRewardSettleFixed,
     CancelSlashRate: DefaultCancelSlashRate,
 	}
 }

@@ -54,7 +54,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
         return nil, sdkerrors.Wrap(mt.ErrTradeMatch, "already owner")
     }
     
-    commission := mt.NewMicrotickCoinFromDec(params.CommissionTradeFixed)
+    commission := mtKeeper.PoolCommission(ctx, params.CommissionTradeFixed)
     settleIncentive := mt.NewMicrotickCoinFromDec(params.SettleIncentive)
     now := ctx.BlockHeader().Time
     durName := mtKeeper.NameFromDuration(ctx, quote.Duration)
@@ -74,7 +74,7 @@ func HandleTxPickTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Microt
         if err != nil {
             return nil, mt.ErrInsufficientFunds
         }
-        reward, err := mtKeeper.PoolCommission(ctx, msg.Taker, trade.Commission, true, sdk.OneDec())
+        reward, err := mtKeeper.AwardRebate(ctx, msg.Taker, params.MintRewardTradeFixed)
         if err != nil {
             return nil, err
         }

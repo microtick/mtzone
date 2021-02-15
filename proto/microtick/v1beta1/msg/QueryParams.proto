@@ -13,24 +13,24 @@ message QueryParamsResponse {
     (gogoproto.jsontag) = "european_options"
   ];
   
-  string commission_quote_percent = 2 [
-    (gogoproto.jsontag) = "commission_quote_percent"
+  string commission_create_perunit = 2 [
+    (gogoproto.jsontag) = "commission_create_perunit"
   ];  
   
   string commission_trade_fixed = 3 [
     (gogoproto.jsontag) = "commission_trade_fixed"
   ];  
   
-  string commission_update_percent = 4 [
-    (gogoproto.jsontag) = "commission_update_percent"
+  string commission_update_perunit = 4 [
+    (gogoproto.jsontag) = "commission_update_perunit"
   ];  
   
   string commission_settle_fixed = 5 [
     (gogoproto.jsontag) = "commission_settle_fixed"
   ];  
   
-  string commission_cancel_percent = 6 [
-    (gogoproto.jsontag) = "commission_cancel_percent"
+  string commission_cancel_perunit = 6 [
+    (gogoproto.jsontag) = "commission_cancel_perunit"
   ];  
   
   string settle_incentive = 7 [
@@ -41,27 +41,35 @@ message QueryParamsResponse {
     (gogoproto.jsontag) = "freeze_time"
   ];
   
-  string halt_time = 9 [
-    (gogoproto.jsontag) = "halt_time"
-  ];
-  
-  string mint_denom = 10 [
+  string mint_denom = 9 [
     (gogoproto.jsontag) = "mint_denom"
   ];
   
-  string mint_ratio = 11 [
-    (gogoproto.jsontag) = "mint_ratio"
-  ];  
+  string mint_reward_create_perunit = 10 [
+    (gogoproto.jsontag) = "mint_reward_create_perunit"
+  ];
   
-  string cancel_slash_rate = 12 [
+  string mint_reward_update_perunit = 11 [
+    (gogoproto.jsontag) = "mint_reward_update_perunit"
+  ];
+  
+  string mint_reward_trade_fixed = 12 [
+    (gogoproto.jsontag) = "mint_reward_trade_fixed"
+  ];
+  
+  string mint_reward_settle_fixed = 13 [
+    (gogoproto.jsontag) = "mint_reward_settle_fixed"
+  ];
+  
+  string cancel_slash_rate = 14 [
     (gogoproto.jsontag) = "cancel_slash_rate"
   ]; 
   
-  string backing_denom = 13 [
+  string backing_denom = 15 [
     (gogoproto.jsontag) = "backing_denom"
   ];
   
-  uint32 backing_ratio = 14 [
+  uint32 backing_ratio = 16 [
     (gogoproto.jsontag) = "backing_ratio"
   ];
   

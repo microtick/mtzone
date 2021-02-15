@@ -60,4 +60,8 @@ message UpdateQuoteData {
     (gogoproto.jsontag) = "reward"
   ];
   
+  string adjustment = 7 [
+    (gogoproto.jsontag) = "adjustment"
+  ];
+  
 }

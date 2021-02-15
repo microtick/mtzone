@@ -57,12 +57,23 @@ func HandleTxUpdateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
         return nil, sdkerrors.Wrap(mt.ErrQuoteFrozen, time.Unix(quote.CanModify, 0).String())
     }
     
-    commission := mt.NewMicrotickCoinFromDec(quote.Backing.Amount.Mul(params.CommissionUpdatePercent))
-    
     dataMarket, err := mtKeeper.GetDataMarket(ctx, quote.Market)
     if err != nil {
         return nil, mt.ErrInvalidMarket
     }
+    
+    orderBook := dataMarket.GetOrderBook(quote.DurationName)
+    adjustment := sdk.OneDec()
+    if len(orderBook.CallAsks.Data) > 0 {
+        bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
+        bestPutAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
+        average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
+        if quote.Ask.Amount.GT(average) {
+            adjustment = average.Quo(quote.Ask.Amount)
+        }
+    }    
+    
+    commission := mtKeeper.PoolCommission(ctx, quote.Backing.Amount.Mul(params.CommissionUpdatePerunit).Quo(adjustment))
     
     dataMarket.FactorOut(quote)
     dataMarket.DeleteQuote(quote)
@@ -86,17 +97,6 @@ func HandleTxUpdateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     // Recompute quantity
     quote.ComputeQuantity()
     
-    orderBook := dataMarket.GetOrderBook(quote.DurationName)
-    adjustment := sdk.OneDec()
-    if len(orderBook.CallAsks.Data) > 0 {
-        bestCallAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.CallAsks.Data[0].Id)
-        bestPutAsk, _ := mtKeeper.GetActiveQuote(ctx, orderBook.PutAsks.Data[0].Id)
-        average := bestCallAsk.CallAsk(dataMarket.Consensus).Amount.Add(bestPutAsk.PutAsk(dataMarket.Consensus).Amount).QuoInt64(2)
-        if quote.Ask.Amount.GT(average) {
-            adjustment = average.Quo(quote.Ask.Amount)
-        }
-    }    
-    
     dataMarket.AddQuote(quote)
     if !dataMarket.FactorIn(quote, true) {
         return nil, mt.ErrQuoteParams
@@ -113,7 +113,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
     
     // Add commission to pool
     //fmt.Printf("Update Commission: %s\n", commission.String())
-    reward, err := mtKeeper.PoolCommission(ctx, msg.Requester, commission, true, adjustment)
+    reward, err := mtKeeper.AwardRebate(ctx, msg.Requester, quote.Backing.Amount.Mul(params.MintRewardUpdatePerunit).Mul(adjustment))
     if err != nil {
         return nil, err
     }
@@ -126,6 +126,7 @@ func HandleTxUpdateQuote(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
       Consensus: dataMarket.Consensus,
       Commission: commission,
       Reward: *reward,
+      Adjustment: adjustment.String(),
     }
     bz, err := proto.Marshal(&data)
     
