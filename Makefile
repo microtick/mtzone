@@ -31,7 +31,7 @@ install:
 	$(eval override HOST = $(shell hostname))
 	$(eval override COMMIT = $(shell git log -1 --format='%H'))
 	@echo "package app;" > $(VERSIONFILE)
-	@echo "const MTAppVersion = \"$(VERSION)\"" >> $(VERSIONFILE)
+	@echo "const MTAppVersion = \"mtm v2 ($(VERSION))\"" >> $(VERSIONFILE)
 	@echo "const MTBuildDate = \"$(DATE)\"" >> $(VERSIONFILE)
 	@echo "const MTHostBuild = \"$(HOST)\"" >> $(VERSIONFILE)
 	@echo "const MTCommit = \"$(COMMIT)\"" >> $(VERSIONFILE)
