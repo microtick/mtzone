@@ -13,7 +13,7 @@ This directory contains the code to start up a local test setup of two chains: g
 5. To move tokens from gaiad to microtick, run 
 
 ```
-./fund <micro-account> 1000000000udai
+./fund <micro-account> 1000000000uatom
 ```
 
 where micro-account is your microtick chain account.

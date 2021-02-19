@@ -81,7 +81,7 @@ sleep 15
 
 # backing change
 echo "Submitting backing change proposal..."
-redirect mtm tx gov submit-proposal microtick-denom-change --title "New backing proposal" --description "Use hub backing" ibc/BC599B88586F8C22E408569D7F6FAD40AEBF808A67D2051B86958CBB5F0A16B0 --home ./data/microtick --from governance --keyring-backend test --chain-id microtick --deposit 10000000stake -y 
+redirect mtm tx gov submit-proposal microtick-denom-change --title "New backing proposal" --description "Use hub backing" ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 --home ./data/microtick --from governance --keyring-backend test --chain-id microtick --deposit 10000000stake -y 
 echo "Voting yes on backing change proposal..."
 redirect mtm tx gov vote 1 yes --from validator --home ./data/microtick --keyring-backend test --chain-id microtick -y
 # create markets
@@ -115,3 +115,5 @@ echo
 echo "Linking chains"
 echo "--------------"
 rly tx link funding --timeout 10s
+rly tx link amm --timeout 10s
+

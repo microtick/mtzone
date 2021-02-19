@@ -2,7 +2,7 @@
   "executable": "gaiad",
   "chain_id": "gaiad",
   "accounts": {
-    "bank": "1000000000000udai,1000000000stake",
+    "bank": "1000000000000uatom,1000000000stake",
     "relayer": "10000000stake"
   },
   "config": {
