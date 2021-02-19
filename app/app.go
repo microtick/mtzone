@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"fmt"
+	"bufio"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -245,8 +246,9 @@ func NewApp(
 					panic(err)
 				}
 			}()
-			var ver string
-			fmt.Fscan(versionRead, &ver)
+			scanner := bufio.NewScanner(versionRead)
+			scanner.Scan()
+			ver := scanner.Text()
 			if ver != MTAppVersion {
 		    mtroot := os.Getenv("MTROOT")
 				fmt.Fprintf(os.Stderr, "\nVersion mismatch\n")
