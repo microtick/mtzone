@@ -3,7 +3,7 @@ module gitlab.com/microtick/mtzone
 go 1.15
 
 require (
-	github.com/cosmos/cosmos-sdk v0.41.2
+	github.com/cosmos/cosmos-sdk v0.41.3
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3 // indirect
