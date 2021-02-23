@@ -1,16 +1,12 @@
 package types
 
 func NewGenesisState(
-    extTokenType string,
-    extPerInt uint32,
     params MicrotickParams, 
     accounts []GenesisAccount, 
     markets []GenesisMarket, 
     durations []GenesisDuration) GenesisMicrotick {
         
     return GenesisMicrotick {
-        ExtDenom: extTokenType,
-        ExtPerInt: extPerInt,
         Params: params,
         Accounts: accounts,
         Markets: markets,
@@ -19,7 +15,7 @@ func NewGenesisState(
 }
 
 func DefaultGenesisState() GenesisMicrotick {
-    return NewGenesisState("udai", 1000000, DefaultParams(), nil, nil, nil)
+    return NewGenesisState(DefaultParams(), nil, nil, nil)
 }
 
 func ValidateGenesis(gs GenesisMicrotick) error {

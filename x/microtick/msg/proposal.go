@@ -27,12 +27,12 @@ func init() {
 
 // Denom Change
 
-func NewDenomChangeProposal(title, description, extDenom string, extPerInt int64) gov.Content {
+func NewDenomChangeProposal(title, description, backingDenom string, backingRatio string) gov.Content {
   return &DenomChangeProposal{
     Title: title, 
     Description: description, 
-    ExtDenom: extDenom,
-    ExtPerInt: extPerInt,
+    BackingDenom: backingDenom,
+    BackingRatio: backingRatio,
   }
 }
 
@@ -47,8 +47,8 @@ func (dcp *DenomChangeProposal) String() string {
   Title: %s
   Description: %s
   Ext Denom: %s
-  Ratio: %d
-`, dcp.Title, dcp.Description, dcp.ExtDenom, dcp.ExtPerInt)
+  Ratio: %s
+`, dcp.Title, dcp.Description, dcp.BackingDenom, dcp.BackingRatio)
 }
 
 // New Markets

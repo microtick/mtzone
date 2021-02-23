@@ -26,16 +26,14 @@ func MicrotickProposalHandler(k keeper.Keeper) govtypes.Handler {
 func handleDenomChangeProposal(ctx sdk.Context, k keeper.Keeper, dcp *msg.DenomChangeProposal) error {
 	logger := k.Logger(ctx)
 	logger.Info("Denom Change Proposal:")
-	logger.Info(fmt.Sprintf("  New External token type: %s", dcp.ExtDenom))
-    logger.Info(fmt.Sprintf("  New Ratio: %d", dcp.ExtPerInt))
+	logger.Info(fmt.Sprintf("  Denom: %s", dcp.BackingDenom))
+    logger.Info(fmt.Sprintf("  Ratio: %s", dcp.BackingRatio))
 	
 	// Clear markets
 	k.ClearMarkets(ctx)
 	
-	k.SetExtTokenType(ctx, dcp.ExtDenom)
-	k.SetExtPerInt(ctx, uint32(dcp.ExtPerInt))
-	
-    return nil
+	k.SetBackingParams(ctx, dcp.BackingDenom, dcp.BackingRatio)
+  return nil
 }
 
 func handleAddMarketsProposal(ctx sdk.Context, k keeper.Keeper, amp *msg.AddMarketsProposal) error {
@@ -46,5 +44,5 @@ func handleAddMarketsProposal(ctx sdk.Context, k keeper.Keeper, amp *msg.AddMark
       logger.Info(fmt.Sprintf("  %s: %s", amp.Markets[i].Name, amp.Markets[i].Description))
 	}
 	
-    return nil
+  return nil
 }

@@ -19,11 +19,6 @@ func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) mt.Genesi
 func InitGenesis(ctx sdk.Context, mtKeeper keeper.Keeper, data mt.GenesisMicrotick) {
     logger := mtKeeper.Logger(ctx)
     
-   	mtKeeper.SetExtTokenType(ctx, data.ExtDenom)
-	mtKeeper.SetExtPerInt(ctx, data.ExtPerInt)
-    logger.Info(fmt.Sprintf("External token type: %s", mtKeeper.GetExtTokenType(ctx)))
-    logger.Info(fmt.Sprintf("ExtPerInt: %d", mtKeeper.GetExtPerInt(ctx)))
-	
     mtKeeper.SetParams(ctx, data.Params)
     
     for _, acct := range data.Accounts {
@@ -76,6 +71,5 @@ func ExportGenesis(ctx sdk.Context, mtKeeper keeper.Keeper) mt.GenesisMicrotick 
         },
     )
     
-    return mt.NewGenesisState(mtKeeper.GetExtTokenType(ctx), uint32(mtKeeper.GetExtPerInt(ctx)), 
-      params, accounts, markets, durations)
+    return mt.NewGenesisState(params, accounts, markets, durations)
 }

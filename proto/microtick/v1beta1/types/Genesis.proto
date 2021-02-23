@@ -69,12 +69,4 @@ message GenesisMicrotick {
     (gogoproto.jsontag) = "durations"
   ];
   
-  string ext_denom = 5 [
-    (gogoproto.jsontag) = "ext_denom"
-  ];
-  
-  uint32 ext_per_int = 6 [
-    (gogoproto.jsontag) = "ext_per_int"
-  ];
-  
 }

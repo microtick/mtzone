@@ -3,16 +3,12 @@ package types
 import (
 	"fmt"
 	"errors"
+	"strconv"
 	"strings"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
-
-// DefaultParamspace defines the default microtick module parameter subspace
-const TimeFormat = "2006-01-02T15:04:05Z"
-const HaltTimeString = "168h"
 
 // Default parameter values
 var (
@@ -30,6 +26,8 @@ var (
   DefaultMintRewardTradeFixed = sdk.MustNewDecFromStr("0")
   DefaultMintRewardSettleFixed = sdk.MustNewDecFromStr("0")
   DefaultCancelSlashRate = sdk.MustNewDecFromStr("0.01")
+  DefaultBackingDenom = "udai"
+  DefaultBackingRatio = "1000000"
 )
 
 // Parameter keys
@@ -42,13 +40,14 @@ var (
   KeyCommissionCancelPerunit = []byte("KeyCommissionCancelPerunit")
   KeySettleIncentive = []byte("KeySettleIncentive")
   KeyFreezeTime = []byte("KeyFreezeTime")
-  KeyHaltTime = []byte("KeyHaltTime")
   KeyMintDenom = []byte("KeyMintDenom")
   KeyMintRewardCreatePerunit = []byte("KeyMintRewardCreatePerunit")
   KeyMintRewardUpdatePerunit = []byte("KeyMintRewardUpdatePerunit")
   KeyMintRewardTradeFixed = []byte("KeyMintRewardTradeFixed")
   KeyMintRewardSettleFixed = []byte("KeyMintRewardSettleFixed")
   KeyCancelSlashRate = []byte("KeyCancelSlashRate")
+  KeyBackingDenom = []byte("KeyBackingDenom")
+  KeyBackingRatio = []byte("KeyBackingRatio")
 )
 
 // ParamKeyTable for microtick module
@@ -69,13 +68,14 @@ func (p *MicrotickParams) ParamSetPairs() paramtypes.ParamSetPairs {
     {KeyCommissionCancelPerunit, &p.CommissionCancelPerunit, validatePerunit},
     {KeySettleIncentive, &p.SettleIncentive, validateFixed},
     {KeyFreezeTime, &p.FreezeTime, validateFreezeTime},
-    {KeyHaltTime, &p.HaltTime, validateTime},
-    {KeyMintDenom, &p.MintDenom, validateMintDenom},
+    {KeyMintDenom, &p.MintDenom, validateDenom},
     {KeyMintRewardCreatePerunit, &p.MintRewardCreatePerunit, validatePerunit},
     {KeyMintRewardUpdatePerunit, &p.MintRewardUpdatePerunit, validatePerunit},
     {KeyMintRewardTradeFixed, &p.MintRewardTradeFixed, validateFixed},
     {KeyMintRewardSettleFixed, &p.MintRewardSettleFixed, validateFixed},
     {KeyCancelSlashRate, &p.CancelSlashRate, validateSlash},
+    {KeyBackingDenom, &p.BackingDenom, validateDenom},
+    {KeyBackingRatio, &p.BackingRatio, validateDenomRatio},
 	}
 }
 
@@ -156,22 +156,14 @@ func validateFreezeTime(i interface{}) error {
 	return nil
 }
 
-func validateTime(i interface{}) error {
-	_, ok := time.Parse(TimeFormat, i.(string))
-	if ok != nil {
-		return fmt.Errorf("invalid time: %T", i)
-	}
-	return nil
-}
-
-func validateMintDenom(i interface{}) error {
+func validateDenom(i interface{}) error {
   v, ok := i.(string)
   if !ok {
     return fmt.Errorf("invalid parameter type: %T", i)
   }
 
   if strings.TrimSpace(v) == "" {
-    return errors.New("mint denom cannot be blank")
+    return errors.New("denom cannot be blank")
   }
   if err := sdk.ValidateDenom(v); err != nil {
     return err
@@ -180,11 +172,22 @@ func validateMintDenom(i interface{}) error {
   return nil
 }
 
+func validateDenomRatio(i interface{}) error {
+  v, ok := i.(string)
+  if !ok {
+    return fmt.Errorf("invalid parameter type: %T", i)
+  }
+  
+  _, err := strconv.Atoi(v)
+  if err != nil {
+    return err
+  }
+  
+  return nil
+}
+
 // DefaultParams returns a default set of parameters.
 func DefaultParams() MicrotickParams {
-    //interval, _ := time.ParseDuration(HaltTimeString)
-    //defaultHaltTime := time.Now().UTC().Add(interval)
-    defaultHaltTime, _ := time.Parse("2006-Jan-02", "2030-Jan-01")
 	return MicrotickParams{
     EuropeanOptions: DefaultEuropeanOptions,
     CommissionCreatePerunit: DefaultCommissionCreatePerunit,
@@ -194,12 +197,13 @@ func DefaultParams() MicrotickParams {
     CommissionCancelPerunit: DefaultCommissionCancelPerunit,
     SettleIncentive: DefaultSettleIncentive,
     FreezeTime: DefaultFreezeTime,
-    HaltTime: defaultHaltTime.Format(TimeFormat),
     MintDenom: DefaultMintDenom,
     MintRewardCreatePerunit: DefaultMintRewardCreatePerunit,
     MintRewardUpdatePerunit: DefaultMintRewardUpdatePerunit,
     MintRewardTradeFixed: DefaultMintRewardTradeFixed,
     MintRewardSettleFixed: DefaultMintRewardSettleFixed,
     CancelSlashRate: DefaultCancelSlashRate,
+    BackingDenom: DefaultBackingDenom,
+    BackingRatio: DefaultBackingRatio,
 	}
 }

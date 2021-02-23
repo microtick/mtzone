@@ -3,8 +3,8 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
 	"strings"
-	"time"
 	
 	"github.com/tendermint/tendermint/libs/log"
 	
@@ -84,41 +84,21 @@ func (keeper Keeper) Logger(ctx sdk.Context) log.Logger {
 // Keeper as used here contains access methods for data structures only - business logic
 // is maintained in the tx handlers
 
-func (k Keeper) SetExtTokenType(ctx sdk.Context, extTokenType string) {
-	store := ctx.KVStore(k.AppGlobalsKey)
-	key := []byte(AppGlobalExtTokenType)
-	store.Set(key, []byte(extTokenType))
+func (k Keeper) SetBackingParams(ctx sdk.Context, backingDenom string, backingRatio string) {
+	params := k.GetParams(ctx)
+	params.BackingDenom = backingDenom
+	params.BackingRatio = backingRatio
+	k.SetParams(ctx, params)
 }
 
-func (k Keeper) SetExtPerInt(ctx sdk.Context, extPerInt uint32) {
-	store := ctx.KVStore(k.AppGlobalsKey)
-	key := []byte(AppGlobalExtPerInt)
-	val := make([]byte, 4)
-	binary.LittleEndian.PutUint32(val, extPerInt)
-	store.Set(key, val)
-}
-
-func (k Keeper) GetExtTokenType(ctx sdk.Context) string {
-	store := ctx.KVStore(k.AppGlobalsKey)
-	key := []byte(AppGlobalExtTokenType)
-	if store.Has(key) {
-		return string(store.Get(key))
-	}
-	return "udai"
-}
-
-func (k Keeper) GetExtPerInt(ctx sdk.Context) uint32 {
-	store := ctx.KVStore(k.AppGlobalsKey)
-	key := []byte(AppGlobalExtPerInt)
-	if store.Has(key) {
-		return binary.LittleEndian.Uint32(store.Get(key))
-	}
-	return 1000000
+func (k Keeper) GetBackingParams(ctx sdk.Context) (string, int) {
+	params := k.GetParams(ctx)
+	ratio, _ := strconv.Atoi(params.BackingRatio)
+	return params.BackingDenom, ratio
 }
 
 func (k Keeper) MicrotickCoinToExtCoin(ctx sdk.Context, mc mt.MicrotickCoin) mt.ExtCoin {
-	extPerInt := k.GetExtPerInt(ctx)
-	extTokenType := k.GetExtTokenType(ctx)
+	extTokenType, extPerInt := k.GetBackingParams(ctx)
 	if mc.Denom != mt.IntTokenType {
     panic(fmt.Sprintf("Not internal token type: %s", mc.Denom))
   }
@@ -126,15 +106,6 @@ func (k Keeper) MicrotickCoinToExtCoin(ctx sdk.Context, mc mt.MicrotickCoin) mt.
   extCoin, _ := mc.TruncateDecimal()
   extCoin.Denom = extTokenType
   return extCoin
-}
-
-func (k Keeper) GetHaltTime(ctx sdk.Context) int64 {
-	store := ctx.KVStore(k.AppGlobalsKey)
-	key := []byte(AppGlobalTermination)
-	bz := store.Get(key)
-	var termination Termination
-	k.Codec.MustUnmarshalJSON(bz, &termination)
-	return termination.HaltTime
 }
 
 // DataAccountStatus
@@ -441,14 +412,6 @@ func (k Keeper) IterateTrades(ctx sdk.Context, process func(DataActiveTrade) (st
 // SetParams sets the module's parameters.
 func (keeper Keeper) SetParams(ctx sdk.Context, params mt.MicrotickParams) {
 	keeper.paramSubspace.SetParamSet(ctx, &params)
-	
-	haltTime, _ := time.Parse(mt.TimeFormat, params.HaltTime)
-	termination := Termination {
-		HaltTime: haltTime.Unix(),
-	}
-	store := ctx.KVStore(keeper.AppGlobalsKey)
-	key := []byte(AppGlobalTermination)
-	store.Set(key, keeper.Codec.MustMarshalJSON(&termination))
 }
 
 // GetParams gets the module's parameters.

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	FlagExtPerInt = "ext-per-int"
+	FlagBackingRatio = "backing-ratio"
 )
 
 func GetTxCmd(key string) *cobra.Command {
@@ -277,8 +277,8 @@ func NewCmdSubmitDenomChangeProposal() *cobra.Command {
 				return err
 			}
 
-			extDenom := args[0]
-			content, err := parseDenomChangeArgsToContent(cmd, extDenom)
+			backingDenom := args[0]
+			content, err := parseDenomChangeArgsToContent(cmd, backingDenom)
 			if err != nil {
 				return err
 			}
@@ -311,12 +311,12 @@ func NewCmdSubmitDenomChangeProposal() *cobra.Command {
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
-	cmd.Flags().Int64(FlagExtPerInt, 1000000, "how many external units per internal backing (default 1000000)")
+	cmd.Flags().Int64(FlagBackingRatio, 1000000, "how many external tokens per unit backing")
 
 	return cmd
 }
 
-func parseDenomChangeArgsToContent(cmd *cobra.Command, extDenom string) (gov.Content, error) {
+func parseDenomChangeArgsToContent(cmd *cobra.Command, backingDenom string) (gov.Content, error) {
 	title, err := cmd.Flags().GetString(cli.FlagTitle)
 	if err != nil {
 		return nil, err
@@ -327,12 +327,12 @@ func parseDenomChangeArgsToContent(cmd *cobra.Command, extDenom string) (gov.Con
 		return nil, err
 	}
 	
-	extPerInt, err := cmd.Flags().GetInt64(FlagExtPerInt)
+	backingRatio, err := cmd.Flags().GetInt64(FlagBackingRatio)
 	if err != nil {
 		return nil, err
 	}
 	
-	content := msg.NewDenomChangeProposal(title, description, extDenom, extPerInt)
+	content := msg.NewDenomChangeProposal(title, description, backingDenom, fmt.Sprintf("%d", backingRatio))
 	return content, nil
 }
 
@@ -343,7 +343,7 @@ func NewCmdSubmitAddMarketsProposal() *cobra.Command {
 		Short: "Submit a proposal to add markets in the microtick module",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Submit the new proposal along with an initial deposit. 
-The proposal details must be supplied via a JSON file.FlagExtPerInt
+The proposal details must be supplied via a JSON file.
 
 Example:
 $ %s tx gov submit-proposal microtick-add-markets --proposal=<path/to/proposal.json> --from=<key_or_address>

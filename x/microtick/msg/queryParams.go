@@ -14,9 +14,6 @@ func (querier Querier) Params(c context.Context, req *QueryParamsRequest) (*Quer
 
 func baseQueryParams(ctx sdk.Context, keeper keeper.Keeper, req *QueryParamsRequest) (*QueryParamsResponse, error) {
     params := keeper.GetParams(ctx)
-    extDenom := keeper.GetExtTokenType(ctx)
-    extPerInt := keeper.GetExtPerInt(ctx)
-    
     response := QueryParamsResponse {
         EuropeanOptions: params.EuropeanOptions,
         CommissionCreatePerunit: params.CommissionCreatePerunit.String(),
@@ -32,8 +29,8 @@ func baseQueryParams(ctx sdk.Context, keeper keeper.Keeper, req *QueryParamsRequ
         MintRewardTradeFixed: params.MintRewardTradeFixed.String(),
         MintRewardSettleFixed: params.MintRewardSettleFixed.String(),
         CancelSlashRate: params.CancelSlashRate.String(),
-        BackingDenom: extDenom,
-        BackingRatio: extPerInt,
+        BackingDenom: params.BackingDenom,
+        BackingRatio: params.BackingRatio,
     }
     
     return &response, nil

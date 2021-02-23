@@ -18,17 +18,18 @@ func (k Keeper) PoolCommission(ctx sdk.Context, commission sdk.Dec) mt.Microtick
     extCoins := k.MicrotickCoinToExtCoin(ctx, amount)
     
 	store := ctx.KVStore(k.AppGlobalsKey)
+	backingDenom, _ := k.GetBackingParams(ctx)
 	
 	// Get current pool amount
 	key := []byte(MTPoolName)
 	var pool CommissionPool = CommissionPool {
-		Pool: sdk.NewInt64DecCoin(k.GetExtTokenType(ctx), 0),
+		Pool: sdk.NewInt64DecCoin(backingDenom, 0),
 	}
 	if store.Has(key) {
 		bz := store.Get(key)
 		k.Codec.MustUnmarshalJSON(bz, &pool)
 	}
-	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(k.GetExtTokenType(ctx), extCoins.Amount))
+	pool.Pool = pool.Pool.Add(sdk.NewDecCoin(backingDenom, extCoins.Amount))
 	store.Set(key, k.Codec.MustMarshalJSON(&pool))
 	
 	return amount
@@ -55,11 +56,12 @@ func (k Keeper) AwardRebate(ctx sdk.Context, addr sdk.AccAddress, rebate sdk.Dec
 
 func (k Keeper) Sweep(ctx sdk.Context) {
 	store := ctx.KVStore(k.AppGlobalsKey)
+	backingDenom, _ := k.GetBackingParams(ctx)
 	
 	// Get current pool amount
 	key := []byte(MTPoolName)
 	var pool CommissionPool = CommissionPool {
-		Pool: sdk.NewInt64DecCoin(k.GetExtTokenType(ctx), 0),
+		Pool: sdk.NewInt64DecCoin(backingDenom, 0),
 	}
 	if store.Has(key) {
 		bz := store.Get(key)
@@ -76,7 +78,7 @@ func (k Keeper) Sweep(ctx sdk.Context) {
         }
 	}
     	
-    pool.Pool = sdk.NewInt64DecCoin(k.GetExtTokenType(ctx), 0)
+    pool.Pool = sdk.NewInt64DecCoin(backingDenom, 0)
     store.Set(key, k.Codec.MustMarshalJSON(&pool))
     
     ctx.EventManager().EmitEvent(
@@ -124,8 +126,9 @@ func (k Keeper) DepositMicrotickCoin(ctx sdk.Context, account sdk.AccAddress,
 
 func (k Keeper) GetTotalBalance(ctx sdk.Context, addr sdk.AccAddress) (sdk.Dec, sdk.Dec) {
 	params := k.GetParams(ctx)
-	extBacking := k.BankKeeper.GetBalance(ctx, addr, k.GetExtTokenType(ctx))
-    backing := sdk.NewDecFromInt(extBacking.Amount).QuoInt64(int64(k.GetExtPerInt(ctx)))
+	backingDenom, backingRatio := k.GetBackingParams(ctx)
+	extBacking := k.BankKeeper.GetBalance(ctx, addr, backingDenom)
+    backing := sdk.NewDecFromInt(extBacking.Amount).QuoInt64(int64(backingRatio))
 	ustake := k.BankKeeper.GetBalance(ctx, addr, params.MintDenom)
     stake := sdk.NewDecFromInt(ustake.Amount).QuoInt64(1000000)
     return backing, stake

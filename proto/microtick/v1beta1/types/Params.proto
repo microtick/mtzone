@@ -51,42 +51,46 @@ message MicrotickParams {
     (gogoproto.jsontag) = "freeze_time"
   ];
   
-  string halt_time = 9 [
-    (gogoproto.jsontag) = "halt_time"
-  ];
-  
-  string mint_denom = 10 [
+  string mint_denom = 9 [
     (gogoproto.jsontag) = "mint_denom"
   ];
   
-  string mint_reward_create_perunit = 11 [
+  string mint_reward_create_perunit = 10 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "mint_reward_create_perunit"
   ];
   
-  string mint_reward_update_perunit = 12 [
+  string mint_reward_update_perunit = 11 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "mint_reward_update_perunit"
   ];
   
-  string mint_reward_trade_fixed = 13 [
+  string mint_reward_trade_fixed = 12 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "mint_reward_trade_fixed"
   ];
   
-  string mint_reward_settle_fixed = 14 [
+  string mint_reward_settle_fixed = 13 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "mint_reward_settle_fixed"
   ];  
   
-  string cancel_slash_rate = 15 [
+  string cancel_slash_rate = 14 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.jsontag) = "cancel_slash_rate"
   ];  
+  
+  string backing_denom = 15 [
+    (gogoproto.jsontag) = "backing_denom"
+  ];
+  
+  string backing_ratio = 16 [
+    (gogoproto.jsontag) = "backing_ratio"
+  ];
   
 }

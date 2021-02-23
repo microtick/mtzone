@@ -11,8 +11,8 @@ message DenomChangeProposal {
   
   string title = 1;
   string description = 2;
-  string ext_denom = 3;
-  int64 ext_per_int = 5;
+  string backing_denom = 3;
+  string backing_ratio = 4;
 }
 
 message MarketMetadata {
