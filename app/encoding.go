@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/cosmos/cosmos-sdk/std"
-	"gitlab.com/microtick/mtzone/app/params"
+	"github.com/microtick/mtzone/app/params"
 )
 
 // MakeEncodingConfig creates an EncodingConfig for testing

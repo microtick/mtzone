@@ -11,7 +11,7 @@ import "microtick/v1beta1/msg/QueryQuote.proto";
 import "microtick/v1beta1/msg/QueryTrade.proto";
 import "microtick/v1beta1/msg/QueryParams.proto";
 
-option go_package = "gitlab.com/microtick/mtzone/x/microtick/msg";
+option go_package = "github.com/microtick/mtzone/x/microtick/msg";
 
 service GRPC {
   rpc Account (QueryAccountRequest) returns (QueryAccountResponse) {

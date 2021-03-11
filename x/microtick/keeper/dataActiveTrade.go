@@ -5,7 +5,7 @@ import (
     "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
     
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 func NewDataActiveTrade(now time.Time, market mt.MicrotickMarket, 

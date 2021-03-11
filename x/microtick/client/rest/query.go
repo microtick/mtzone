@@ -9,7 +9,7 @@ import (
 		"github.com/cosmos/cosmos-sdk/types/rest"
 		"github.com/cosmos/cosmos-sdk/client"
 		
-		"gitlab.com/microtick/mtzone/x/microtick/msg"
+		"github.com/microtick/mtzone/x/microtick/msg"
 )
 
 func RegisterRoutes(cliCtx client.Context, r *mux.Router) {

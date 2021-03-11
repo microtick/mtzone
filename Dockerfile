@@ -4,7 +4,7 @@ FROM golang:1.14-alpine AS build-env
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
 
 # Set working directory for the build
-WORKDIR /go/src/gitlab.com/microtick/mtzone
+WORKDIR /go/src/github.com/microtick/mtzone
 
 # Add source files
 COPY . .

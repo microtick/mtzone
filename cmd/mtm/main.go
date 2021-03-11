@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
   svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
   
-	"gitlab.com/microtick/mtzone/app"
-	"gitlab.com/microtick/mtzone/cmd/mtm/cmd"
+	"github.com/microtick/mtzone/app"
+	"github.com/microtick/mtzone/cmd/mtm/cmd"
 )
 
 func main() {

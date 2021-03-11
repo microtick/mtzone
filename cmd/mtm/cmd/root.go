@@ -30,8 +30,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-  "gitlab.com/microtick/mtzone/app"
-  "gitlab.com/microtick/mtzone/app/params"
+  "github.com/microtick/mtzone/app"
+  "github.com/microtick/mtzone/app/params"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the

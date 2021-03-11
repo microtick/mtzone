@@ -16,11 +16,11 @@ import (
 	
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	mt "gitlab.com/microtick/mtzone/x/microtick/types"
-	"gitlab.com/microtick/mtzone/x/microtick/msg"
-	"gitlab.com/microtick/mtzone/x/microtick/keeper"
-	"gitlab.com/microtick/mtzone/x/microtick/client/cli"
-	"gitlab.com/microtick/mtzone/x/microtick/client/rest"
+	mt "github.com/microtick/mtzone/x/microtick/types"
+	"github.com/microtick/mtzone/x/microtick/msg"
+	"github.com/microtick/mtzone/x/microtick/keeper"
+	"github.com/microtick/mtzone/x/microtick/client/cli"
+	"github.com/microtick/mtzone/x/microtick/client/rest"
 	
 	abci "github.com/tendermint/tendermint/abci/types"	
 )

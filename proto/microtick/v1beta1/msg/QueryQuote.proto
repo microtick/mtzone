@@ -4,7 +4,7 @@ package microtick.v1beta1.msg;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
-option go_package = "gitlab.com/microtick/mtzone/x/microtick/msg";
+option go_package = "github.com/microtick/mtzone/x/microtick/msg";
 
 message QueryQuoteRequest {
   

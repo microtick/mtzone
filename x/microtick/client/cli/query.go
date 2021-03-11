@@ -10,8 +10,8 @@ import (
     
   sdk "github.com/cosmos/cosmos-sdk/types"
   
-  mt "gitlab.com/microtick/mtzone/x/microtick/types"
-  "gitlab.com/microtick/mtzone/x/microtick/msg"
+  mt "github.com/microtick/mtzone/x/microtick/types"
+  "github.com/microtick/mtzone/x/microtick/msg"
 )
 
 func GetQueryCmd() *cobra.Command {

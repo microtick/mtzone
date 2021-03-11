@@ -6,8 +6,8 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
-    "gitlab.com/microtick/mtzone/x/microtick/keeper"
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    "github.com/microtick/mtzone/x/microtick/keeper"
+    mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 func (querier Querier) Trade(c context.Context, req *QueryTradeRequest) (*QueryTradeResponse, error) {

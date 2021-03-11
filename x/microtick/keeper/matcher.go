@@ -5,7 +5,7 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
    	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 type QuoteFillInfo struct {

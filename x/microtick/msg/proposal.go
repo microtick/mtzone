@@ -6,7 +6,7 @@ import(
   "encoding/json"
   
   gov "github.com/cosmos/cosmos-sdk/x/gov/types"
-  mt "gitlab.com/microtick/mtzone/x/microtick/types"
+  mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 const (

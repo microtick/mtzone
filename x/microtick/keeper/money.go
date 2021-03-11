@@ -5,7 +5,7 @@ import (
 	"os"
     sdk "github.com/cosmos/cosmos-sdk/types"
     auth "github.com/cosmos/cosmos-sdk/x/auth/types"
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 const MTModuleAccount = "microtick"

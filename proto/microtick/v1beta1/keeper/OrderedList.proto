@@ -3,7 +3,7 @@ package microtick.keeper;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "gitlab.com/microtick/mtzone/x/microtick/keeper";
+option go_package = "github.com/microtick/mtzone/x/microtick/keeper";
 
 message ListItem {
   

@@ -88,9 +88,9 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 
-	"gitlab.com/microtick/mtzone/x/microtick"
-	mtparams "gitlab.com/microtick/mtzone/app/params"
-	mtclient "gitlab.com/microtick/mtzone/x/microtick/client"
+	"github.com/microtick/mtzone/x/microtick"
+	mtparams "github.com/microtick/mtzone/app/params"
+	mtclient "github.com/microtick/mtzone/x/microtick/client"
 )
 
 const appName = "microtick"

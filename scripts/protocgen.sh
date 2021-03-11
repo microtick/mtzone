@@ -19,7 +19,7 @@ Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types:. \
 done
 
 # move proto files to the right places
-cp -r gitlab.com/microtick/mtzone/* ./
-rm -rf gitlab.com
+cp -r github.com/microtick/mtzone/* ./
+rm -rf github.com
 
 

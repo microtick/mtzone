@@ -3,8 +3,8 @@ package msg
 import (
     "context"
     sdk "github.com/cosmos/cosmos-sdk/types"
-    "gitlab.com/microtick/mtzone/x/microtick/keeper"
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    "github.com/microtick/mtzone/x/microtick/keeper"
+    mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 func (querier Querier) Account(c context.Context, req *QueryAccountRequest) (*QueryAccountResponse, error) {

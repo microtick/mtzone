@@ -1,4 +1,4 @@
-module gitlab.com/microtick/mtzone
+module github.com/microtick/mtzone
 
 go 1.15
 

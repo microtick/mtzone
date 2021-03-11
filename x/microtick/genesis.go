@@ -4,8 +4,8 @@ import (
     "fmt"
     sdk "github.com/cosmos/cosmos-sdk/types"
     
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
-    "gitlab.com/microtick/mtzone/x/microtick/keeper"
+    mt "github.com/microtick/mtzone/x/microtick/types"
+    "github.com/microtick/mtzone/x/microtick/keeper"
 )
 
 func GenesisAccountFromDataAccountStatus(das keeper.DataAccountStatus) mt.GenesisAccount {

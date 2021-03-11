@@ -15,8 +15,8 @@ import (
  	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
  	"github.com/cosmos/cosmos-sdk/version"
 	
-	mt "gitlab.com/microtick/mtzone/x/microtick/types"
-	"gitlab.com/microtick/mtzone/x/microtick/msg"
+	mt "github.com/microtick/mtzone/x/microtick/types"
+	"github.com/microtick/mtzone/x/microtick/msg"
 )
 
 const (

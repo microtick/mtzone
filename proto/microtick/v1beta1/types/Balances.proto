@@ -3,7 +3,7 @@ package microtick.types;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "gitlab.com/microtick/mtzone/x/microtick/types";
+option go_package = "github.com/microtick/mtzone/x/microtick/types";
 
 message FractCoin {
   

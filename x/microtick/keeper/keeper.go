@@ -18,7 +18,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	
-	mt "gitlab.com/microtick/mtzone/x/microtick/types"
+	mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 const (

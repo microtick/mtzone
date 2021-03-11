@@ -5,7 +5,7 @@ import (
  	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	
- 	"gitlab.com/microtick/mtzone/x/microtick/client/cli"
+ 	"github.com/microtick/mtzone/x/microtick/client/cli"
 )
 
 // Microtick does not support proposals over REST, but SDK does not handle

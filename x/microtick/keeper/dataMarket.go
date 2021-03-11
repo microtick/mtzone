@@ -4,7 +4,7 @@ import (
     "time"
     sdk "github.com/cosmos/cosmos-sdk/types"
     
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
+    mt "github.com/microtick/mtzone/x/microtick/types"
 )
 
 func NewDataMarket(market mt.MicrotickMarket, description string) DataMarket {

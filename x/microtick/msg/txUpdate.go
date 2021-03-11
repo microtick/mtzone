@@ -7,8 +7,8 @@ import (
     sdk "github.com/cosmos/cosmos-sdk/types"
     sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
     
-    mt "gitlab.com/microtick/mtzone/x/microtick/types"
-    "gitlab.com/microtick/mtzone/x/microtick/keeper"
+    mt "github.com/microtick/mtzone/x/microtick/types"
+    "github.com/microtick/mtzone/x/microtick/keeper"
 )
 
 func (msg TxUpdateQuote) Route() string { return "microtick" }

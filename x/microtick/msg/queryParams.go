@@ -4,7 +4,7 @@ import (
     "context"
     sdk "github.com/cosmos/cosmos-sdk/types"
     
-    "gitlab.com/microtick/mtzone/x/microtick/keeper"
+    "github.com/microtick/mtzone/x/microtick/keeper"
 )
 
 func (querier Querier) Params(c context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
