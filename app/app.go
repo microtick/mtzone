@@ -87,11 +87,6 @@ var (
         //transfer.ModuleName:           {auth.Minter, auth.Burner},
         microtick.ModuleName:	         {auth.Minter, auth.Burner},
 	}
-	
-	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{
-		distr.ModuleName: true,
-	}
 )
 
 // Extended ABCI application
@@ -256,7 +251,7 @@ func NewMTApp(
 		appCodec, keys[auth.StoreKey], app.subspaces[auth.ModuleName], auth.ProtoBaseAccount, maccPerms,
 	)
 	app.bankKeeper = bank.NewBaseKeeper(
-		appCodec, keys[bank.StoreKey], app.accountKeeper, app.subspaces[bank.ModuleName], app.BlacklistedAccAddrs(),
+		appCodec, keys[bank.StoreKey], app.accountKeeper, app.subspaces[bank.ModuleName], app.ModuleAccountAddrs(),
 	)
 	stakingKeeper := staking.NewKeeper(
 		appCodec, keys[staking.StoreKey], app.accountKeeper, app.bankKeeper, app.subspaces[staking.ModuleName],
@@ -452,16 +447,6 @@ func (app *MTApp) ModuleAccountAddrs() map[string]bool {
 	}
 
 	return modAccAddrs
-}
-
-// BlacklistedAccAddrs returns all the app's module account addresses black listed for receiving tokens.
-func (app *MTApp) BlacklistedAccAddrs() map[string]bool {
-	blacklistedAddrs := make(map[string]bool)
-	for acc := range maccPerms {
-		blacklistedAddrs[auth.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
-	}
-
-	return blacklistedAddrs
 }
 
 // Codec returns MTApp's codec.
