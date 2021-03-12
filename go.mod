@@ -3,7 +3,7 @@ module github.com/microtick/mtzone
 go 1.15
 
 require (
-	github.com/cosmos/cosmos-sdk v0.41.3
+	github.com/cosmos/cosmos-sdk v0.42.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3 // indirect
@@ -14,7 +14,7 @@ require (
 	github.com/regen-network/cosmos-proto v0.3.1
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
-	github.com/tendermint/tendermint v0.34.7
+	github.com/tendermint/tendermint v0.34.8
 	github.com/tendermint/tm-db v0.6.4
 	github.com/vektra/mockery v1.1.2
 	golang.org/x/tools v0.0.0-20210106214847-113979e3529a

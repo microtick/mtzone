@@ -203,13 +203,13 @@ func createSimappAndExport(
 	encCfg.Marshaler = codec.NewProtoCodec(encCfg.InterfaceRegistry)
 	var microtickApp *app.MicrotickApp
 	if height != -1 {
-		microtickApp = app.NewApp(logger, db, traceStore, false, map[int64]bool{}, "!", uint(1), encCfg, appOpts)
+		microtickApp = app.NewApp(logger, db, traceStore, false, map[int64]bool{}, "!", cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)), encCfg, appOpts)
 
 		if err := microtickApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		microtickApp = app.NewApp(logger, db, traceStore, true, map[int64]bool{}, "!", uint(1), encCfg, appOpts)
+		microtickApp = app.NewApp(logger, db, traceStore, true, map[int64]bool{}, "!", cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)), encCfg, appOpts)
 	}
 
 	return microtickApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
