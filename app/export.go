@@ -56,7 +56,7 @@ func (app *MTApp) prepForZeroHeightGenesis(ctx sdk.Context, jailWhiteList []stri
 	}
 
 	/* Just to be safe, assert the invariants on current state. */
-	app.crisisKeeper.AssertInvariants(ctx)
+	//app.crisisKeeper.AssertInvariants(ctx)
 
 	/* Handle fee distribution state. */
 
