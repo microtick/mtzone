@@ -26,7 +26,7 @@ PROTOC := $(CACHE_BIN)/protoc
 all: install
 
 install: proto
-	$(eval override VERSION = $(shell git describe --tags))
+	$(eval override VERSION = $(shell git describe --tags 2>/dev/null))
 	$(eval override DATE = $(shell date))
 	$(eval override HOST = $(shell hostname))
 	$(eval override COMMIT = $(shell git log -1 --format='%H'))
