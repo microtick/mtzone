@@ -82,7 +82,7 @@ $(CACHE):
 	mkdir -p $(CACHE_VERSIONS)
 
 .PHONY: modsensure
-modsensure: deps-tidy deps-vendor
+modsensure: deps-vendor deps-tidy
 
 deps-tidy:
 	$(GO) mod tidy
