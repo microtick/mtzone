@@ -1,6 +1,7 @@
 VERSIONFILE=app/version.go
 TEST_DOCKER_REPO=microtick/mtzonetest
 
+export GO111MODULE = on
 GO := go
 
 UNAME_OS              := $(shell uname -s)
@@ -117,7 +118,7 @@ $(PROTOC): $(PROTOC_VERSION_FILE)
 	
 $(MODVENDOR): $(CACHE)
 	echo "installing modvendor..."
-	GOBIN=$(CACHE_BIN) GO111MODULE=off go get github.com/goware/modvendor
+	GOBIN=$(CACHE_BIN) go get github.com/goware/modvendor
 
 test-docker:
 	@docker build -f contrib/Dockerfile.test -t ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) .
