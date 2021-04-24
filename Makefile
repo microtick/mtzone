@@ -36,8 +36,7 @@ install: proto
 	@echo "const MTBuildDate = \"$(DATE)\"" >> $(VERSIONFILE)
 	@echo "const MTHostBuild = \"$(HOST)\"" >> $(VERSIONFILE)
 	@echo "const MTCommit = \"$(COMMIT)\"" >> $(VERSIONFILE)
-	@#$(GO) install -gcflags '-N -l' -mod=mod -tags="netgo ledger" ./cmd/mtm
-	$(GO) install -mod=readonly -tags="netgo ledger" ./cmd/mtm
+	$(GO) install -mod=mod -tags="netgo ledger" ./cmd/mtm
 	@mv $(shell go env GOPATH)/bin/mtm .
 	
 ifeq ($(UNAME_OS),Linux)
