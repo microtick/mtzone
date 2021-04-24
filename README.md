@@ -2,22 +2,16 @@
 
 ## Instructions for building
 
-1. Set GOPATH, GOBIN, and PATH to include GOBIN appropriately.
+1. Ensure the go compiler version 1.15 or greater is installed on your system
 
 ```
-export GOPATH=...
-$ export GOBIN=$GOPATH/bin
-$ export PATH=$GOBIN:$PATH
+$ go version
+go version go1.16.3 linux/amd64
 ```
 
-2. Follow the instructions to install grpc-gateway binaries in your GOBIN:
-
-https://pkg.go.dev/mod/github.com/grpc-ecosystem/grpc-gateway
-
-3. Build the Microtick 'mtm' executable:
+2. Build the Microtick 'mtm' executable:
 
 ```
-$ make proto
 $ make
 ```
 
