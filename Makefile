@@ -50,6 +50,7 @@ endif
 .PHONY: proto
 proto: $(PROTOC) protovendor
 	@echo "Installing protoc-gen-gocosmos..."
+	go mod tidy
 	@go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
 	@echo "Installing protoc-gen-grpc-gateway"
 	@go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway google.golang.org/protobuf/cmd/protoc-gen-go google.golang.org/grpc/cmd/protoc-gen-go-grpc
@@ -83,7 +84,7 @@ $(CACHE):
 	mkdir -p $(CACHE_VERSIONS)
 
 .PHONY: modsensure
-modsensure: deps-vendor deps-tidy
+modsensure: deps-tidy deps-vendor
 
 deps-tidy:
 	$(GO) mod tidy
