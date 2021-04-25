@@ -10,7 +10,6 @@ import (
 	
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -29,7 +28,6 @@ const (
 
 type Keeper struct {
 	Codec codec.Marshaler
-	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper bankkeeper.Keeper
 	DistrKeeper distrkeeper.Keeper
 	stakingKeeper stakingkeeper.Keeper
@@ -45,7 +43,6 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.Marshaler, 
 	paramSpace paramtypes.Subspace,
-	accountKeeper authkeeper.AccountKeeper, 
 	bankKeeper bankkeeper.Keeper,
 	distrKeeper distrkeeper.Keeper,
 	stakingKeeper stakingkeeper.Keeper,
@@ -61,7 +58,6 @@ func NewKeeper(
 	}
 	return Keeper {
 		Codec: cdc,
-		AccountKeeper: accountKeeper,
 		BankKeeper: bankKeeper,
 		DistrKeeper: distrKeeper,
 		stakingKeeper: stakingKeeper,
