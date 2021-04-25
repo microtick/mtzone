@@ -22,7 +22,6 @@ import (
 )
 
 const (
-	AppGlobalTermination = "termination"
 	AppGlobalExtTokenType = "ExtTokenType"
 	AppGlobalIntTokenType = "IntTokenType"
 	AppGlobalExtPerInt = "ExtPerInt"
