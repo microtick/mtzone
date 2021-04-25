@@ -362,7 +362,7 @@ func NewApp(
 	app.MicrotickKeeper = microtick.NewKeeper(
 		appCodec,
 		app.GetSubspace(microtick.ModuleName),
-		app.BankKeeper, app.DistrKeeper, app.StakingKeeper,
+		app.BankKeeper, 
 		keys[microtick.GlobalsKey],
 		keys[microtick.AccountStatusKey],
 		keys[microtick.ActiveQuotesKey],
