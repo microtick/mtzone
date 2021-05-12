@@ -194,6 +194,10 @@ func init() {
 	home := os.Getenv("mtm_HOME")
 	if home != "" {
 		DefaultNodeHome = home
+	  // Hacky again but the SDK doesn't create config, data if env is set
+	  os.Mkdir(DefaultNodeHome, os.ModePerm)
+	  os.Mkdir(DefaultNodeHome + "/config", os.ModePerm)
+	  os.Mkdir(DefaultNodeHome + "/data", os.ModePerm)
 	} else {
 	  DefaultNodeHome = filepath.Join(userHomeDir, ".microtick")	
 	}
