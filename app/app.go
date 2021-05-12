@@ -2,10 +2,11 @@ package app
 
 import (
 	"io"
+	stdlog "log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"fmt"
-	"bufio"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -96,8 +97,8 @@ import (
 const appName = "microtick"
 
 var (
-	// DefaultHome default home directories for the application daemon
-	DefaultHome string
+	// DefaultNodeHome default home directories for the application daemon
+	DefaultNodeHome string
 
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
@@ -184,18 +185,17 @@ type MicrotickApp struct { // nolint: golint
 }
 
 func init() {
-	// Check for MTROOT environment set
-	mtroot := os.Getenv("MTROOT")
-	if mtroot == "" {
-		mtroot = fmt.Sprintf("%s/.microtick", os.Getenv("HOME"))
-	} else {
-		// Print custom MTROOT on stderr
-		fmt.Fprintf(os.Stderr, "MTROOT set to %s\n", mtroot)
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		stdlog.Println("Failed to get home dir %2", err)
 	}
-	DefaultHome = fmt.Sprintf("%s", mtroot)
 	
-	if _, err := os.Stat(mtroot); os.IsNotExist(err) {
-		os.Mkdir(mtroot, os.ModePerm)
+	// Hacky but the init logic doesn't honor this env variable if set later
+	home := os.Getenv("mtm_HOME")
+	if home != "" {
+		DefaultNodeHome = home
+	} else {
+	  DefaultNodeHome = filepath.Join(userHomeDir, ".microtick")	
 	}
 	
 	version.Name = "Microtick"
@@ -219,45 +219,6 @@ func NewApp(
 	homePath string, invCheckPeriod uint, encodingConfig mtparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *MicrotickApp {
 	
-	if homePath != "!" {
-		// Check MTROOT version.lock file for correct version, if not, print a warning
-		filename := fmt.Sprintf("%s/version.lock", homePath)
-		versionRead, err := os.Open(filename)
-		if err != nil {
-			versionWrite, err := os.Create(filename)
-			if err != nil {
-				panic(err)
-			}
-			defer func() {
-				if err := versionWrite.Close(); err != nil {
-					panic(err)
-				}
-			}()
-			fmt.Fprint(versionWrite, MTAppVersion)
-		} else {
-			// Check version matches
-			defer func() {
-				if err := versionRead.Close(); err != nil {
-					panic(err)
-				}
-			}()
-			scanner := bufio.NewScanner(versionRead)
-			scanner.Scan()
-			ver := scanner.Text()
-			if ver != MTAppVersion {
-		    mtroot := os.Getenv("MTROOT")
-				fmt.Fprintf(os.Stderr, "\nVersion mismatch\n")
-				fmt.Fprintf(os.Stderr, "Executable version: %s\n", MTAppVersion)
-				fmt.Fprintf(os.Stderr, "Version lock: %s\n\n", ver)
-				fmt.Fprintf(os.Stderr, "This warning exists to make sure the Microtick executables are using data and config files " +
-				    "generated with correct settings for the correct software version.\n\n")
-				fmt.Fprintf(os.Stderr, "(remove this warning by deleting %s/version.lock or using a different root directory by " +
-				    "setting the MTROOT environment variable. MTROOT is currently set to '%s')\n\n", homePath, mtroot)
-				os.Exit(1)
-			}
-		}
-	}
-
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
