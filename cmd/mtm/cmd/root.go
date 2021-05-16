@@ -56,7 +56,9 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
-			return server.InterceptConfigsPreRunHandler(cmd)
+			err2 := server.InterceptConfigsPreRunHandler(cmd)
+			//cmd.DebugFlags()
+			return err2
 		},
 	}
 
