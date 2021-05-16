@@ -141,9 +141,9 @@ func HandleTxSettleTrade(ctx sdk.Context, mtKeeper keeper.Keeper, params mt.Micr
         accountStatusTaker := mtKeeper.GetAccountStatus(ctx, trade.Taker)
         accountStatusTaker.SettleBacking = accountStatusTaker.SettleBacking.Sub(trade.SettleIncentive)
         mtKeeper.SetAccountStatus(ctx, trade.Taker, accountStatusTaker)
-        mtKeeper.DeleteActiveTrade(ctx, trade.Id)
-        
     }
+    
+    mtKeeper.DeleteActiveTrade(ctx, trade.Id)
     
     data := SettleTradeData {
         Id: trade.Id,

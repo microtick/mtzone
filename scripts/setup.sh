@@ -1,7 +1,6 @@
 #!/bin/sh
 
-MTBINARY=./mtm
-TESTOPTS=--keyring-backend=test
+MTBINARY=mtm
 SILENT=1
 
 redirect() {
@@ -18,60 +17,34 @@ if [[ "$#" -ne 2 ]]; then
   exit 1
 fi
 
-if [ -z "$MTROOT" ]; then
-  WORK=$HOME/.microtick
-else
-  WORK=$MTROOT
-fi
+export mtm_HOME=$HOME/chains/$1
+export mtm_CHAIN_ID=$1
+export mtm_KEYRING_BACKEND=test
 
-echo "Working directory: $WORK"
+echo "Working directory: $mtm_HOME"
 
-if [ -d $WORK ]; then
+if [ -d $mtm_HOME ]; then
   echo "Directory exists, exiting"
   exit 1
 fi
 
-mkdir -p $WORK
 echo "Initializing: $2"
-MTROOT=$WORK redirect $MTBINARY init $2
+redirect $MTBINARY init $2
 
-echo "Setting chain id: $1"
-GENESIS=$WORK/config/genesis.json
-TRANSFORMS='.chain_id="'$1'"'
-TRANSFORMS+='|.app_state.gov.deposit_params.max_deposit_period="300s"'
-TRANSFORMS+='|.app_state.gov.voting_params.voting_period="300s"'
-TRANSFORMS+='|.app_state.slashing.params.signed_blocks_window="10000"'
+echo "Setting chain params"
+GENESIS=$mtm_HOME/config/genesis.json
+TRANSFORMS='.app_state.slashing.params.signed_blocks_window="10000"'
+TRANSFORMS+='|.app_state.microtick.params.mint_denom="stake"'
 TRANSFORMS+='|.app_state.microtick.markets=[{name:"XBTUSD",description:"Crypto - Bitcoin"},{name:"ETHUSD",description:"Crypto - Ethereum"}]'
-TRANSFORMS+='|.app_state.microtick.durations=[{name:"5minute",seconds:300},{name:"15minute",seconds:900},{name:"1hour",seconds:3600},{name:"4hour",seconds:14400},{name:"12hour",seconds:43200}]'
-jq "$TRANSFORMS" $GENESIS > $WORK/tmp && mv $WORK/tmp $GENESIS
-sed -i 's/stake/utick/g' $GENESIS
+TRANSFORMS+='|.app_state.microtick.durations=[{name:"5minute",seconds:300},{name:"15minute",seconds:900},{name:"1hour",seconds:3600}]'
+jq "$TRANSFORMS" $GENESIS > $mtm_HOME/tmp && mv $mtm_HOME/tmp $GENESIS
 
-if [ -z "$PROD"]; then
-  echo "Checking validator key"
-  MTROOT=$WORK $MTBINARY keys show validator -a $TESTOPTS > /dev/null 2>&1
-  if [ $? -ne 0 ]; then
-    echo "Creating validator key"
-    MTROOT=$WORK redirect $MTBINARY keys add validator $TESTOPTS
-  fi
+redirect $MTBINARY keys add validator
+redirect $MTBINARY keys add bank
 
-  echo "Checking microtick key"
-  MTROOT=$WORK $MTBINARY keys show microtick -a $TESTOPTS > /dev/null 2>&1
-  if [ $? -ne 0 ]; then
-    echo "Creating microtick key"
-    MTROOT=$WORK redirect $MTBINARY keys add microtick $TESTOPTS
-  fi
+echo "Adding validator genesis accounts"
+redirect $MTBINARY add-genesis-account validator 100000000000stake 
+redirect $MTBINARY add-genesis-account bank 1000000000000udai
 
-  VALIDATOR=$($MTBINARY keys show validator -a --home=$WORK --keyring-backend=test)
-  echo "Adding validator genesis account: $VALIDATOR"
-  MTROOT=$WORK redirect $MTBINARY add-genesis-account $VALIDATOR 1000000000000utick
-
-  MICROTICK=$($MTBINARY keys show microtick -a --home=$WORK --keyring-backend=test)
-  echo "Adding microtick genesis account: $MICROTICK"
-  MTROOT=$WORK redirect $MTBINARY add-genesis-account $MICROTICK 1000000000000udai,1000000000utick
-
-  echo "Creating genesis transaction"
-  MTROOT=$WORK redirect $MTBINARY gentx validator --amount 1000000000000utick --chain-id $1 $TESTOPTS
-
-  echo "Collecting genesis transactions"
-  MTROOT=$WORK redirect $MTBINARY collect-gentxs
-fi
+redirect $MTBINARY gentx validator 100000000000stake
+redirect $MTBINARY collect-gentxs
