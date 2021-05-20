@@ -60,6 +60,10 @@ func baseQuerySynthetic(ctx sdk.Context, keeper keeper.Keeper, req *QuerySynthet
         Consensus:  dataMarket.Consensus,
         SumBacking: syntheticBook.SumBacking,
         SumWeight: syntheticBook.SumWeight,
+        Limit: req.Limit,
+        Offset: req.Offset,
+        TotalAsks: uint32(len(syntheticBook.Asks)),
+        TotalBids: uint32(len(syntheticBook.Bids)),
         Asks: asks,
         Bids: bids,
     }

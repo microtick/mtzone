@@ -57,11 +57,27 @@ message QuerySyntheticResponse {
     (gogoproto.jsontag) = "sum_weight"
   ];
   
-  repeated SyntheticQuote asks = 4 [
+  uint32 offset = 4 [
+    (gogoproto.jsontag) = "offset"
+  ];
+  
+  uint32 limit = 5 [
+    (gogoproto.jsontag) = "limit"
+  ];
+  
+  uint32 total_asks = 6 [
+    (gogoproto.jsontag) = "total_asks"
+  ];
+  
+  uint32 total_bids = 7 [
+    (gogoproto.jsontag) = "total_bids"
+  ];
+  
+  repeated SyntheticQuote asks = 8 [
     (gogoproto.jsontag) = "asks"
   ];
   
-  repeated SyntheticQuote bids = 5 [
+  repeated SyntheticQuote bids = 9 [
     (gogoproto.jsontag) = "bids"
   ];
 

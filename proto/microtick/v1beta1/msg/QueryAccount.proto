@@ -44,25 +44,41 @@ message QueryAccountResponse {
     (gogoproto.jsontag) = "placed_trades"
   ];
   
-  repeated uint32 active_quotes = 5 [
+  uint32 offset = 5 [
+    (gogoproto.jsontag) = "offset"
+  ];
+  
+  uint32 limit = 6 [
+    (gogoproto.jsontag) = "limit"
+  ];
+  
+  uint32 total_active_quotes = 7 [
+    (gogoproto.jsontag) = "total_active_quotes"
+  ];
+  
+  repeated uint32 active_quotes = 8 [
     (gogoproto.jsontag) = "active_quotes"
   ];
   
-  repeated uint32 active_trades = 6 [
+  uint32 total_active_trades = 9 [
+    (gogoproto.jsontag) = "total_active_trades"
+  ];
+  
+  repeated uint32 active_trades = 10 [
     (gogoproto.jsontag) = "active_trades"
   ];
   
-  cosmos.base.v1beta1.DecCoin quote_backing = 7 [
+  cosmos.base.v1beta1.DecCoin quote_backing = 11 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "quote_backing"
   ];
   
-  cosmos.base.v1beta1.DecCoin trade_backing = 8 [
+  cosmos.base.v1beta1.DecCoin trade_backing = 12 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "trade_backing"
   ];
   
-  cosmos.base.v1beta1.DecCoin settle_backing = 9 [
+  cosmos.base.v1beta1.DecCoin settle_backing = 13 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "settle_backing"
   ];
