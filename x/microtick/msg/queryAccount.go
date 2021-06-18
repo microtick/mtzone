@@ -43,12 +43,12 @@ func baseQueryAccount(ctx sdk.Context, keeper keeper.Keeper, req* QueryAccountRe
     
     response := QueryAccountResponse {
         Account: address,
-        Balances: []mt.FractCoin {
-            mt.FractCoin {
+        Balances: []sdk.DecCoin {
+            sdk.DecCoin {
                 Denom: "backing",
                 Amount: backing,
             },
-            mt.FractCoin {
+            sdk.DecCoin {
                 Denom: params.MintDenom,
                 Amount: tick,
             },
